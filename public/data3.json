@@ -1,0 +1,37 @@
+[
+  {
+    "image": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/cleaners/171577755026199_-_hamza-removebg-preview.png?f=webp&w=320",
+    "name": "John Carter",
+    "rating": 4.9,
+    "description": "Experienced web developer specializing in React and Node.js.",
+    "totalReview": 87
+  },
+  {
+    "image": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/cleaners/174678561133702-removebg-preview.png?f=webp&w=320",
+    "name": "Michael Lee",
+    "rating": 4.7,
+    "description": "Digital marketing expert with a focus on SEO and content strategy.",
+    "totalReview": 112
+  },
+  {
+    "image": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/cleaners/174678561133702-removebg-preview.png?f=webp&w=320",
+    "name": "David Kim",
+    "rating": 4.8,
+    "description": "Full-stack developer offering modern MERN stack solutions.",
+    "totalReview": 95
+  },
+  {
+    "image": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/cleaners/174678561133702-removebg-preview.png?f=webp&w=320",
+    "name": "Alex Johnson",
+    "rating": 4.6,
+    "description": "Freelance graphic designer delivering stunning brand visuals.",
+    "totalReview": 64
+  },
+  {
+    "image": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/cleaners/174678561133702-removebg-preview.png?f=webp&w=320",
+    "name": "Ryan Smith",
+    "rating": 4.9,
+    "description": "Professional photographer with 10+ years in portrait and event shoots.",
+    "totalReview": 140
+  }
+]

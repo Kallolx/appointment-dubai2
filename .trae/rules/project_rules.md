@@ -1,0 +1,1 @@
+If any new function is added, always check the backend and the database that is the new added function or feature is properly working or not

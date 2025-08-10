@@ -1,0 +1,110 @@
+[
+  {
+    "id": "f001",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/1750143922studio.jpg?f=webp&w=320",
+    "title": "Studio",
+    "discountPrice": 499.99,
+    "previousPrice": 699.99,
+    "category": "general",
+    "description": "Elegant and comfortable luxury sofa set perfect for any modern living room."
+  },
+  {
+    "id": "f002",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17501443091bedroomapt.(1).jpg?f=webp&w=320",
+    "title": "1 Bedroom Apartment",
+    "discountPrice": 349.99,
+    "previousPrice": 599.99,
+    "category": "general",
+    "description": "Stylish recliner sofa designed for maximum comfort and relaxation."
+  },
+  {
+    "id": "f003",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17501443091bedroomapt.(1).jpg?f=webp&w=320",
+    "title": "2 Bedroom Apartment",
+    "discountPrice": 299.99,
+    "previousPrice": 499.99,
+    "category": "cockroaches",
+    "description": "High-quality memory foam mattress that adapts to your body shape for better sleep."
+  },
+  {
+    "id": "f004",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17508535682bedroomvilla.webp?f=webp&w=320",
+    "title": "3 Bedroom Apartment",
+    "discountPrice": 399.99,
+    "previousPrice": 599.99,
+    "category": "cockroaches",
+    "description": "Orthopedic mattress offering excellent support to reduce back pain."
+  },
+  {
+    "id": "f005",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17501456244bedroomapt.-1(2).jpg?f=webp&w=320",
+    "title": "4 Bedroom Apartment",
+    "discountPrice": 89.99,
+    "previousPrice": 139.99,
+    "category": "ants",
+    "description": "Soft and durable wool carpet with a classic design."
+  },
+  {
+    "id": "f006",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17501458015bedroomapt..jpg?f=webp&w=320",
+    "title": "5 Bedroom Apartment",
+    "discountPrice": 129.99,
+    "previousPrice": 199.99,
+    "category": "ants",
+    "description": "Elegant Persian-style carpet with intricate patterns and rich colors."
+  },
+  {
+    "id": "f007",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17508535963bedroomvilla.webp?f=webp&w=320",
+    "title": "2 Bedroom Villa",
+    "discountPrice": 59.99,
+    "previousPrice": 99.99,
+    "category": "bed bugs",
+    "description": "Heavy blackout curtains designed to block light and improve privacy."
+  },
+  {
+    "id": "f008",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17508535963bedroomvilla.webp?f=webp&w=320",
+    "title": "3 Bedroom Villa",
+    "discountPrice": 39.99,
+    "previousPrice": 69.99,
+    "category": "bed bugs",
+    "description": "Light and airy sheer linen curtains to brighten your rooms."
+  },
+  {
+    "id": "f009",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17508535963bedroomvilla.webp?f=webp&w=320",
+    "title": "4 Bedroom Villa",
+    "discountPrice": 899.99,
+    "previousPrice": 1299.99,
+    "category": "rodents",
+    "description": "Complete living room furniture combo with sofa, table, and accessories."
+  },
+  {
+    "id": "f010",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17508535963bedroomvilla.webp?f=webp&w=320",
+    "title": "5 Bedroom Villa",
+    "discountPrice": 749.99,
+    "previousPrice": 1099.99,
+    "category": "rodents",
+    "description": "Coordinated bedroom set including bed, nightstands, and dresser."
+  },
+  {
+    "id": "f011",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17501703861bedroomapt.(1).jpg?f=webp&w=320",
+    "title": "3 Bedroom Apartment",
+    "discountPrice": 19.99,
+    "previousPrice": 34.99,
+    "category": "mosquitoes",
+    "description": "Protective nano coating spray to keep your furniture looking new."
+  },
+  {
+    "id": "f012",
+    "img": "https://deax38zvkau9d.cloudfront.net/prod/assets/images/attribute-contents/17501703861bedroomapt.(1).jpg?f=webp&w=320",
+    "title": "4  Bedroom Apartment",
+    "discountPrice": 24.99,
+    "previousPrice": 44.99,
+    "category": "mosquitoes",
+    "description": "Advanced protective nano layer for enhanced durability and stain resistance."
+  }
+]

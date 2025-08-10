@@ -1,0 +1,42 @@
+[
+  {
+    "id": "p001",
+    "title": "Cushion",
+    "image": "https://images.pexels.com/photos/1248583/pexels-photo-1248583.jpeg?_gl=1*1tz6use*_ga*MjA5MTQxMTYwNC4xNzUyMjQyNTAx*_ga_8JE65Q40S6*czE3NTM3MjI3NjYkbzMkZzEkdDE3NTM3MjI3ODAkajQ2JGwwJGgw",
+    "description": "High-quality wireless headphones with noise cancellation and 20-hour battery life.",
+    "previousPrice": 99.99,
+    "currentPrice": 79.99
+  },
+  {
+    "id": "p002",
+    "title": "Dining Chair",
+    "image": "https://images.pexels.com/photos/3144581/pexels-photo-3144581.jpeg?_gl=1*1e8vr9z*_ga*MjA5MTQxMTYwNC4xNzUyMjQyNTAx*_ga_8JE65Q40S6*czE3NTM3MjI3NjYkbzMkZzEkdDE3NTM3MjI4NTEkajM2JGwwJGgw",
+    "description": "Durable silicone case with shockproof design, compatible with multiple smartphone models.",
+    "previousPrice": 29.99,
+    "currentPrice": 19.99
+  },
+  {
+    "id": "p003",
+    "title": "Bluetooth Speaker",
+    "image": "https://example.com/images/speaker.jpg",
+    "description": "Portable Bluetooth speaker with deep bass and waterproof features.",
+    "previousPrice": 59.99,
+    "currentPrice": 49.99
+  },
+  {
+    "id": "p004",
+    "title": "Fitness Tracker",
+    "image": "https://example.com/images/fitness-tracker.jpg",
+    "description": "Track your steps, heart rate, and sleep with this sleek fitness tracker.",
+    "previousPrice": 79.99,
+    "currentPrice": 59.99
+  },
+  {
+    "id": "p005",
+    "title": "USB-C Charger",
+    "image": "https://example.com/images/charger.jpg",
+    "description": "Fast-charging USB-C adapter with 65W output, compatible with most devices.",
+    "previousPrice": 39.99,
+    "currentPrice": 29.99
+  }
+]

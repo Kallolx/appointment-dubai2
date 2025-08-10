@@ -1,0 +1,149 @@
+@import 'tailwindcss/base.css';
+@import 'tailwindcss/components.css';
+@import 'tailwindcss/utilities';
+
+/* Professional Appointment System Design System 
+All colors MUST be HSL. Dark theme with #00C3FF accent.
+*/
+
+@layer base {
+  :root {
+    /* Modern White Theme Base Colors */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    /* Cards and Surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary Brand Color - #00C3FF */
+    --primary: 196 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 196 100% 45%;
+    --primary-light: 196 100% 95%;
+
+    /* Secondary */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Muted */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent */
+    --accent: 196 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and Inputs */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 196 100% 50%;
+
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 196 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 196 100% 50%;
+
+    /* Custom Gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(196 100% 50%),
+      hsl(196 100% 40%)
+    );
+    --gradient-card: linear-gradient(
+      145deg,
+      hsl(0 0% 100%),
+      hsl(210 40% 98%)
+    );
+    --gradient-sidebar: linear-gradient(
+      180deg,
+      hsl(0 0% 100%),
+      hsl(210 40% 98%)
+    );
+
+    /* Shadows */
+    --shadow-primary: 0 10px 30px -10px hsl(196 100% 50% / 0.2);
+    --shadow-card: 0 8px 25px -8px hsl(220 60% 10% / 0.08);
+    --shadow-elegant: 0 20px 40px -12px hsl(220 60% 10% / 0.12);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Dark theme (for potential future dark mode toggle) */
+  .dark {
+    --background: 217 32% 8%;
+    --foreground: 210 40% 98%;
+    --card: 217 32% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 32% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 196 100% 50%;
+    --primary-foreground: 217 32% 8%;
+    --secondary: 217 32% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 32% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 196 100% 50%;
+    --accent-foreground: 217 32% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 32% 18%;
+    --input: 217 32% 15%;
+    --ring: 196 100% 50%;
+    --sidebar-background: 217 32% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 196 100% 50%;
+    --sidebar-primary-foreground: 217 32% 8%;
+    --sidebar-accent: 217 32% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 32% 18%;
+    --sidebar-ring: 196 100% 50%;
+    --gradient-card: linear-gradient(145deg, hsl(217 32% 10%), hsl(217 32% 12%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(217 32% 8%), hsl(217 32% 10%));
+    --shadow-card: 0 8px 25px -8px hsl(217 32% 4% / 0.4);
+    --shadow-elegant: 0 20px 40px -12px hsl(217 32% 4% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Hide vertical scrollbar across browsers */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
