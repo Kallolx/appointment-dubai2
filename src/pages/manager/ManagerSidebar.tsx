@@ -74,14 +74,14 @@ const managerMenuItems = [
   },
   {
     title: "Schedule Management",
-    url: "/manager/schedule",
+    url: "/dashboard/schedule",
     icon: Clock,
     description: "Time slots & availability",
     category: "appointments"
   },
   {
     title: "Appointment Status",
-    url: "/manager/appointment-status",
+    url: "/dashboard/appointment",
     icon: CheckCircle2,
     badge: "12",
     description: "Pending approvals",
@@ -91,7 +91,7 @@ const managerMenuItems = [
   // Service Management
   {
     title: "Service Areas",
-    url: "/manager/service-areas",
+    url: "/dashboard/service-areas",
     icon: MapPin,
     badge: "8",
     description: "Coverage locations",
@@ -99,7 +99,7 @@ const managerMenuItems = [
   },
   {
     title: "Service Management",
-    url: "/manager/services",
+    url: "/dashboard/services",
     icon: Building2,
     badge: "15",
     description: "Available services",
@@ -116,7 +116,7 @@ const managerMenuItems = [
   // Customer Management
   {
     title: "Customer Management",
-    url: "/manager/customers",
+    url: "/dashboard/customers",
     icon: Users,
     badge: "234",
     description: "Customer database",
@@ -124,7 +124,7 @@ const managerMenuItems = [
   },
   {
     title: "Customer Support",
-    url: "/manager/support",
+    url: "/dashboard/support",
     icon: Ticket,
     badge: "8",
     description: "Support tickets",

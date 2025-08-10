@@ -54,7 +54,7 @@ const userMenuItems = [
   // Appointments
   {
     title: "My Appointments",
-    url: "/user/appointments",
+    url: "/dashboard/appointments",
     icon: Calendar,
     badge: "3",
     description: "Upcoming & Past",
@@ -62,14 +62,14 @@ const userMenuItems = [
   },
   {
     title: "Appointment History",
-    url: "/user/history",
+    url: "/dashboard/appointments",
     icon: Clock,
     description: "View all bookings",
     category: "appointments"
   },
   {
     title: "Favorites",
-    url: "/user/favorites",
+    url: "/dashboard/favorites",
     icon: Heart,
     badge: "5",
     description: "Saved services",

@@ -92,7 +92,7 @@ const adminMenuItems = [
   // Appointments & Services
   {
     title: "Appointments",
-    url: "/admin/appointments",
+    url: "/dashboard/appointments",
     icon: Calendar,
     badge: "156",
     description: "All bookings",
@@ -100,7 +100,7 @@ const adminMenuItems = [
   },
   {
     title: "Service Categories",
-    url: "/admin/service-categories", 
+    url: "/dashboard/service-categories",
     icon: FolderTree,
     description: "Categories & subcategories",
     category: "operations"
@@ -139,7 +139,7 @@ const adminMenuItems = [
   },
   {
     title: "Website Settings",
-    url: "/admin/website",
+    url: "/dashboard/website-settings",
     icon: Settings,
     description: "Site configuration",
     category: "content"
@@ -188,7 +188,7 @@ const adminMenuItems = [
   // System
   {
     title: "System Settings",
-    url: "/admin/system",
+    url: "/dashboard/system",
     icon: Database,
     description: "Core configuration",
     category: "system"
