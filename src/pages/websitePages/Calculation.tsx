@@ -116,7 +116,7 @@ const Calculation: React.FC<CalculationProps> = ({
       <div className="md:hidden w-full">
         {/* Slide-Up Drawer */}
         <div
-          className={`fixed bottom-12 left-0 right-0 bg-white transition-transform duration-300 transform max-h-[70vh] overflow-y-auto rounded-t-xl shadow-lg ${
+          className={`fixed bottom-12 left-0 right-0 bg-white transition-transform duration-300 transform max-h-[70vh] overflow-y-auto rounded-t-xl shadow-lg z-[60] ${
             showDrawer ? "translate-y-0" : "translate-y-full"
           }`}
           style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.1)" }}
@@ -164,7 +164,7 @@ const Calculation: React.FC<CalculationProps> = ({
         </div>
 
         {/* Bottom Total Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-md flex items-center justify-between z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-md flex items-center justify-between z-[70]">
           <div
             onClick={() => setShowDrawer(!showDrawer)}
             className="cursor-pointer flex items-center gap-2"

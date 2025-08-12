@@ -274,59 +274,60 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="flex flex-col w-full min-h-screen">
         {/* Enhanced Header */}
-        <header className="h-14 sm:h-16 sticky top-0 z-40">
-          <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-full">
-            <div className="flex items-center gap-4 min-w-0 flex-1">
-              <SidebarTrigger className="lg:hidden flex-shrink-0" />
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate">
-                  Admin Dashboard
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block truncate">
-                  Welcome back! Here's what's happening with your business
-                  today.
-                </p>
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+          <div className="px-4 sm:px-6 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <SidebarTrigger className="lg:hidden flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    Hello, Admin! 👋
+                  </h1>
+                  <p className="text-gray-600 text-sm sm:text-base mt-1">
+                    Welcome back! Here's what's happening with your business
+                    today.
+                  </p>
+                </div>
               </div>
-            </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <Select
+                  value={selectedTimeframe}
+                  onValueChange={setSelectedTimeframe}
+                >
+                  <SelectTrigger className="w-24 sm:w-32 bg-white border-gray-200 shadow-sm text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <Select
-                value={selectedTimeframe}
-                onValueChange={setSelectedTimeframe}
-              >
-                <SelectTrigger className="w-24 sm:w-32 bg-white border-gray-200 shadow-sm text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="bg-white border-gray-200 hover:bg-gray-50 w-8 h-8 sm:w-9 sm:h-9 shadow-sm"
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                      refreshing ? "animate-spin" : ""
+                    }`}
+                  />
+                </Button>
 
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="bg-white border-gray-200 hover:bg-gray-50 w-8 h-8 sm:w-9 sm:h-9 shadow-sm"
-              >
-                <RefreshCw
-                  className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                    refreshing ? "animate-spin" : ""
-                  }`}
-                />
-              </Button>
-
-              <Badge
-                variant="outline"
-                className="hidden sm:flex bg-green-50 text-green-700 border-green-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs"
-              >
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse" />
-                <span className="hidden md:inline">Online</span>
-                <span className="md:hidden">•</span>
-              </Badge>
+                <Badge
+                  variant="outline"
+                  className="hidden sm:flex bg-green-50 text-green-700 border-green-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs"
+                >
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse" />
+                  <span className="hidden md:inline">Online</span>
+                  <span className="md:hidden">•</span>
+                </Badge>
+              </div>
             </div>
           </div>
         </header>
