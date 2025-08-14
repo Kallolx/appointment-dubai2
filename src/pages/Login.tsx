@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, LogIn, Shield, ArrowRight, User, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
   // Authentication flow states
@@ -28,16 +29,25 @@ export default function Login() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   
   // Check URL parameters on component mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const phoneParam = params.get('phone');
     const isNewUser = params.get('new') === 'true';
+    const isVerified = params.get('verified') === 'true';
     
     if (phoneParam) {
       setPhone(phoneParam);
-      setStep(isNewUser ? "signup" : "password");
+      if (isNewUser && isVerified) {
+        // Phone is already verified via OTP, go directly to signup
+        setStep("signup");
+      } else if (isNewUser) {
+        setStep("signup");
+      } else {
+        setStep("password");
+      }
     }
   }, []);
 
@@ -106,15 +116,8 @@ export default function Login() {
     .then(response => response.json())
     .then(data => {
       if (data.token) {
-        // Store token in localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${data.user.fullName || 'User'}!`,
-        });
-        
+        // Use AuthContext login method
+        login(data.user, data.token);
         navigate("/user");
       } else {
         toast({
@@ -138,17 +141,31 @@ export default function Login() {
   
   // Handle signup
   const handleSignup = () => {
-    // Validate input
-    if (!fullName || !email || !recipientName || !buildingInfo || !streetInfo || !locality || !city || !country || !password || !confirmPassword) {
+    const params = new URLSearchParams(window.location.search);
+    const isOtpVerified = params.get('verified') === 'true';
+    
+    // Validate input - password is optional for OTP-verified users
+    if (!fullName || !email || !recipientName || !buildingInfo || !streetInfo || !locality || !city || !country) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields.",
+        description: "Please fill in all required fields.",
         variant: "destructive"
       });
       return;
     }
     
-    if (password !== confirmPassword) {
+    // If not OTP verified, password is required
+    if (!isOtpVerified && (!password || !confirmPassword)) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields including password.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // If passwords are provided, they must match
+    if (password && password !== confirmPassword) {
       toast({
         title: "Password Mismatch",
         description: "Passwords do not match.",
@@ -175,21 +192,15 @@ export default function Login() {
           city,
           country
         }, 
-        password 
+        password: password || null,
+        isOtpVerified
       })
     })
     .then(response => response.json())
     .then(data => {
       if (data.token) {
-        // Store token in localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        toast({
-          title: "Registration Successful",
-          description: `Welcome to AppointPro, ${fullName}!`,
-        });
-        
+        // Use AuthContext login method
+        login(data.user, data.token);
         navigate("/user");
       } else {
         toast({
@@ -369,8 +380,26 @@ export default function Login() {
                     className="bg-muted/50"
                   />
                 </div>
+                
+                {/* Check if this is OTP verified registration */}
+                {(() => {
+                  const params = new URLSearchParams(window.location.search);
+                  const isOtpVerified = params.get('verified') === 'true';
+                  
+                  return isOtpVerified && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                        <span className="text-green-700 text-sm font-medium">Phone number verified</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">Full Name *</Label>
                   <Input 
                     id="fullName" 
                     type="text" 
@@ -381,7 +410,7 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input 
                     id="email" 
                     type="email" 
@@ -392,7 +421,7 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-4">
-                  <Label className="text-base font-medium">Physical Address</Label>
+                  <Label className="text-base font-medium">Physical Address *</Label>
                   <div className="space-y-2">
                     <Label htmlFor="recipientName">Recipient's Name</Label>
                     <Input 
@@ -460,28 +489,45 @@ export default function Login() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-signup">Password</Label>
-                  <Input 
-                    id="password-signup" 
-                    type="password" 
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input 
-                    id="confirmPassword" 
-                    type="password" 
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                
+                {/* Password fields - optional for OTP verified users */}
+                {(() => {
+                  const params = new URLSearchParams(window.location.search);
+                  const isOtpVerified = params.get('verified') === 'true';
+                  
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="password-signup">
+                          Password {!isOtpVerified && '*'}
+                          {isOtpVerified && <span className="text-sm text-gray-500">(Optional - you can set this later)</span>}
+                        </Label>
+                        <Input 
+                          id="password-signup" 
+                          type="password" 
+                          placeholder="Create a password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required={!isOtpVerified}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">
+                          Confirm Password {!isOtpVerified && '*'}
+                        </Label>
+                        <Input 
+                          id="confirmPassword" 
+                          type="password" 
+                          placeholder="Confirm your password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required={!isOtpVerified}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
+                
                 <Button 
                   type="button" 
                   className="w-full" 

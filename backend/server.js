@@ -4,6 +4,7 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const { sendOTP, verifyOTP } = require('./services/otpService');
 
 // Load environment variables
 dotenv.config();
@@ -137,6 +138,97 @@ let pool;
 
 // API Routes
 
+// Send OTP to phone number
+app.post('/api/auth/send-otp', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone number is required' });
+    }
+    
+    // Send OTP using Twilio
+    const result = await sendOTP(phone);
+    
+    if (result.success) {
+      // Include test OTP in response for development mode
+      const response = { 
+        message: result.message,
+        success: true
+      };
+      
+      // Add test info for development
+      if (result.testMode) {
+        response.testMode = true;
+        response.testOtp = result.testOtp;
+      }
+      
+      return res.json(response);
+    } else {
+      return res.status(500).json({ 
+        message: result.message,
+        success: false
+      });
+    }
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify OTP and login/register
+app.post('/api/auth/verify-otp', async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+    
+    if (!phone || !otp) {
+      return res.status(400).json({ message: 'Phone number and OTP are required' });
+    }
+    
+    // Verify OTP
+    const otpResult = verifyOTP(phone, otp);
+    
+    if (!otpResult.success) {
+      return res.status(400).json({ 
+        message: otpResult.message,
+        success: false
+      });
+    }
+    
+    // Check if user exists
+    const [userRows] = await pool.execute('SELECT * FROM users WHERE phone = ?', [phone]);
+    
+    if (userRows.length > 0) {
+      // User exists - login
+      const user = userRows[0];
+      
+      // Generate JWT token
+      const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
+      
+      // Remove password from user object
+      delete user.password;
+      
+      return res.json({
+        message: 'Login successful',
+        token,
+        user,
+        isNewUser: false
+      });
+    } else {
+      // User doesn't exist - return flag for registration
+      return res.json({
+        message: 'Phone verified, please complete registration',
+        phone,
+        isNewUser: true,
+        success: true
+      });
+    }
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Check if phone number exists
 app.post('/api/auth/check-phone', async (req, res) => {
   try {
@@ -155,14 +247,19 @@ app.post('/api/auth/check-phone', async (req, res) => {
   }
 });
 
-// Register new user
+// Register new user (modified for OTP flow)
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { phone, fullName, email, address, password } = req.body;
+    const { phone, fullName, email, address, password, isOtpVerified } = req.body;
     
     // Validate input
-    if (!phone || !fullName || !email || !address || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+    if (!phone || !fullName || !email || !address) {
+      return res.status(400).json({ message: 'Phone, name, email, and address are required' });
+    }
+    
+    // For OTP flow, password is optional (can be set later)
+    if (!isOtpVerified && !password) {
+      return res.status(400).json({ message: 'Password is required for non-OTP registration' });
     }
     
     // Check if phone already exists
@@ -177,8 +274,14 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
     
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password if provided, otherwise use a placeholder
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    } else {
+      // For OTP users, create a placeholder password that they'll need to change
+      hashedPassword = await bcrypt.hash(phone + '_temp_otp_password', 10);
+    }
     
     // Convert address object to JSON string for storage
     const addressJSON = JSON.stringify(address);

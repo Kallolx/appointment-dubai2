@@ -3,6 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ApiCredentials from "./pages/dashboard/ApiCredentials";
 import AppointmentManagement from "./pages/dashboard/AppointmentManagement";
@@ -14,8 +16,11 @@ import ProfileSettings from "./pages/ProfileSettings";
 import RoleManagement from "./pages/dashboard/RoleManagement";
 import ServiceAreas from "./pages/dashboard/ServiceAreas";
 import SystemSettings from "./pages/dashboard/SystemSettings";
-import UserDashboard from "@/pages/users/UserDashboard";
+import NewUserDashboard from "@/pages/users/NewUserDashboard";
 import MyAppointments from "./pages/MyAppointments";
+import MyBookings from "./pages/users/MyBookings";
+import MyQuotes from "./pages/users/MyQuotes";
+import OutstandingPayments from "./pages/users/OutstandingPayments";
 import MyAddresses from "./pages/MyAddresses";
 import Support from "./pages/Support";
 import Profile from "./pages/Profile";
@@ -29,15 +34,19 @@ import PrivacyPolicy from "./pages/websitePages/PrivacyPolicy";
 import ServiceLayout from "./pages/websitePages/ServiceLayout";
 import SingleCategory from "./pages/websitePages/SingleCategory";
 import Terms from "./pages/websitePages/Terms";
+import OrderConfirmation from "./pages/users/OrderConfirmation";
+import BookingDetails from "./pages/users/BookingDetails";
+import ManageBooking from "./pages/users/ManageBooking";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Login />} />
@@ -53,6 +62,12 @@ const App = () => (
             <Route path="terms" element={<Terms />} />
             <Route path="faq" element={<FaqPage />} />
           </Route>
+          
+          {/* Order Confirmation - Standalone page with navbar */}
+          <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
+          <Route path="/booking-details/:bookingId" element={<ProtectedRoute><BookingDetails /></ProtectedRoute>} />
+          <Route path="/manage-booking/:bookingId" element={<ProtectedRoute><ManageBooking /></ProtectedRoute>} />
+          
           <Route
             path="/service/:category"
             element={<ServiceLayout></ServiceLayout>}
@@ -84,11 +99,14 @@ const App = () => (
           <Route path="/manager/pages" element={<WebsiteSettings />} />
           <Route path="/manager/profile" element={<ProfileSettings />} />
 
-          <Route path="/user" element={<UserDashboard />} />
-          <Route path="/user/appointments" element={<MyAppointments />} />
-          <Route path="/user/addresses" element={<MyAddresses />} />
-          <Route path="/user/support" element={<Support />} />
-          <Route path="/user/profile" element={<Profile />} />
+          <Route path="/user" element={<ProtectedRoute><NewUserDashboard /></ProtectedRoute>} />
+          <Route path="/user/bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+          <Route path="/user/quotes" element={<ProtectedRoute><MyQuotes /></ProtectedRoute>} />
+          <Route path="/user/payments" element={<ProtectedRoute><OutstandingPayments /></ProtectedRoute>} />
+          <Route path="/user/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
+          <Route path="/user/addresses" element={<ProtectedRoute><MyAddresses /></ProtectedRoute>} />
+          <Route path="/user/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+          <Route path="/user/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
           {/* Legacy Dashboard Routes - Redirect to role-based */}
           <Route path="/dashboard" element={<Dashboard />} />
@@ -137,7 +155,8 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

@@ -1,21 +1,22 @@
+import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 
 const StepThree = ({ onSelectionChange }) => {
   const dateScrollRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [dates, setDates] = useState<any[]>([]);
 
   // Generate dates for the next 10 days
   const generateDates = () => {
-    const dates = [];
+    const datesList = [];
     const today = new Date();
     for (let i = 0; i < 10; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      dates.push({
+      datesList.push({
         id: i,
         dayName: dayNames[date.getDay()],
         date: date.getDate(),
@@ -24,28 +25,67 @@ const StepThree = ({ onSelectionChange }) => {
         dateObj: date
       });
     }
-    return dates;
+    return datesList;
   };
 
-  const dates = generateDates();
-
-  // Set the first date as selected on mount
+  // Initialize dates on mount
   useEffect(() => {
-    if (dates.length > 0 && !selectedDate) {
-      setSelectedDate(dates[0].fullDate);
+    const generatedDates = generateDates();
+    setDates(generatedDates);
+    if (generatedDates.length > 0 && !selectedDate) {
+      setSelectedDate(generatedDates[0].fullDate);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (onSelectionChange) {
+      // Convert the selected date to YYYY-MM-DD format for the database
+      let formattedDate = "";
+      let formattedTime = "";
+      
+      if (selectedDate) {
+        // Find the date object from our generated dates
+        const dateItem = dates.find(d => d.fullDate === selectedDate);
+        if (dateItem) {
+          // Format as YYYY-MM-DD for database storage
+          const year = dateItem.dateObj.getFullYear();
+          const month = String(dateItem.dateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(dateItem.dateObj.getDate()).padStart(2, '0');
+          formattedDate = `${year}-${month}-${day}`;
+        }
+      }
+      
+      if (selectedTime) {
+        // Extract the start time from "9:00 AM - 9:30 AM" format and convert to 24-hour format
+        const startTime = selectedTime.split(' - ')[0];
+        formattedTime = convertTo24Hour(startTime);
+      }
+      
       onSelectionChange({
         professional: null, // Not used in this step
-        date: selectedDate,
-        time: selectedTime,
+        date: formattedDate,
+        time: formattedTime,
+        displayDate: selectedDate, // Keep the display format for UI
+        displayTime: selectedTime
       });
     }
   }, [selectedDate, selectedTime, onSelectionChange]);
+
+  // Helper function to convert 12-hour time to 24-hour format
+  const convertTo24Hour = (time12h: string) => {
+    const [time, modifier] = time12h.split(' ');
+    let [hours, minutes] = time.split(':');
+    
+    if (hours === '12') {
+      hours = '00';
+    }
+    
+    if (modifier === 'PM') {
+      hours = String(parseInt(hours, 10) + 12);
+    }
+    
+    return `${String(hours).padStart(2, '0')}:${minutes}:00`;
+  };
 
   const scroll = (direction, ref) => {
     if (ref.current) {

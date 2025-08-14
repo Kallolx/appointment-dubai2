@@ -9,10 +9,15 @@ import {
   Star,
   ThumbsUp,
   X,
+  User,
+  Calendar,
+  LogOut,
+  Settings,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LoginModal from "./LoginModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Service {
   name: string;
@@ -104,6 +109,9 @@ export const Navbar = () => {
   /* NEW: mobile menu toggle */
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Get auth state
+  const { user, isAuthenticated, logout } = useAuth();
+
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported.");
@@ -113,6 +121,11 @@ export const Navbar = () => {
       () => setLocation("Detected Location"),
       (err) => alert(err.message)
     );
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsProfileOpen(false);
   };
 
   const toggleCountryDrawer = () => setIsCountryDrawerOpen(!isCountryDrawerOpen);
@@ -208,15 +221,60 @@ export const Navbar = () => {
         </div>
 
         {/* Auth */}
-        <button
-          onClick={() => {
-            setLoginModalOpen(true);
-            setMobileMenuOpen(false);
-          }}
-          className="bg-[#FFD03E] text-white py-2 rounded-full font-bold"
-        >
-          Sign Up or Login
-        </button>
+        {isAuthenticated ? (
+          <div className="flex flex-col space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-800">{user?.fullName}</p>
+                  <p className="text-sm text-gray-600">{user?.phone}</p>
+                </div>
+              </div>
+            </div>
+            
+            <Link 
+              to="/user/bookings"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Calendar className="w-5 h-5 text-gray-600" />
+              <span>My Orders</span>
+            </Link>
+            
+            <Link 
+              to="/user/profile"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Settings className="w-5 h-5 text-gray-600" />
+              <span>Profile</span>
+            </Link>
+            
+            <button
+              onClick={() => {
+                handleLogout();
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-red-600"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Logout</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              setLoginModalOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="bg-[#FFD03E] text-white py-2 rounded-full font-bold"
+          >
+            Sign Up or Login
+          </button>
+        )}
       </div>
     </div>
   );
@@ -364,38 +422,111 @@ export const Navbar = () => {
                 className="rounded-full px-3 py-2 flex items-center gap-2 h-12 border border-gray-300 bg-white hover:bg-gray-100"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
               >
-                <img
-                  src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/person.svg"
-                  className="w-5"
-                  alt=""
-                />
-                <img
-                  src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/hamburger-menu.svg"
-                  className="w-5"
-                  alt=""
-                />
+                {isAuthenticated ? (
+                  <>
+                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-medium max-w-20 truncate">
+                      {user?.fullName?.split(' ')[0] || 'User'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/person.svg"
+                      className="w-5"
+                      alt=""
+                    />
+                    <img
+                      src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/hamburger-menu.svg"
+                      className="w-5"
+                      alt=""
+                    />
+                  </>
+                )}
               </button>
 
               {isProfileOpen && (
                 <div className="absolute right-0 top-full mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                  <div className="p-4">
-                    <button
-                      onClick={() => setLoginModalOpen(true)}
-                      className="bg-[#FFD03E] text-white py-2 px-4 rounded-full font-bold w-full hover:bg-[#FFC107] transition"
-                    >
-                      Sign Up or Login
-                    </button>
-                  </div>
-                  <div className="p-2">
-                    <div className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-2 cursor-pointer">
-                      <img
-                        width={18}
-                        src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/question-mark-outlined.svg"
-                        alt=""
-                      />
-                      <span className="text-sm font-medium">Help</span>
-                    </div>
-                  </div>
+                  {isAuthenticated ? (
+                    <>
+                      <div className="p-4 border-b bg-blue-50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                            <User className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">{user?.fullName}</p>
+                            <p className="text-sm text-gray-600">{user?.email}</p>
+                            <p className="text-xs text-gray-500">{user?.phone}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="p-2">
+                        <Link 
+                          to="/user/bookings"
+                          className="flex items-center gap-3 py-2 px-3 hover:bg-gray-50 rounded cursor-pointer"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          <Calendar className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium">My Orders</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/user/profile"
+                          className="flex items-center gap-3 py-2 px-3 hover:bg-gray-50 rounded cursor-pointer"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          <Settings className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium">Profile</span>
+                        </Link>
+                        
+                        <div className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-2 cursor-pointer">
+                          <img
+                            width={18}
+                            src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/question-mark-outlined.svg"
+                            alt=""
+                          />
+                          <span className="text-sm font-medium">Help</span>
+                        </div>
+                        
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 py-2 px-3 hover:bg-red-50 rounded cursor-pointer text-red-600"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span className="text-sm font-medium">Logout</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-4">
+                        <button
+                          onClick={() => {
+                            setLoginModalOpen(true);
+                            setIsProfileOpen(false);
+                          }}
+                          className="bg-[#FFD03E] text-white py-2 px-4 rounded-full font-bold w-full hover:bg-[#FFC107] transition"
+                        >
+                          Sign Up or Login
+                        </button>
+                      </div>
+                      <div className="p-2">
+                        <div className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-2 cursor-pointer">
+                          <img
+                            width={18}
+                            src="https://deax38zvkau9d.cloudfront.net/prod/assets/static/svgs/question-mark-outlined.svg"
+                            alt=""
+                          />
+                          <span className="text-sm font-medium">Help</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
                   <hr className="border-gray-300" />
                   <div className="flex gap-4 p-5 justify-center">
                     <a

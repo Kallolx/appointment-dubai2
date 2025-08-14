@@ -1,22 +1,111 @@
 import React, { useState } from "react";
 import { Check, CreditCard, Banknote, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
-const StepFour = ({ cartItems, selectedDateTime, subtotal }) => {
+const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) => {
   const [selectedPayment, setSelectedPayment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  const { user, isAuthenticated, token } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const vat = subtotal * 0.05;
   const total = subtotal + vat;
 
   const handleBookNow = async () => {
-    if (!selectedPayment) return;
+    if (!selectedPayment) {
+      toast({
+        title: "Payment Method Required",
+        description: "Please select a payment method to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to book an appointment.",
+        variant: "destructive"
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!selectedDateTime.date || !selectedDateTime.time) {
+      toast({
+        title: "Missing Information",
+        description: "Please select date and time for your appointment.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedAddress) {
+      toast({
+        title: "Missing Address",
+        description: "Please select a service address.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    setShowSuccessModal(true);
+    
+    try {
+      // Prepare appointment data
+      const appointmentData = {
+        service: cartItems.map(item => `${item.service.name} (x${item.count})`).join(', '),
+        appointment_date: selectedDateTime.date,
+        appointment_time: selectedDateTime.time,
+        location: selectedAddress,
+        price: total,
+        notes: `Payment Method: ${selectedPayment === 'card' ? 'Credit/Debit Card' : 'Cash on Delivery'}. Items: ${cartItems.map(item => `${item.service.name} (x${item.count})`).join(', ')}`
+      };
+
+      // Make API call to create appointment
+      const response = await fetch('http://localhost:3001/api/user/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(appointmentData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Navigate to order confirmation page with order data
+        navigate("/order-confirmation", { 
+          state: { 
+            orderData: {
+              ...data.appointment,
+              ...appointmentData
+            }
+          }
+        });
+        toast({
+          title: "Booking Confirmed!",
+          description: "Your appointment has been successfully booked.",
+        });
+      } else {
+        throw new Error(data.message || 'Failed to create appointment');
+      }
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const paymentMethods = [
@@ -98,9 +187,17 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal }) => {
           Service Address
         </h2>
         <div className="bg-white p-4 rounded-lg">
-          <p className="text-gray-600">
-            Selected address will be displayed here
-          </p>
+          {selectedAddress ? (
+            <div>
+              <p className="font-medium text-gray-900">{selectedAddress.displayName || selectedAddress.type}</p>
+              <p className="text-gray-600">
+                {selectedAddress.address}, {selectedAddress.area}, {selectedAddress.city}
+                {selectedAddress.apartmentNo && ` - ${selectedAddress.apartmentNo}`}
+              </p>
+            </div>
+          ) : (
+            <p className="text-gray-600">No address selected</p>
+          )}
         </div>
       </div>
 
@@ -231,10 +328,13 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal }) => {
               confirmation message shortly.
             </p>
             <button
-              onClick={() => setShowSuccessModal(false)}
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate("/user/bookings");
+              }}
               className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
             >
-              Continue
+              View My Orders
             </button>
           </div>
         </div>

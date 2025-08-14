@@ -9,6 +9,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Calendar, Clock, MapPin, DollarSign, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Appointment {
   id: number;
@@ -16,13 +17,14 @@ interface Appointment {
   appointment_date: string;
   appointment_time: string;
   location: string;
-  price: number;
+  price: number | string;
   status: string;
   notes?: string;
 }
 
 const MyAppointments: React.FC = () => {
   const { toast } = useToast();
+  const { token } = useAuth();
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -33,18 +35,17 @@ const MyAppointments: React.FC = () => {
     const fetchAppointments = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
         
         if (!token) {
           navigate('/login');
           return;
         }
 
-        const upcomingResponse = await axios.get('/api/user/appointments/upcoming', {
+        const upcomingResponse = await axios.get('http://localhost:3001/api/user/appointments/upcoming', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        const pastResponse = await axios.get('/api/user/appointments/past', {
+        const pastResponse = await axios.get('http://localhost:3001/api/user/appointments/past', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -67,14 +68,12 @@ const MyAppointments: React.FC = () => {
 
   const handleCancelAppointment = async (id: number) => {
     try {
-      const token = localStorage.getItem('token');
-      
       if (!token) {
         navigate('/login');
         return;
       }
 
-      await axios.put(`/api/user/appointments/${id}`, 
+      await axios.put(`http://localhost:3001/api/user/appointments/${id}`, 
         { status: 'cancelled' },
         { headers: { Authorization: `Bearer ${token}` }}
       );
@@ -172,7 +171,7 @@ const MyAppointments: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-primary" />
-              <span>${appointment.price.toFixed(2)}</span>
+              <span>AED {typeof appointment.price === 'string' ? parseFloat(appointment.price).toFixed(2) : appointment.price?.toFixed(2) || '0.00'}</span>
             </div>
             {appointment.notes && (
               <div className="flex items-start gap-2 mt-2">

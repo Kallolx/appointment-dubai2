@@ -54,7 +54,7 @@ const userMenuItems = [
   // Appointments
   {
     title: "My Appointments",
-    url: "/dashboard/appointments",
+    url: "/user/bookings",
     icon: Calendar,
     badge: "3",
     description: "Upcoming & Past",

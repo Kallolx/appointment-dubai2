@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
-import { Plus, ChevronRight, MapPin, Home, Building, User } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+// Use Vite env variable for Google Maps API key
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+import { Plus, ChevronRight, MapPin, Home, Building, User, ArrowLeft } from "lucide-react";
+import GoogleMapPicker from "../../ui/GoogleMapPicker";
 
 const StepTwo = ({
   handleAddItemsClick,
@@ -8,6 +11,8 @@ const StepTwo = ({
   onSelectionChange,
 }) => {
   const [showAddAddress, setShowAddAddress] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [currentStep, setCurrentStep] = useState("list"); // "list", "map", "form"
   const [addressType, setAddressType] = useState("Home");
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -16,8 +21,16 @@ const StepTwo = ({
     city: "",
     area: "",
     address: "",
-    apartmentNo: ""
+    apartmentNo: "",
+    coordinates: null
   });
+
+  // Google Maps API Key from env
+  // (already imported at top)
+
+  // Use ref to store the latest callback to avoid infinite loops
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
 
   const cities = [
     "Dubai",
@@ -30,12 +43,12 @@ const StepTwo = ({
   ];
 
   useEffect(() => {
-    if (onSelectionChange) {
-      onSelectionChange({
+    if (onSelectionChangeRef.current) {
+      onSelectionChangeRef.current({
         address: selectedAddress,
       });
     }
-  }, [selectedAddress, onSelectionChange]);
+  }, [selectedAddress]);
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -51,7 +64,8 @@ const StepTwo = ({
           ...prev,
           city: "Dubai",
           area: "Detected Area",
-          address: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`
+          address: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
+          coordinates: { lat: latitude, lng: longitude }
         }));
         alert("Location detected! Please review and complete the address details.");
       },
@@ -59,6 +73,27 @@ const StepTwo = ({
         alert("Unable to retrieve your location. Please enter address manually.");
       }
     );
+  };
+
+  const handleLocationSelect = (location: {
+    lat: number;
+    lng: number;
+    address: string;
+    area: string;
+    city: string;
+  }) => {
+    setAddressForm(prev => ({
+      ...prev,
+      city: location.city,
+      area: location.area,
+      address: location.address,
+      coordinates: { lat: location.lat, lng: location.lng }
+    }));
+    setCurrentStep("form");
+  };
+
+  const handleAddNewAddress = () => {
+    setCurrentStep("map");
   };
 
   const handleInputChange = (field, value) => {
@@ -83,13 +118,14 @@ const StepTwo = ({
 
     setAddresses(prev => [...prev, newAddress]);
     setSelectedAddress(newAddress);
-    setShowAddAddress(false);
+    setCurrentStep("list");
     setAddressForm({
       nickname: "",
       city: "",
       area: "",
       address: "",
-      apartmentNo: ""
+      apartmentNo: "",
+      coordinates: null
     });
   };
 
@@ -191,18 +227,18 @@ const StepTwo = ({
 
         <div className="flex items-end">
           <button
-            onClick={handleDetectLocation}
+            onClick={() => setCurrentStep("map")}
             className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <MapPin className="w-4 h-4" />
-            Detect Location
+            Select on Map
           </button>
         </div>
       </div>
 
       <div className="flex gap-3 pt-4">
         <button
-          onClick={() => setShowAddAddress(false)}
+          onClick={() => setCurrentStep("list")}
           className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Cancel
@@ -220,75 +256,113 @@ const StepTwo = ({
   return (
     <div className="">
       <div className="max-w-2xl">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Where do you need the Service?
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Please select your address or add a new address
-        </p>
-
-        {/* Saved Addresses */}
-        {addresses.length > 0 && (
-          <div className="space-y-3 mb-6">
-            {addresses.map((address) => (
-              <div
-                key={address.id}
-                onClick={() => setSelectedAddress(address)}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedAddress?.id === address.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      {address.type === "Home" && <Home className="w-4 h-4 text-gray-600" />}
-                      {address.type === "Office" && <Building className="w-4 h-4 text-gray-600" />}
-                      {address.type === "Other" && <User className="w-4 h-4 text-gray-600" />}
-                      <span className="font-medium text-gray-900">{address.displayName}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {address.address}, {address.area}, {address.city}
-                      {address.apartmentNo && ` - ${address.apartmentNo}`}
-                    </p>
-                  </div>
-                  <div className={`w-4 h-4 rounded-full border-2 ${
-                    selectedAddress?.id === address.id
-                      ? "border-blue-500 bg-blue-500"
-                      : "border-gray-300"
-                  }`}>
-                    {selectedAddress?.id === address.id && (
-                      <div className="w-full h-full rounded-full bg-white m-0.5"></div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Header with back button for map and form views */}
+        {currentStep !== "list" && (
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setCurrentStep(currentStep === "form" ? "map" : "list")}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {currentStep === "map" ? "Select Location on Map" : "Add New Address"}
+            </h2>
           </div>
         )}
 
-        {/* Add New Address Button or Form */}
-        {!showAddAddress ? (
-          <button
-            onClick={() => setShowAddAddress(true)}
-            className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border-2 border-gray-400 group-hover:border-blue-500 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                  <Plus className="w-5 h-5 text-gray-400 group-hover:text-white" />
-                </div>
-                <span className="text-gray-700 group-hover:text-blue-700 font-medium">
-                  Add new address
-                </span>
+        {/* Main header for list view */}
+        {currentStep === "list" && (
+          <>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Where do you need the Service?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Please select your address or add a new address
+            </p>
+          </>
+        )}
+
+        {/* List View - Show saved addresses and add new button */}
+        {currentStep === "list" && (
+          <>
+            {/* Saved Addresses */}
+            {addresses.length > 0 && (
+              <div className="space-y-3 mb-6">
+                {addresses.map((address) => (
+                  <div
+                    key={address.id}
+                    onClick={() => setSelectedAddress(address)}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedAddress?.id === address.id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          {address.type === "Home" && <Home className="w-4 h-4 text-gray-600" />}
+                          {address.type === "Office" && <Building className="w-4 h-4 text-gray-600" />}
+                          {address.type === "Other" && <User className="w-4 h-4 text-gray-600" />}
+                          <span className="font-medium text-gray-900">{address.displayName}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {address.address}, {address.area}, {address.city}
+                          {address.apartmentNo && ` - ${address.apartmentNo}`}
+                        </p>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        selectedAddress?.id === address.id
+                          ? "border-blue-500 bg-blue-500"
+                          : "border-gray-300"
+                      }`}>
+                        {selectedAddress?.id === address.id && (
+                          <div className="w-full h-full rounded-full bg-white m-0.5"></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
-            </div>
-          </button>
-        ) : (
+            )}
+
+            {/* Add New Address Button */}
+            <button
+              onClick={handleAddNewAddress}
+              className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border-2 border-gray-400 group-hover:border-blue-500 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
+                    <Plus className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                  </div>
+                  <span className="text-gray-700 group-hover:text-blue-700 font-medium">
+                    Add new address
+                  </span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
+              </div>
+            </button>
+          </>
+        )}
+
+        {/* Map View - Show Google Map inline */}
+        {currentStep === "map" && (
+          <div className="w-full h-96 border border-gray-300 rounded-lg overflow-hidden">
+            <GoogleMapPicker
+              apiKey={GOOGLE_MAPS_API_KEY}
+              onLocationSelect={handleLocationSelect}
+              onClose={() => setCurrentStep("list")}
+              inline={true}
+            />
+          </div>
+        )}
+
+        {/* Form View - Show address form */}
+        {currentStep === "form" && (
           <div className="border border-gray-300 rounded-lg p-6 bg-white">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Address</h3>
             {renderAddressForm()}
           </div>
         )}

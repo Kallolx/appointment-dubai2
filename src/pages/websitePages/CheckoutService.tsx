@@ -26,6 +26,16 @@ interface SelectedDateTime {
   time: string | null;
 }
 
+interface SelectedAddress {
+  id: number;
+  type: string;
+  displayName: string;
+  address: string;
+  area: string;
+  city: string;
+  apartmentNo?: string;
+}
+
 const CheckoutService = ({ category }) => {
   const [step, setStep] = useState<number>(1);
   const [cartItems, setCartItems] = useState<Record<string, CartItem>>({});
@@ -34,6 +44,7 @@ const CheckoutService = ({ category }) => {
     date: null,
     time: null,
   });
+  const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null);
 
   const cartItemsArray = Object.values(cartItems).filter(item => item.count > 0);
   const subtotal = cartItemsArray.reduce((total, item) => {
@@ -111,8 +122,16 @@ const CheckoutService = ({ category }) => {
     }
   };
 
-  const handleSelectionChange = (selection: SelectedDateTime) => {
-    setSelectedDateTime(selection);
+  const handleSelectionChange = (selection: any) => {
+    if (selection.address) {
+      setSelectedAddress(selection.address);
+    }
+    if (selection.date || selection.time || selection.professional) {
+      setSelectedDateTime(prev => ({
+        ...prev,
+        ...selection
+      }));
+    }
   };
 
   const renderStep = () => {
@@ -142,6 +161,7 @@ const CheckoutService = ({ category }) => {
             cartItems={cartItemsArray}
             selectedDateTime={selectedDateTime}
             subtotal={subtotal}
+            selectedAddress={selectedAddress}
           />
         );
       default:
