@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import ApiCredentials from "./pages/dashboard/ApiCredentials";
 import AppointmentManagement from "./pages/dashboard/AppointmentManagement";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -37,6 +37,10 @@ import Terms from "./pages/websitePages/Terms";
 import OrderConfirmation from "./pages/users/OrderConfirmation";
 import BookingDetails from "./pages/users/BookingDetails";
 import ManageBooking from "./pages/users/ManageBooking";
+import NewAdminDashboard from "./pages/admin/NewAdminDashboard";
+import AdminAppointments from "./pages/admin/AdminAppointments";
+import AdminAvailableDates from "./pages/admin/AdminAvailableDates";
+import AdminTimeSlots from "./pages/admin/AdminTimeSlots";
 
 const queryClient = new QueryClient();
 
@@ -74,17 +78,16 @@ const App = () => (
           />
 
           {/* Role-based Dashboard Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route
-            path="/admin/appointments"
-            element={<AppointmentManagement />}
-          />
+          <Route path="/admin" element={<AdminProtectedRoute><NewAdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/appointments" element={<AdminProtectedRoute><AdminAppointments /></AdminProtectedRoute>} />
+          <Route path="/admin/available-dates" element={<AdminProtectedRoute><AdminAvailableDates /></AdminProtectedRoute>} />
+          <Route path="/admin/time-slots" element={<AdminProtectedRoute><AdminTimeSlots /></AdminProtectedRoute>} />
           <Route path="/admin/managers" element={<UserManagement />} />
           <Route path="/admin/services" element={<ServiceAreas />} />
           <Route path="/admin/tickets" element={<AppointmentManagement />} />
           <Route path="/admin/reports" element={<Dashboard />} />
           <Route path="/admin/pages" element={<WebsiteSettings />} />
-          <Route path="/admin/slots" element={<AppointmentManagement />} />
+          <Route path="/admin/slots" element={<ProtectedRoute><AdminTimeSlots /></ProtectedRoute>} />
           <Route path="/admin/profile" element={<ProfileSettings />} />
 
           <Route path="/manager" element={<ManagerDashboard />} />
@@ -149,7 +152,7 @@ const App = () => (
           <Route path="/dashboard/system" element={<SystemSettings />} />
 
           {/* Fallback Admin Route */}
-          <Route path="/administrator" element={<AdminDashboard />} />
+          <Route path="/administrator" element={<AdminProtectedRoute><NewAdminDashboard /></AdminProtectedRoute>} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

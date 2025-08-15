@@ -118,7 +118,13 @@ export default function Login() {
       if (data.token) {
         // Use AuthContext login method
         login(data.user, data.token);
-        navigate("/user");
+        
+        // Redirect based on user role
+        if (data.user.role === 'admin' || data.user.role === 'super_admin') {
+          navigate("/admin");
+        } else {
+          navigate("/user");
+        }
       } else {
         toast({
           title: "Login Failed",
@@ -201,7 +207,13 @@ export default function Login() {
       if (data.token) {
         // Use AuthContext login method
         login(data.user, data.token);
-        navigate("/user");
+        
+        // Redirect based on user role
+        if (data.user.role === 'admin' || data.user.role === 'super_admin') {
+          navigate("/admin");
+        } else {
+          navigate("/user");
+        }
       } else {
         toast({
           title: "Registration Failed",
