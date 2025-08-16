@@ -21,41 +21,43 @@ const category = [
 // Category configuration with specific images for hero banners
 const categoryConfig = {
   general: {
-    heroImage: "/general_cleaning/homecleaning.webp",
-    title: "General"
+    heroImage: "/steps/s1.png",
+    title: "General",
   },
   cockroaches: {
-    heroImage: "/general_cleaning/deepcleaning.webp",
-    title: "Cockroaches"
+    heroImage: "/steps/s2.png",
+    title: "Cockroaches",
   },
   ants: {
-    heroImage: "/general_cleaning/243.webp",
-    title: "Ants"
+    heroImage: "/steps/s3.png",
+    title: "Ants",
   },
   mosquitoes: {
-    heroImage: "/general_cleaning/345.webp",
-    title: "Mosquitoes"
+    heroImage: "/steps/s4.png",
+    title: "Mosquitoes",
   },
   "bed bugs": {
-    heroImage: "/general_cleaning/deepcleaning.webp",
-    title: "Bed Bugs"
-  }
+    heroImage: "/steps/s5.png",
+    title: "Bed Bugs",
+  },
 };
 
 // Property types data
 const propertyTypes = [
   {
     name: "Apartment",
-    description: "Get rid of common pests and keep your home safe with General Pest Control.",
+    description:
+      "Get rid of common pests and keep your home safe with General Pest Control.",
     price: "199",
-    image: "/general_cleaning/homecleaning.webp"
+    image: "/steps/apart.png",
   },
   {
     name: "Villa",
-    description: "Keep your villa pest-free with our easy and effective General Pest Control service.",
+    description:
+      "Keep your villa pest-free with our easy and effective General Pest Control service.",
     price: "299",
-    image: "/general_cleaning/homecleaning.webp"
-  }
+    image: "/steps/villa.png",
+  },
 ];
 
 const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
@@ -194,7 +196,9 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
           />
         </div>
         <div className="flex-grow">
-          <h3 className="text-base md:text-xl font-semibold mb-1">{property.name}</h3>
+          <h3 className="text-base md:text-xl font-semibold mb-1">
+            {property.name}
+          </h3>
           <p className="text-gray-500 text-xs md:text-sm mb-2">
             {property.description}
           </p>
@@ -203,14 +207,16 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
               <span className="text-xs md:text-sm text-gray-500">
                 Starting from
               </span>
-              <span className="text-base md:text-lg font-semibold">AED {property.price}</span>
+              <span className="text-base md:text-lg font-semibold">
+                AED {property.price}
+              </span>
             </div>
             <Button
               variant="outline"
               className="flex text-primary items-center gap-1 px-3 py-1 md:px-4 md:py-2 text-xs md:text-base"
               onClick={handleOptionsClick}
             >
-               Options
+              Options
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -234,19 +240,16 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 items-center bg-black bg-opacity-20 flex">
-            <div className="text-white w-full flex justify-center items-center">
-              <h2 className="text-4xl font-bold">{config.title}</h2>
-            </div>
           </div>
         </div>
 
         {/* Property Type Cards */}
         <div className="mb-8 space-y-4">
           {propertyTypes.map((property, index) => (
-            <PropertyTypeCard 
-              key={index} 
-              property={property} 
-              currentCategory={categoryName} 
+            <PropertyTypeCard
+              key={index}
+              property={property}
+              currentCategory={categoryName}
             />
           ))}
         </div>
@@ -330,9 +333,9 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
   };
 
   return (
-  <div className="px-4 md:px-0">
+    <div className="px-4 md:px-0">
       {/* Sticky Search Bar + Tabs */}
-  <div className="sticky top-0 z-10 bg-white border-b border-gray-200 mb-4">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 mb-4">
         {/* Search Bar */}
         <div className="mb-4 px-2 pt-2 pb-2 bg-white">
           <div className="relative">
@@ -352,53 +355,48 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
         {/* Categories Section */}
         <div className="p-2 pt-0 bg-white">
           <div className="relative">
-          {/* Left Arrow */}
-          <button
-            onClick={() => scrollCategories("left")}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 hover:bg-gray-100"
-          >
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
-          </button>
+            {/* Left Arrow */}
+            <button
+              onClick={() => scrollCategories("left")}
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 hover:bg-gray-100"
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </button>
 
-          {/* Categories Container */}
-          <div
-            ref={categoryRef}
-            className="flex gap-3 overflow-x-auto scrollbar-hide mx-6 max-w-[calc(100vw-100px)] md:max-w-[600px]"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {category.map((cat) => (
-              <button
-                key={cat.name}
-                onClick={() => scrollToCategory(cat.name)}
-                className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all ${
-                  selected === cat.name
-                    ? "bg-blue-50 border border-black"
-                    : "bg-gray-50 border border-black"
-                }`}
-              >
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-6 h-6 object-cover rounded-full"
-                />
-                <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
-                  {cat.name}
-                </span>
-              </button>
-            ))}
+            {/* Categories Container */}
+            <div
+              ref={categoryRef}
+              className="flex gap-3 overflow-x-auto scrollbar-hide mx-6 max-w-[calc(100vw-100px)] md:max-w-[600px]"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {category.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => scrollToCategory(cat.name)}
+                  className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all ${
+                    selected === cat.name
+                      ? "bg-gray-50 border border-black"
+                      : "bg-gray-50 border border-gray-300"
+                  }`}
+                >
+                  <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
+                    {cat.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Right Arrow */}
+            <button
+              onClick={() => scrollCategories("right")}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 hover:bg-gray-100"
+            >
+              <ChevronRight className="w-6 h-6 text-gray-600" />
+            </button>
           </div>
-
-          {/* Right Arrow */}
-          <button
-            onClick={() => scrollCategories("right")}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 hover:bg-gray-100"
-          >
-            <ChevronRight className="w-6 h-6 text-gray-600" />
-          </button>
         </div>
-      </div>
 
-      {/* End sticky wrapper */}
+        {/* End sticky wrapper */}
       </div>
 
       {/* Services Content */}

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin, CreditCard, X, Phone } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import StepTwo from "../../components/website/Steps/StepTwo";
-import StepThree from "../../components/website/Steps/StepThree";
-import StepFour from "../../components/website/Steps/StepFour";
+import StepTwo from "../../../components/website/Steps/StepTwo";
+import StepThree from "../../../components/website/Steps/StepThree";
+import StepFour from "../../../components/website/Steps/StepFour";
 import { Navbar } from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 

@@ -19,362 +19,152 @@ interface ServiceOptionsModalProps {
   onRemoveService?: (service: ServiceOption) => void;
 }
 
+// Centralized image mapping to avoid duplication
+const PROPERTY_IMAGES = {
+  apartment: {
+    studio: "/steps/apart/1.png",
+    "1bed": "/steps/apart/2.png", 
+    "2bed": "/steps/apart/3.png",
+    "3bed": "/steps/apart/4.png",
+    "4bed": "/steps/apart/5.png"
+  },
+  villa: {
+    "2bed": "/steps/villa/1.png",
+    "3bed": "/steps/villa/2.png", 
+    "4bed": "/steps/villa/3.png",
+    "5bed": "/steps/villa/4.png"
+  },
+  special: "/pest.webp" // For special cases
+};
+
 // Function to get category display name
 const getCategoryDisplayName = (category: string): string => {
   const categoryNames = {
     general: "General",
     cockroaches: "Cockroaches",
-    "bed bugs": "Bed Bugs", // FIXED: Use correct key with space
+    "bed bugs": "Bed Bugs",
     bedbugs: "Bed Bugs", 
     termite: "Termite",
     ants: "Ants",
-    mosquitoes: "Mosquitoes", // ADDED: Missing mosquitoes mapping
+    mosquitoes: "Mosquitoes",
     "deep-clean": "Deep Clean",
     maintenance: "Maintenance"
   };
   return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
-const serviceOptions = {
+// Helper function to get image path
+const getImagePath = (propertyType: string, roomType: string, isSpecial = false): string => {
+  if (isSpecial) return PROPERTY_IMAGES.special;
+  
+  const propertyKey = propertyType.toLowerCase() as keyof typeof PROPERTY_IMAGES;
+  return PROPERTY_IMAGES[propertyKey]?.[roomType] || PROPERTY_IMAGES.special;
+};
+
+// Base service configurations - prices only, images generated dynamically
+const SERVICE_CONFIGS = {
   apartment: {
-    general: [
-      {
-        id: "apt-studio",
-        name: "Studio",
-        description: "Specialized treatment aimed at eradicating bed bugs.",
-        price: 149,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "apt-1bed",
-        name: "1 Bedroom Apartment",
-        description: "Specialized treatment aimed at eradicating bed bugs.",
-        price: 179,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "apt-2bed",
-        name: "2 Bedroom Apartment",
-        description: "Specialized treatment aimed at eradicating bed bugs.",
-        price: 199,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "apt-3bed",
-        name: "3 Bedroom Apartment",
-        description: "Specialized treatment aimed at eradicating bed bugs.",
-        price: 229,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "apt-4bed",
-        name: "4 Bedroom Apartment",
-        description: "Specialized treatment aimed at eradicating bed bugs.",
-        price: 249,
-        image: "/general_cleaning/homecleaning.webp"
-      }
-    ],
-    cockroaches: [
-      {
-        id: "apt-studio-cock",
-        name: "Studio",
-        description: "Professional cockroach control for studio apartments.",
-        price: 129,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-1bed-cock",
-        name: "1 Bedroom Apartment",
-        description: "Professional cockroach control for 1 bedroom apartments.",
-        price: 159,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-2bed-cock",
-        name: "2 Bedroom Apartment",
-        description: "Professional cockroach control for 2 bedroom apartments.",
-        price: 179,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-3bed-cock",
-        name: "3 Bedroom Apartment",
-        description: "Professional cockroach control for 3 bedroom apartments.",
-        price: 209,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-4bed-cock",
-        name: "4 Bedroom Apartment",
-        description: "Professional cockroach control for 4 bedroom apartments.",
-        price: 229,
-        image: "/pest.webp"
-      }
-    ],
-    ants: [
-      {
-        id: "apt-studio-ants",
-        name: "Studio",
-        description: "Professional ant control for studio apartments.",
-        price: 119,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-1bed-ants",
-        name: "1 Bedroom Apartment",
-        description: "Professional ant control for 1 bedroom apartments.",
-        price: 149,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-2bed-ants",
-        name: "2 Bedroom Apartment",
-        description: "Professional ant control for 2 bedroom apartments.",
-        price: 169,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-3bed-ants",
-        name: "3 Bedroom Apartment",
-        description: "Professional ant control for 3 bedroom apartments.",
-        price: 199,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-4bed-ants",
-        name: "4 Bedroom Apartment",
-        description: "Professional ant control for 4 bedroom apartments.",
-        price: 219,
-        image: "/pest.webp"
-      }
-    ],
-    mosquitoes: [
-      {
-        id: "apt-studio-mosq",
-        name: "Studio",
-        description: "Professional mosquito control for studio apartments.",
-        price: 139,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-1bed-mosq",
-        name: "1 Bedroom Apartment",
-        description: "Professional mosquito control for 1 bedroom apartments.",
-        price: 169,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-2bed-mosq",
-        name: "2 Bedroom Apartment",
-        description: "Professional mosquito control for 2 bedroom apartments.",
-        price: 189,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-3bed-mosq",
-        name: "3 Bedroom Apartment",
-        description: "Professional mosquito control for 3 bedroom apartments.",
-        price: 219,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-4bed-mosq",
-        name: "4 Bedroom Apartment",
-        description: "Professional mosquito control for 4 bedroom apartments.",
-        price: 239,
-        image: "/pest.webp"
-      }
-    ],
-    "bed bugs": [
-      {
-        id: "apt-studio-bugs",
-        name: "Studio",
-        description: "Professional bed bug control for studio apartments.",
-        price: 159,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-1bed-bugs",
-        name: "1 Bedroom Apartment",
-        description: "Professional bed bug control for 1 bedroom apartments.",
-        price: 189,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-2bed-bugs",
-        name: "2 Bedroom Apartment",
-        description: "Professional bed bug control for 2 bedroom apartments.",
-        price: 209,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-3bed-bugs",
-        name: "3 Bedroom Apartment",
-        description: "Professional bed bug control for 3 bedroom apartments.",
-        price: 239,
-        image: "/pest.webp"
-      },
-      {
-        id: "apt-4bed-bugs",
-        name: "4 Bedroom Apartment",
-        description: "Professional bed bug control for 4 bedroom apartments.",
-        price: 259,
-        image: "/pest.webp"
-      }
-    ]
+    general: {
+      studio: { price: 149, description: "Specialized treatment aimed at eradicating bed bugs." },
+      "1bed": { price: 179, description: "Specialized treatment aimed at eradicating bed bugs." },
+      "2bed": { price: 199, description: "Specialized treatment aimed at eradicating bed bugs." },
+      "3bed": { price: 229, description: "Specialized treatment aimed at eradicating bed bugs." },
+      "4bed": { price: 249, description: "Specialized treatment aimed at eradicating bed bugs." }
+    },
+    cockroaches: {
+      studio: { price: 129, description: "Professional cockroach control for studio apartments." },
+      "1bed": { price: 159, description: "Professional cockroach control for 1 bedroom apartments." },
+      "2bed": { price: 179, description: "Professional cockroach control for 2 bedroom apartments." },
+      "3bed": { price: 209, description: "Professional cockroach control for 3 bedroom apartments.", special: true },
+      "4bed": { price: 229, description: "Professional cockroach control for 4 bedroom apartments." }
+    },
+    ants: {
+      studio: { price: 119, description: "Professional ant control for studio apartments." },
+      "1bed": { price: 149, description: "Professional ant control for 1 bedroom apartments." },
+      "2bed": { price: 169, description: "Professional ant control for 2 bedroom apartments." },
+      "3bed": { price: 199, description: "Professional ant control for 3 bedroom apartments." },
+      "4bed": { price: 219, description: "Professional ant control for 4 bedroom apartments." }
+    },
+    mosquitoes: {
+      studio: { price: 139, description: "Professional mosquito control for studio apartments." },
+      "1bed": { price: 169, description: "Professional mosquito control for 1 bedroom apartments." },
+      "2bed": { price: 189, description: "Professional mosquito control for 2 bedroom apartments." },
+      "3bed": { price: 219, description: "Professional mosquito control for 3 bedroom apartments." },
+      "4bed": { price: 239, description: "Professional mosquito control for 4 bedroom apartments." }
+    },
+    "bed bugs": {
+      studio: { price: 159, description: "Professional bed bug control for studio apartments." },
+      "1bed": { price: 189, description: "Professional bed bug control for 1 bedroom apartments." },
+      "2bed": { price: 209, description: "Professional bed bug control for 2 bedroom apartments." },
+      "3bed": { price: 239, description: "Professional bed bug control for 3 bedroom apartments." },
+      "4bed": { price: 259, description: "Professional bed bug control for 4 bedroom apartments." }
+    }
   },
   villa: {
-    general: [
-      {
-        id: "villa-2bed",
-        name: "2 Bedroom Villa",
-        description: "Comprehensive cleaning service for 2 bedroom villas.",
-        price: 299,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "villa-3bed",
-        name: "3 Bedroom Villa",
-        description: "Comprehensive cleaning service for 3 bedroom villas.",
-        price: 349,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "villa-4bed",
-        name: "4 Bedroom Villa",
-        description: "Comprehensive cleaning service for 4 bedroom villas.",
-        price: 399,
-        image: "/general_cleaning/homecleaning.webp"
-      },
-      {
-        id: "villa-5bed",
-        name: "5 Bedroom Villa",
-        description: "Comprehensive cleaning service for 5 bedroom villas.",
-        price: 449,
-        image: "/general_cleaning/homecleaning.webp"
-      }
-    ],
-    cockroaches: [
-      {
-        id: "villa-2bed-cock",
-        name: "2 Bedroom Villa",
-        description: "Professional cockroach control for 2 bedroom villas.",
-        price: 279,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-3bed-cock",
-        name: "3 Bedroom Villa",
-        description: "Professional cockroach control for 3 bedroom villas.",
-        price: 329,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-4bed-cock",
-        name: "4 Bedroom Villa",
-        description: "Professional cockroach control for 4 bedroom villas.",
-        price: 379,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-5bed-cock",
-        name: "5 Bedroom Villa",
-        description: "Professional cockroach control for 5 bedroom villas.",
-        price: 429,
-        image: "/pest.webp"
-      }
-    ],
-    ants: [
-      {
-        id: "villa-2bed-ants",
-        name: "2 Bedroom Villa",
-        description: "Professional ant control for 2 bedroom villas.",
-        price: 259,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-3bed-ants",
-        name: "3 Bedroom Villa",
-        description: "Professional ant control for 3 bedroom villas.",
-        price: 309,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-4bed-ants",
-        name: "4 Bedroom Villa",
-        description: "Professional ant control for 4 bedroom villas.",
-        price: 359,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-5bed-ants",
-        name: "5 Bedroom Villa",
-        description: "Professional ant control for 5 bedroom villas.",
-        price: 409,
-        image: "/pest.webp"
-      }
-    ],
-    mosquitoes: [
-      {
-        id: "villa-2bed-mosq",
-        name: "2 Bedroom Villa",
-        description: "Professional mosquito control for 2 bedroom villas.",
-        price: 289,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-3bed-mosq",
-        name: "3 Bedroom Villa",
-        description: "Professional mosquito control for 3 bedroom villas.",
-        price: 339,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-4bed-mosq",
-        name: "4 Bedroom Villa",
-        description: "Professional mosquito control for 4 bedroom villas.",
-        price: 389,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-5bed-mosq",
-        name: "5 Bedroom Villa",
-        description: "Professional mosquito control for 5 bedroom villas.",
-        price: 439,
-        image: "/pest.webp"
-      }
-    ],
-    "bed bugs": [
-      {
-        id: "villa-2bed-bugs",
-        name: "2 Bedroom Villa",
-        description: "Professional bed bug control for 2 bedroom villas.",
-        price: 309,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-3bed-bugs",
-        name: "3 Bedroom Villa",
-        description: "Professional bed bug control for 3 bedroom villas.",
-        price: 359,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-4bed-bugs",
-        name: "4 Bedroom Villa",
-        description: "Professional bed bug control for 4 bedroom villas.",
-        price: 409,
-        image: "/pest.webp"
-      },
-      {
-        id: "villa-5bed-bugs",
-        name: "5 Bedroom Villa",
-        description: "Professional bed bug control for 5 bedroom villas.",
-        price: 459,
-        image: "/pest.webp"
-      }
-    ]
+    general: {
+      "2bed": { price: 299, description: "Comprehensive cleaning service for 2 bedroom villas." },
+      "3bed": { price: 349, description: "Comprehensive cleaning service for 3 bedroom villas." },
+      "4bed": { price: 399, description: "Comprehensive cleaning service for 4 bedroom villas." },
+      "5bed": { price: 449, description: "Comprehensive cleaning service for 5 bedroom villas." }
+    },
+    cockroaches: {
+      "2bed": { price: 279, description: "Professional cockroach control for 2 bedroom villas." },
+      "3bed": { price: 329, description: "Professional cockroach control for 3 bedroom villas." },
+      "4bed": { price: 379, description: "Professional cockroach control for 4 bedroom villas." },
+      "5bed": { price: 429, description: "Professional cockroach control for 5 bedroom villas." }
+    },
+    ants: {
+      "2bed": { price: 259, description: "Professional ant control for 2 bedroom villas." },
+      "3bed": { price: 309, description: "Professional ant control for 3 bedroom villas." },
+      "4bed": { price: 359, description: "Professional ant control for 4 bedroom villas." },
+      "5bed": { price: 409, description: "Professional ant control for 5 bedroom villas." }
+    },
+    mosquitoes: {
+      "2bed": { price: 289, description: "Professional mosquito control for 2 bedroom villas." },
+      "3bed": { price: 339, description: "Professional mosquito control for 3 bedroom villas." },
+      "4bed": { price: 389, description: "Professional mosquito control for 4 bedroom villas." },
+      "5bed": { price: 439, description: "Professional mosquito control for 5 bedroom villas." }
+    },
+    "bed bugs": {
+      "2bed": { price: 309, description: "Professional bed bug control for 2 bedroom villas." },
+      "3bed": { price: 359, description: "Professional bed bug control for 3 bedroom villas.", special: true },
+      "4bed": { price: 409, description: "Professional bed bug control for 4 bedroom villas." },
+      "5bed": { price: 459, description: "Professional bed bug control for 5 bedroom villas." }
+    }
   }
+};
+
+// Room type display names
+const ROOM_DISPLAY_NAMES = {
+  studio: "Studio",
+  "1bed": "1 Bedroom Apartment",
+  "2bed": "2 Bedroom",
+  "3bed": "3 Bedroom", 
+  "4bed": "4 Bedroom",
+  "5bed": "5 Bedroom"
+};
+
+// Generate service options dynamically
+const generateServiceOptions = (propertyType: string, category: string): ServiceOption[] => {
+  const propertyKey = propertyType.toLowerCase() as keyof typeof SERVICE_CONFIGS;
+  const categoryKey = category as keyof typeof SERVICE_CONFIGS.apartment;
+  const configs = SERVICE_CONFIGS[propertyKey]?.[categoryKey];
+  
+  if (!configs) return [];
+  
+  return Object.entries(configs).map(([roomType, config]) => {
+    const propertyTypeSuffix = propertyType === "Apartment" ? 
+      (roomType === "studio" ? "" : " Apartment") : 
+      " Villa";
+    
+    return {
+      id: `${propertyType.toLowerCase()}-${roomType}-${category.replace(/\s+/g, '')}`,
+      name: `${ROOM_DISPLAY_NAMES[roomType]}${propertyTypeSuffix}`,
+      description: config.description,
+      price: config.price,
+      image: getImagePath(propertyType, roomType, (config as { special?: boolean }).special || false)
+    };
+  });
 };
 
 const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
@@ -395,22 +185,18 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   // Prevent body scroll when modal is open and ensure modal opens from top
   useEffect(() => {
     if (isOpen) {
-      // Prevent body scroll
       document.body.style.overflow = 'hidden';
-      // Scroll to top when modal opens
       window.scrollTo(0, 0);
     } else {
-      // Restore body scroll
       document.body.style.overflow = 'unset';
     }
 
-    // Cleanup function to restore scroll when component unmounts
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
-  // ADDED: Debug logging to track category changes
+  // Debug logging to track category changes
   useEffect(() => {
     console.log("Modal category changed to:", category);
     console.log("Property type:", propertyType);
@@ -418,12 +204,10 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
 
   if (!isOpen) return null;
 
-  const propertyKey = propertyType.toLowerCase() as keyof typeof serviceOptions;
-  const categoryKey = category as keyof typeof serviceOptions.apartment;
-  const options = serviceOptions[propertyKey]?.[categoryKey] || [];
+  // Generate options dynamically
+  const options = generateServiceOptions(propertyType, category);
 
-  // ADDED: Debug logging for options lookup
-  console.log("Looking up options for:", { propertyKey, categoryKey, optionsFound: options.length });
+  console.log("Generated options:", { propertyType, category, optionsFound: options.length });
 
   const handleAddService = (service: ServiceOption) => {
     const currentCount = selectedServices[service.id] || 0;
@@ -432,12 +216,11 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
       [service.id]: currentCount + 1
     }));
     
-    // FIXED: Add category information to the service with proper display name
     const serviceWithCategory = {
       ...service,
       name: `${service.name} - ${getCategoryDisplayName(category)}`,
       category: category,
-      propertyType: propertyType // ADDED: Also include property type for better tracking
+      propertyType: propertyType
     };
     
     console.log("Adding service with category info:", serviceWithCategory);
@@ -452,8 +235,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         [serviceId]: currentCount - 1
       }));
       
-      // Find the service option to pass to onRemoveService
-      const service = serviceOptions[propertyKey]?.[categoryKey]?.find(option => option.id === serviceId);
+      const service = options.find(option => option.id === serviceId);
       if (service && onRemoveService) {
         const serviceWithCategory = {
           ...service,
@@ -470,7 +252,6 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   const handleContinue = () => {
     onClose();
     setSelectedServices({});
-    // Restore scroll when closing
     document.body.style.overflow = 'unset';
   };
 
@@ -479,11 +260,12 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
       <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 mb-4">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-center p-4">
-          <h2 className="text-xl font-semibold text-gray-900 text-center flex-1">{propertyType} - {getCategoryDisplayName(category)}</h2>
+          <h2 className="text-xl font-semibold text-gray-900 text-center flex-1">
+            {propertyType} - {getCategoryDisplayName(category)}
+          </h2>
           <button
             onClick={() => {
               onClose();
-              // Restore scroll when closing via X button
               document.body.style.overflow = 'unset';
             }}
             className="absolute right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -508,6 +290,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                       src={option.image}
                       alt={option.name}
                       className="w-full h-full object-cover rounded-md"
+                      loading="lazy"
                     />
                   </div>
                   <div className="flex-grow">

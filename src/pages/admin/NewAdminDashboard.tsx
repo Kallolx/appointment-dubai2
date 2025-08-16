@@ -1,32 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import NewAdminLayout from './NewAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Clock, CheckCircle, AlertCircle, TrendingUp, DollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import axios from 'axios';
+import { useToast } from '@/hooks/use-toast';
 
 const NewAdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayAppointments: 0,
+    totalUsers: 0,
+    availableSlots: 0,
+    todayRevenue: 0
+  });
+  const [appointments, setAppointments] = useState([]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      if (!token) {
+        return;
+      }
+
+      // Fetch today's appointments
+      const appointmentsResponse = await axios.get('http://localhost:3001/api/admin/appointments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Fetch all users count
+      const usersResponse = await axios.get('http://localhost:3001/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Process data
+      const allAppointments = appointmentsResponse.data;
+      const today = new Date().toISOString().split('T')[0];
+      
+      const todayAppointments = allAppointments.filter(apt => 
+        apt.appointment_date === today
+      );
+
+      const todayRevenue = todayAppointments.reduce((sum, apt) => 
+        sum + parseFloat(apt.price || 0), 0
+      );
+
+      setStats({
+        todayAppointments: todayAppointments.length,
+        totalUsers: usersResponse.data.length,
+        availableSlots: 36, // This would need a separate API endpoint
+        todayRevenue: todayRevenue
+      });
+
+      // Set recent appointments (today's appointments)
+      setAppointments(todayAppointments.slice(0, 4));
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const quickStats = [
     {
       title: "Today's Appointments",
-      value: "12",
+      value: loading ? "..." : stats.todayAppointments.toString(),
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      change: "+2 from yesterday"
+      change: "Today"
     },
     {
       title: "Total Customers",
-      value: "248",
+      value: loading ? "..." : stats.totalUsers.toString(),
       icon: Users,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      change: "+15 this week"
+      change: "All registered users"
     },
     {
       title: "Available Slots",
-      value: "36",
+      value: loading ? "..." : stats.availableSlots.toString(),
       icon: Clock,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
@@ -34,48 +102,42 @@ const NewAdminDashboard: React.FC = () => {
     },
     {
       title: "Revenue Today",
-      value: "$1,240",
+      value: loading ? "..." : `$${stats.todayRevenue.toFixed(2)}`,
       icon: DollarSign,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      change: "+8% from yesterday"
+      change: "Today's earnings"
     }
   ];
 
-  const recentAppointments = [
-    {
-      id: 1,
-      customer: "John Smith",
-      service: "General Cleaning",
-      time: "09:00 AM",
-      status: "confirmed",
-      address: "Downtown, Dubai"
-    },
-    {
-      id: 2,
-      customer: "Sarah Johnson",
-      service: "Deep Cleaning",
-      time: "11:00 AM", 
-      status: "pending",
-      address: "Marina, Dubai"
-    },
-    {
-      id: 3,
-      customer: "Ahmed Al-Mansoori",
-      service: "AC Cleaning",
-      time: "02:00 PM",
-      status: "in-progress",
-      address: "Jumeirah, Dubai"
-    },
-    {
-      id: 4,
-      customer: "Emma Davis",
-      service: "General Cleaning",
-      time: "04:00 PM",
-      status: "confirmed",
-      address: "Business Bay, Dubai"
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    const time = new Date(`2000-01-01T${timeString}`);
+    return time.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const parseAddress = (addressData: any) => {
+    if (!addressData) return 'No address';
+    
+    try {
+      const address = typeof addressData === 'string' ? JSON.parse(addressData) : addressData;
+      return address.area || address.city || 'Dubai';
+    } catch (e) {
+      return 'Dubai';
     }
-  ];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -140,30 +202,42 @@ const NewAdminDashboard: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
-                        {appointment.customer.split(' ').map(n => n[0]).join('')}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Loading appointments...</span>
+              </div>
+            ) : appointments.length > 0 ? (
+              <div className="space-y-4">
+                {appointments.map((appointment: any) => (
+                  <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {appointment.user_name ? appointment.user_name.split(' ').map((n: string) => n[0]).join('') : 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{appointment.user_name || 'Unknown User'}</p>
+                        <p className="text-sm text-gray-600">{appointment.service}</p>
+                        <p className="text-xs text-gray-500">{parseAddress(appointment.location)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">{formatTime(appointment.appointment_time)}</p>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                       </span>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{appointment.customer}</p>
-                      <p className="text-sm text-gray-600">{appointment.service}</p>
-                      <p className="text-xs text-gray-500">{appointment.address}</p>
-                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">{appointment.time}</p>
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">No appointments scheduled for today</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

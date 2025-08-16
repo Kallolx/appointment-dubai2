@@ -8,41 +8,130 @@ type Service = {
   isNew?: boolean;
 };
 
-const services: Service[] = [
-  { title: "Home Cleaning", image: "/general_cleaning/homecleaning.webp" },
-  {
-    title: "Furniture Cleaning",
-    image: "/general_cleaning/homecleaning.webp",
-  },
-  {
-    title: "Home Deep Cleaning",
-    image: "/general_cleaning/deepcleaning.webp",
-  },
-  {
-    title: "Kitchen & Bathroom Deep Clean",
-    image: "/general_cleaning/homepageimages_furniturecleaning.webp",
-  },
-  {
-    title: "Kitchen & Bathroom Deep Clean",
-    image: "/general_cleaning/homecleaning.webp",
-  },
-  {
-    title: "Kitchen & Bathroom Deep Clean",
-    image: "/general_cleaning/homecleaning.webp",
-  },
-  {
-    title: "Kitchen & Bathroom Deep Clean",
-    image: "/general_cleaning/homecleaning.webp",
-  },
-  {
-    title: "Kitchen & Bathroom Deep Clean",
-    image: "/general_cleaning/homecleaning.webp",
-  },
-  { title: "AC Cleaning", image: "/general_cleaning/homecleaning.webp" },
-];
+const categoryServices: Record<string, Service[]> = {
+  "General Cleaning": [
+    { title: "Home Cleaning", image: "/general_cleaning/1.webp" },
+    {
+      title: "Furniture Cleaning",
+      image: "/general_cleaning/4.webp",
+    },
+    {
+      title: "Home Deep Cleaning",
+      image: "/general_cleaning/3.webp",
+    },
+    {
+      title: "Kitchen & Bathroom Deep Clean",
+      image: "/general_cleaning/5.webp",
+    },
+    {
+      title: "AC Cleaning",
+      image: "/general_cleaning/6.webp",
+    },
+    {
+      title: "Laundry & Dry Cleaning",
+      image: "/general_cleaning/7.webp",
+    },
+    {
+      title: "Kitchen & Bathroom Deep Clean",
+      image: "/general_cleaning/6.webp",
+    },
+    {
+      title: "Car Wash",
+      image: "/general_cleaning/8.webp",
+    },
+    { title: "Shoe Cleaning", image: "/general_cleaning/9.webp" },
+  ],
+  "Salon & Spa at Home": [
+    {
+      title: "Women's Salon",
+      image: "/salons_and_spa/1.webp",
+    },
+    {
+      title: "Women's Spa",
+      image: "/salons_and_spa/2.webp",
+    },
+    {
+      title: "Men's Salon",
+      image: "/salons_and_spa/3.webp",
+    },
+    {
+      title: "Hair Salon",
+      image: "/salons_and_spa/4.webp",
+    },
+    {
+      title: "Men's Spa",
+      image: "/salons_and_spa/5.webp",
+    },
+    {
+      title: "Nail Extensions",
+      image: "/salons_and_spa/6.webp",
+    },
+    {
+      title: "Lashes & Brows",
+      image: "/salons_and_spa/7.webp",
+    },
+    {
+      title: "Spray Tanning",
+      image: "/salons_and_spa/8.webp",
+    },
+    {
+      title: "Makeup",
+      image: "/salons_and_spa/9.webp",
+    },
+  ],
+  "Healthcare at Home": [
+    {
+      title: "Lab Tests at Home",
+      image: "/healthcare_at_home/1.webp",
+    },
+    {
+      title: "IV Therapy at Home",
+      image: "/healthcare_at_home/2.webp",
+    },
+    {
+      title: "Doctor Consultations",
+      image: "/healthcare_at_home/3.webp",
+    },
+    {
+      title: "PCR & Flu Test at Home",
+      image: "/healthcare_at_home/4.webp",
+    },
+    {
+      title: "Flu Vaccine at Home",
+      image: "/healthcare_at_home/5.webp",
+    },
+    {
+      title: "Nurse Care at Home",
+      image: "/healthcare_at_home/6.webp",
+    },
+    {
+      title: "Physiotherapy at Home",
+      image: "/healthcare_at_home/7.webp",
+    },
+    {
+      title: "Psychotherapy & Counselling",
+      image: "/healthcare_at_home/8.webp",
+    },
+  ],
+  "Handyman & Maintenance": [
+    {
+      title: "Handyman & Maintenance",
+      image: "/general_cleaning/1.webp",
+    },
+    {
+      title: "Home Painting",
+      image: "/general_cleaning/2.webp",
+    },
+    {
+      title: "Water Tank Cleaning",
+      image: "/general_cleaning/3.webp",
+    },
+  ],
+};
 
 const SingleCategory = () => {
   const { category } = useParams();
+  const services = categoryServices[category || ""] || [];
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -63,22 +152,22 @@ const SingleCategory = () => {
           <Link
             to={`/service/${category}`}
             key={index}
-            className=" min-w-[180px] bg-white overflow-hidden hover:cursor-pointer "
+            className=" min-w-[180px] overflow-hidden hover:cursor-pointer "
           >
-            <div className="relative transition-transform hover:scale-105 ">
+            <div className="relative ">
               {/* Image */}
               <img
                 src={service.image}
                 alt={service.title}
-                className="w-full h-32 object-cover"
+                className="w-full h-50 object-cover rounded-md"
               />
 
               {/* Overlay */}
-              <div className="absolute inset-0 bg-black opacity-30 hover:opacity-0 transition-opacity "></div>
+              <div className="absolute inset-0 bg-black rounded-md opacity-20 hover:opacity-0 transition-opacity "></div>
             </div>
 
             {/* Title */}
-            <p className="font-medium py-2">{service.title}</p>
+            <p className="font-bold pt-2 text-left">{service.title}</p>
           </Link>
         ))}
       </div>

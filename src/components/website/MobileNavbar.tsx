@@ -79,15 +79,6 @@ const MobileNavbar = () => {
         </div>
       </div>
 
-      {/* Location Input */}
-      <div className="flex items-center bg-blue-100 rounded-lg px-3 py-2 mb-2">
-        <LocateFixed className="text-sky-500 w-4 h-4 mr-2" />
-        <span className="text-sm font-medium text-gray-800 flex-1">
-          Dubai Marina
-        </span>
-        <LocateFixed className="text-sky-500 w-4 h-4" />
-      </div>
-
       {/* Search Input */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />

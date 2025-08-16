@@ -199,14 +199,14 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
         {/* Map Container */}
         <div className="flex-1 relative">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-90 z-10">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                 <p className="text-gray-600">Loading map...</p>
               </div>
             </div>
           )}
-          <div ref={mapRef} className="w-full h-full rounded-lg" />
+          <div ref={mapRef} className="w-full h-full rounded-lg" style={{ pointerEvents: isLoading ? 'none' : 'auto' }} />
         </div>
 
         {/* Selected Location Info */}
@@ -242,8 +242,19 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        // Only close if clicking the backdrop, not the modal content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div>
@@ -261,14 +272,14 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
         {/* Map Container */}
         <div className="flex-1 relative">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-90 z-10">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                 <p className="text-gray-600">Loading map...</p>
               </div>
             </div>
           )}
-          <div ref={mapRef} className="w-full h-full" />
+          <div ref={mapRef} className="w-full h-full" style={{ pointerEvents: isLoading ? 'none' : 'auto' }} />
         </div>
 
         {/* Selected Location Info */}

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { GoogleMapsProvider } from "@/contexts/GoogleMapsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import ApiCredentials from "./pages/dashboard/ApiCredentials";
@@ -18,13 +19,11 @@ import ServiceAreas from "./pages/dashboard/ServiceAreas";
 import SystemSettings from "./pages/dashboard/SystemSettings";
 import NewUserDashboard from "@/pages/users/NewUserDashboard";
 import MyAppointments from "./pages/MyAppointments";
-import MyBookings from "./pages/users/MyBookings";
-import MyQuotes from "./pages/users/MyQuotes";
-import OutstandingPayments from "./pages/users/OutstandingPayments";
+import MyBookings from "./pages/users/pages/MyBookings";
+import UserLocations from "./pages/users/pages/UserLocations";
 import MyAddresses from "./pages/MyAddresses";
-import Support from "./pages/Support";
-import Profile from "./pages/Profile";
-import UserManagement from "./pages/dashboard/UserManagement";
+import Support from "./pages/users/pages/Support";
+import Profile from "./pages/users/pages/Profile";
 import WebsiteSettings from "./pages/dashboard/WebsiteSettings";
 import BlogPage from "./pages/websitePages/BlogPage";
 import FaqPage from "./pages/websitePages/FaqPage";
@@ -34,24 +33,36 @@ import PrivacyPolicy from "./pages/websitePages/PrivacyPolicy";
 import ServiceLayout from "./pages/websitePages/ServiceLayout";
 import SingleCategory from "./pages/websitePages/SingleCategory";
 import Terms from "./pages/websitePages/Terms";
-import OrderConfirmation from "./pages/users/OrderConfirmation";
-import BookingDetails from "./pages/users/BookingDetails";
-import ManageBooking from "./pages/users/ManageBooking";
+import OrderConfirmation from "./pages/users/pages/OrderConfirmation";
+import BookingDetails from "./pages/users/pages/BookingDetails";
+import ManageBooking from "./pages/users/pages/ManageBooking";
 import NewAdminDashboard from "./pages/admin/NewAdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminAvailableDates from "./pages/admin/AdminAvailableDates";
 import AdminTimeSlots from "./pages/admin/AdminTimeSlots";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminReports from "./pages/admin/AdminReports";
+import AdminSupport from "./pages/admin/AdminSupport";
+import AdminProfile from "./pages/admin/AdminProfile";
+import SuperAdminProtectedRoute from "@/components/SuperAdminProtectedRoute";
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import SuperAdminApiConfig from "./pages/superadmin/SuperAdminApiConfig";
+import SuperAdminUserManagement from "./pages/superadmin/SuperAdminUserManagement";
+import SuperAdminProfile from "./pages/superadmin/SuperAdminProfile";
+import ImpersonationBanner from "./components/ImpersonationBanner";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        <Routes>
+      <GoogleMapsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ImpersonationBanner />
+            <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Login />} />
           {/* frontend Routes */}
@@ -82,20 +93,28 @@ const App = () => (
           <Route path="/admin/appointments" element={<AdminProtectedRoute><AdminAppointments /></AdminProtectedRoute>} />
           <Route path="/admin/available-dates" element={<AdminProtectedRoute><AdminAvailableDates /></AdminProtectedRoute>} />
           <Route path="/admin/time-slots" element={<AdminProtectedRoute><AdminTimeSlots /></AdminProtectedRoute>} />
-          <Route path="/admin/managers" element={<UserManagement />} />
+          <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
+          <Route path="/admin/managers" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
           <Route path="/admin/services" element={<ServiceAreas />} />
           <Route path="/admin/tickets" element={<AppointmentManagement />} />
-          <Route path="/admin/reports" element={<Dashboard />} />
+          <Route path="/admin/reports" element={<AdminProtectedRoute><AdminReports /></AdminProtectedRoute>} />
+          <Route path="/admin/support" element={<AdminProtectedRoute><AdminSupport /></AdminProtectedRoute>} />
+          <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
           <Route path="/admin/pages" element={<WebsiteSettings />} />
           <Route path="/admin/slots" element={<ProtectedRoute><AdminTimeSlots /></ProtectedRoute>} />
           <Route path="/admin/profile" element={<ProfileSettings />} />
+
+          {/* Super Admin Routes */}
+          <Route path="/administrator" element={<SuperAdminProtectedRoute><SuperAdminDashboard /></SuperAdminProtectedRoute>} />
+          <Route path="/administrator/apis" element={<SuperAdminProtectedRoute><SuperAdminApiConfig /></SuperAdminProtectedRoute>} />
+          <Route path="/administrator/users" element={<SuperAdminProtectedRoute><SuperAdminUserManagement /></SuperAdminProtectedRoute>} />
+          <Route path="/administrator/profile" element={<SuperAdminProtectedRoute><SuperAdminProfile /></SuperAdminProtectedRoute>} />
 
           <Route path="/manager" element={<ManagerDashboard />} />
           <Route
             path="/manager/appointments"
             element={<AppointmentManagement />}
           />
-          <Route path="/manager/users" element={<UserManagement />} />
           <Route path="/manager/services" element={<ServiceAreas />} />
           <Route path="/manager/tickets" element={<AppointmentManagement />} />
           <Route path="/manager/reports" element={<Dashboard />} />
@@ -104,8 +123,7 @@ const App = () => (
 
           <Route path="/user" element={<ProtectedRoute><NewUserDashboard /></ProtectedRoute>} />
           <Route path="/user/bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-          <Route path="/user/quotes" element={<ProtectedRoute><MyQuotes /></ProtectedRoute>} />
-          <Route path="/user/payments" element={<ProtectedRoute><OutstandingPayments /></ProtectedRoute>} />
+          <Route path="/user/locations" element={<ProtectedRoute><UserLocations /></ProtectedRoute>} />
           <Route path="/user/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
           <Route path="/user/addresses" element={<ProtectedRoute><MyAddresses /></ProtectedRoute>} />
           <Route path="/user/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
@@ -117,8 +135,6 @@ const App = () => (
             path="/dashboard/appointments"
             element={<AppointmentManagement />}
           />
-          <Route path="/dashboard/users" element={<UserManagement />} />
-          <Route path="/dashboard/managers" element={<UserManagement />} />
           <Route
             path="/dashboard/my-appointments"
             element={<AppointmentManagement />}
@@ -158,7 +174,8 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </GoogleMapsProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

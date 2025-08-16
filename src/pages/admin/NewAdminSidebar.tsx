@@ -11,7 +11,8 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  User
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,10 +32,10 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({ isCollapsed, setIsCol
     { icon: Calendar, label: 'Appointments', path: '/admin/appointments' },
     { icon: Clock, label: 'Available Dates', path: '/admin/available-dates' },
     { icon: Clock, label: 'Time Slots', path: '/admin/time-slots' },
-    { icon: Users, label: 'Customers', path: '/admin/customers' },
+    { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: FileText, label: 'Reports', path: '/admin/reports' },
-    { icon: Database, label: 'Data Management', path: '/admin/data' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
+    { icon: Database, label: 'Support Tickets', path: '/admin/support' },
+    { icon: User, label: 'Profile', path: '/admin/profile' }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -71,20 +72,6 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({ isCollapsed, setIsCol
               <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
                 Administrator
               </span>
-              
-              {/* Quick Stats */}
-              <div className="bg-gray-50 rounded-lg p-3 w-full mt-3">
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div>
-                    <p className="text-xs text-gray-500">Today</p>
-                    <p className="text-sm font-semibold text-gray-900">12</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Pending</p>
-                    <p className="text-sm font-semibold text-gray-900">3</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

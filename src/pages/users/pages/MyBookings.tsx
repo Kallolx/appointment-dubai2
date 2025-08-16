@@ -6,7 +6,7 @@ import { Calendar, Clock, MapPin, DollarSign, Phone, MessageCircle } from 'lucid
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import NewUserLayout from "./NewUserLayout";
+import NewUserLayout from "./../NewUserLayout";
 
 interface Appointment {
   id: number;

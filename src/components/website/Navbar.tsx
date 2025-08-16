@@ -98,7 +98,7 @@ const ServiceSlider = ({ services }: { services: Service[] }) => {
 
 export const Navbar = () => {
   /* existing states */
-  const [location, setLocation] = useState("Dubai Marina");
+  const [location, setLocation] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
@@ -534,7 +534,7 @@ export const Navbar = () => {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <img src="/appstore.webp" className="h-10" alt="App Store" />
+                      <img src="/icons/appstore.webp" className="h-10" alt="App Store" />
                     </a>
                     <a
                       href="https://play.google.com/store"
@@ -542,7 +542,7 @@ export const Navbar = () => {
                       rel="noreferrer"
                     >
                       <img
-                        src="/playstore.webp"
+                        src="/icons/playstore.webp"
                         className="h-10"
                         alt="Google Play"
                       />

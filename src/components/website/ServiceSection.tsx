@@ -66,25 +66,24 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
         {services.map((service, index) => (
           <div
             key={index}
-            className=" min-w-[180px] bg-white overflow-hidden hover:cursor-pointer "
+            className="min-w-[240px] hover:cursor-pointer rounded-md flex flex-col"
           >
             <Link
               to={`/service/${heading}`}
-              className="relative transition-transform hover:scale-105 "
+              className="relative block"
             >
               {/* Image */}
               <img
                 src={service.image}
                 alt={service.title}
-                className="w-full h-32 object-cover"
+                className="w-full h-48 object-cover rounded-md"
               />
 
               {/* Overlay */}
-              <div className="absolute inset-0 bg-black opacity-30 hover:opacity-0 transition-opacity "></div>
+              <div className="absolute inset-0 bg-black rounded-md opacity-20 hover:opacity-0 transition-opacity "></div>
             </Link>
-
             {/* Title */}
-            <p className="font-medium py-2">{service.title}</p>
+            <p className="font-bold pt-2 text-left">{service.title}</p>
           </div>
         ))}
       </div>

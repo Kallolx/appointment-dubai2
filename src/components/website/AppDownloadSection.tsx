@@ -18,7 +18,7 @@ const AppDownloadSection: React.FC = () => {
               href="#"
               className="flex items-center justify-center text-white bg-black py-2 px-6 rounded-md"
             >
-              <img src="./appstore.webp" alt="App Store" className="h-8 mr-2" />
+              <img src="/icons/appstore.webp" alt="App Store" className="h-8 mr-2" />
             </a>
             {/* Google Play Button */}
             <a
@@ -26,7 +26,7 @@ const AppDownloadSection: React.FC = () => {
               className="flex items-center justify-center text-white bg-black py-2 px-6 rounded-md"
             >
               <img
-                src="playstore.webp"
+                src="/icons/playstore.webp"
                 alt="Google Play"
                 className="h-8 mr-2"
               />

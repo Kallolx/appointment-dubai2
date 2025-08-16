@@ -29,14 +29,9 @@ const NewUserSidebar: React.FC<NewUserSidebarProps> = ({ isCollapsed, setIsColla
 
   const menuItems = [
     { icon: Calendar, label: 'My Booking', path: '/user/bookings' },
-    { icon: FileText, label: 'My Quotes', path: '/user/quotes' },
     { icon: User, label: 'My Profile', path: '/user/profile' },
-    { icon: DollarSign, label: 'Outstanding Payments', path: '/user/payments' },
-    { icon: MapPin, label: 'Saved locations', path: '/user/addresses' },
-    { icon: CreditCard, label: 'Payment Method', path: '/user/payment-methods' },
-    { icon: HeadphonesIcon, label: 'Support', path: '/user/support' },
-    { icon: Wallet, label: 'My Wallet', path: '/user/wallet' },
-    { icon: Trash2, label: 'Delete Account', path: '/user/delete-account' },
+    { icon: MapPin, label: 'Saved locations', path: '/user/locations' },
+    { icon: HeadphonesIcon, label: 'Support Ticket', path: '/user/support' },
   ];
 
   const isActive = (path: string) => location.pathname === path;

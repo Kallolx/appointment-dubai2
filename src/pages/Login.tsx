@@ -120,7 +120,9 @@ export default function Login() {
         login(data.user, data.token);
         
         // Redirect based on user role
-        if (data.user.role === 'admin' || data.user.role === 'super_admin') {
+        if (data.user.role === 'super_admin') {
+          navigate("/administrator");
+        } else if (data.user.role === 'admin') {
           navigate("/admin");
         } else {
           navigate("/user");
@@ -209,7 +211,9 @@ export default function Login() {
         login(data.user, data.token);
         
         // Redirect based on user role
-        if (data.user.role === 'admin' || data.user.role === 'super_admin') {
+        if (data.user.role === 'super_admin') {
+          navigate("/superadmin");
+        } else if (data.user.role === 'admin') {
           navigate("/admin");
         } else {
           navigate("/user");

@@ -120,20 +120,20 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center mt-10 border-t border-zinc-700 pt-6 gap-6">
           {/* App buttons */}
           <div className="flex items-center gap-4">
-            <img src="./appstore.webp" alt="App Store" className="h-10" />
-            <img src="./playstore.webp" alt="Google Play" className="h-10" />
+            <img src="./icons/appstore.webp" alt="App Store" className="h-10" />
+            <img src="./icons/playstore.webp" alt="Google Play" className="h-10" />
           </div>
 
           {/* Social icons */}
           <div className="flex items-center gap-4 text-white">
             <Link to="">
-              <img src="./facebookicon.webp" alt="" className="w-8 h-8" />
+              <img src="./icons/facebook.webp" alt="" className="w-8 h-8" />
             </Link>
             <Link to="">
-              <img src="./twitter-logo.svg" alt="" className="w-8 h-8" />
+              <img src="./icons/twitter.svg" alt="" className="w-8 h-8" />
             </Link>
             <Link to="">
-              <img src="./instagram-logo.svg" alt="" className="w-8 h-8" />
+              <img src="./icons/instagram.svg" alt="" className="w-8 h-8" />
             </Link>
           </div>
 
