@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -64,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const verifyToken = async (authToken: string) => {
     try {
-      const response = await fetch('http://localhost:3001/api/user/profile', {
+      const response = await fetch(buildApiUrl('/api/user/profile'), {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }

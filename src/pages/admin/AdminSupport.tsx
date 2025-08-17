@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from './NewAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ const AdminSupport: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/admin/support-tickets', {
+      const response = await axios.get(buildApiUrl('/api/admin/support-tickets'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { buildApiUrl } from "@/config/api";
 import { Check, CreditCard, Banknote, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -68,7 +69,7 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) =>
       };
 
       // Make API call to create appointment
-      const response = await fetch('http://localhost:3001/api/user/appointments', {
+      const response = await fetch(buildApiUrl('/api/user/appointments'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

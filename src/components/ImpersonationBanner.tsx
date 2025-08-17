@@ -1,4 +1,5 @@
 import React from 'react';
+import { buildApiUrl } from "@/config/api";
 import { AlertTriangle, LogOut, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +33,7 @@ const ImpersonationBanner: React.FC = () => {
       }
 
       // Call backend to exit impersonation
-      const response = await fetch('http://localhost:3001/api/superadmin/exit-impersonation', {
+      const response = await fetch(buildApiUrl('/api/superadmin/exit-impersonation'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

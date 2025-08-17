@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { buildApiUrl } from "@/config/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const StepThree = ({ onSelectionChange }) => {
@@ -17,14 +18,14 @@ const StepThree = ({ onSelectionChange }) => {
       setError("");
       
       // Fetch available dates
-      const datesResponse = await fetch('http://localhost:3001/api/available-dates');
+      const datesResponse = await fetch(buildApiUrl('/api/available-dates'));
       if (!datesResponse.ok) {
         throw new Error('Failed to fetch available dates');
       }
       const datesData = await datesResponse.json();
       
       // Fetch available time slots
-      const timeSlotsResponse = await fetch('http://localhost:3001/api/available-time-slots');
+      const timeSlotsResponse = await fetch(buildApiUrl('/api/available-time-slots'));
       if (!timeSlotsResponse.ok) {
         throw new Error('Failed to fetch available time slots');
       }

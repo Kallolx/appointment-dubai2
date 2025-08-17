@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+import { buildApiUrl } from "@/config/api";
 // Cache for API configurations
 let apiCache: { [key: string]: string } = {};
 let cacheTimestamp: { [key: string]: number } = {};

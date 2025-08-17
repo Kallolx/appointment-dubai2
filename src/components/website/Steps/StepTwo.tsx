@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { buildApiUrl } from "@/config/api";
 // Use Vite env variable for Google Maps API key
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 import { Plus, ChevronRight, MapPin, Home, Building, User, ArrowLeft, Star } from "lucide-react";
@@ -69,7 +70,7 @@ const StepTwo = ({
     
     try {
       setLoadingSavedAddresses(true);
-      const response = await axios.get('http://localhost:3001/api/user/addresses', {
+      const response = await axios.get(buildApiUrl('/api/user/addresses'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSavedAddresses(response.data);

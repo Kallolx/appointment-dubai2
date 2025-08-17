@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from './NewAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,12 +53,12 @@ const AdminReports: React.FC = () => {
       }
 
       // Fetch appointments
-      const appointmentsResponse = await axios.get('http://localhost:3001/api/admin/appointments', {
+      const appointmentsResponse = await axios.get(buildApiUrl('/api/admin/appointments'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       // Fetch users
-      const usersResponse = await axios.get('http://localhost:3001/api/admin/users', {
+      const usersResponse = await axios.get(buildApiUrl('/api/admin/users'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 

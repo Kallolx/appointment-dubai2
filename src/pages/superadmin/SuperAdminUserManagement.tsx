@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { 
   Users, 
   Search, 
@@ -70,7 +71,7 @@ const SuperAdminUserManagement: React.FC = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/users', {
+      const response = await fetch(buildApiUrl('/api/superadmin/users'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -131,7 +132,7 @@ const SuperAdminUserManagement: React.FC = () => {
     try {
       setImpersonating(targetUser.id);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/impersonate', {
+      const response = await fetch(buildApiUrl('/api/superadmin/impersonate'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,7 +196,7 @@ const SuperAdminUserManagement: React.FC = () => {
     try {
       setIsCreating(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/create-user', {
+      const response = await fetch(buildApiUrl('/api/superadmin/create-user'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

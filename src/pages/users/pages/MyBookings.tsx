@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ const MyBookings: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/user/appointments', {
+      const response = await axios.get(buildApiUrl('/api/user/appointments'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+import { buildApiUrl } from "@/config/api";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,7 +87,7 @@ const LoginModal = ({ setLoginModalOpen }) => {
     
     try {
       // Send OTP to phone number
-      const response = await fetch('http://localhost:3001/api/auth/send-otp', {
+      const response = await fetch(buildApiUrl('/api/auth/send-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: fullPhoneNumber })
@@ -147,7 +148,7 @@ const LoginModal = ({ setLoginModalOpen }) => {
     
     try {
       // Verify OTP
-      const response = await fetch('http://localhost:3001/api/auth/verify-otp', {
+      const response = await fetch(buildApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: fullPhoneNumber, otp })

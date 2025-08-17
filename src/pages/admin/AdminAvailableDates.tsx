@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from './NewAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ const AdminAvailableDates: React.FC = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3001/api/admin/available-dates', {
+      const response = await fetch(buildApiUrl('/api/admin/available-dates'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -58,7 +59,7 @@ const AdminAvailableDates: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/admin/available-dates', {
+      const response = await fetch(buildApiUrl('/api/admin/available-dates'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ const UserLocations: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/user/addresses', {
+      const response = await axios.get(buildApiUrl('/api/user/addresses'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -164,7 +165,7 @@ const UserLocations: React.FC = () => {
         return;
       }
 
-      await axios.post('http://localhost:3001/api/user/addresses', formData, {
+      await axios.post(buildApiUrl('/api/user/addresses'), formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

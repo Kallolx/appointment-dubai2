@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '@/pages/users/UserSidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,11 +42,11 @@ const MyAppointments: React.FC = () => {
           return;
         }
 
-        const upcomingResponse = await axios.get('http://localhost:3001/api/user/appointments/upcoming', {
+        const upcomingResponse = await axios.get(buildApiUrl('/api/user/appointments/upcoming'), {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        const pastResponse = await axios.get('http://localhost:3001/api/user/appointments/past', {
+        const pastResponse = await axios.get(buildApiUrl('/api/user/appointments/past'), {
           headers: { Authorization: `Bearer ${token}` }
         });
 

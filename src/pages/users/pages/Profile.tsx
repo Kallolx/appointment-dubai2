@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,7 @@ const Profile: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/user/profile', {
+      const response = await axios.get(buildApiUrl('/api/user/profile'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -115,7 +116,7 @@ const Profile: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/user/addresses', {
+      const response = await axios.get(buildApiUrl('/api/user/addresses'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -166,7 +167,7 @@ const Profile: React.FC = () => {
         return;
       }
 
-      await axios.put('http://localhost:3001/api/user/profile', editFormData, {
+      await axios.put(buildApiUrl('/api/user/profile'), editFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -226,7 +227,7 @@ const Profile: React.FC = () => {
         return;
       }
 
-      await axios.put('http://localhost:3001/api/user/change-password', {
+      await axios.put(buildApiUrl('/api/user/change-password'), {
         currentPassword: passwordFormData.currentPassword,
         newPassword: passwordFormData.newPassword
       }, {

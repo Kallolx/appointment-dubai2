@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from './NewAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ const AdminTimeSlots: React.FC = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3001/api/admin/available-time-slots', {
+      const response = await fetch(buildApiUrl('/api/admin/available-time-slots'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -58,7 +59,7 @@ const AdminTimeSlots: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/admin/available-time-slots', {
+      const response = await fetch(buildApiUrl('/api/admin/available-time-slots'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

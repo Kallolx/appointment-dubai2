@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl } from '@/config/api';
 import NewAdminLayout from './NewAdminLayout';
 
 interface ProfileData {
@@ -76,7 +77,7 @@ const AdminProfile: React.FC = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/admin/profile', {
+      const response = await fetch(buildApiUrl('/api/admin/profile'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -115,7 +116,7 @@ const AdminProfile: React.FC = () => {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/admin/profile/personal', {
+      const response = await fetch(buildApiUrl('/api/admin/profile/personal'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -164,7 +165,7 @@ const AdminProfile: React.FC = () => {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/admin/profile/address', {
+      const response = await fetch(buildApiUrl('/api/admin/profile/address'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -230,7 +231,7 @@ const AdminProfile: React.FC = () => {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/admin/profile/password', {
+      const response = await fetch(buildApiUrl('/api/admin/profile/password'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

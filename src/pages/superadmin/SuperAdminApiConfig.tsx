@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import SuperAdminLayout from '@/pages/superadmin/SuperAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,7 @@ const SuperAdminApiConfig: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3001/api/superadmin/api-configs', {
+      const response = await axios.get(buildApiUrl('/api/superadmin/api-configs'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -108,7 +109,7 @@ const SuperAdminApiConfig: React.FC = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:3001/api/superadmin/api-configs',
+        buildApiUrl('/api/superadmin/api-configs'),
         {
           service_name: serviceName,
           api_key: apiKey,

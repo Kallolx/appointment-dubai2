@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl } from "@/config/api";
 import { 
   User, 
   Mail, 
@@ -76,7 +77,7 @@ const SuperAdminProfile: React.FC = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/profile', {
+      const response = await fetch(buildApiUrl('/api/superadmin/profile'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -115,7 +116,7 @@ const SuperAdminProfile: React.FC = () => {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/profile/personal', {
+      const response = await fetch(buildApiUrl('/api/superadmin/profile/personal'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -164,7 +165,7 @@ const SuperAdminProfile: React.FC = () => {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/profile/address', {
+      const response = await fetch(buildApiUrl('/api/superadmin/profile/address'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -230,7 +231,7 @@ const SuperAdminProfile: React.FC = () => {
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/superadmin/profile/password', {
+      const response = await fetch(buildApiUrl('/api/superadmin/profile/password'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

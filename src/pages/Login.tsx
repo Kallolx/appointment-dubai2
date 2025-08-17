@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar, LogIn, Shield, ArrowRight, User, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { buildApiUrl } from "@/config/api";
 
 export default function Login() {
   // Authentication flow states
@@ -52,48 +53,49 @@ export default function Login() {
   }, []);
 
   // Handle phone number verification
-  const handlePhoneCheck = () => {
-    if (!phone || phone.length < 10) {
+  const handleCheckPhone = async () => {
+    if (!phone.trim()) {
       toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid phone number.",
-        variant: "destructive"
+        title: "Error",
+        description: "Please enter your phone number",
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
-    // Make API call to check if phone exists
-    fetch('http://localhost:3001/api/auth/check-phone', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone })
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log("API response:", data);
-      if (data.exists) {
-        // Phone exists, proceed to password step
-        setStep("password");
-      } else {
-        // Phone doesn't exist, proceed to signup
-        setStep("signup");
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      toast({
-        title: "Connection Error",
-        description: "Could not connect to the server. Please try again.",
-        variant: "destructive"
+    try {
+      const response = await fetch(buildApiUrl('/api/auth/check-phone'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone }),
       });
-    })
-    .finally(() => {
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.exists) {
+          setStep("password");
+        } else {
+          // User doesn't exist, redirect to OTP verification for new user
+          navigate(`/verify-otp?phone=${encodeURIComponent(phone)}&new=true`);
+        }
+      } else {
+        throw new Error(data.message || 'Failed to check phone number');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to check phone number",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    });
+    }
   };
-  
+
   // Handle login
   const handleLogin = () => {
     if (!password) {
@@ -108,7 +110,7 @@ export default function Login() {
     setIsLoading(true);
 
     // Make API call to login
-    fetch('http://localhost:3001/api/auth/login', {
+    fetch(buildApiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, password })
@@ -185,7 +187,7 @@ export default function Login() {
     setIsLoading(true);
     
     // Make API call to register
-    fetch('http://localhost:3001/api/auth/register', {
+    fetch(buildApiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -301,7 +303,7 @@ export default function Login() {
                   type="button" 
                   className="w-full" 
                   disabled={isLoading} 
-                  onClick={handlePhoneCheck}
+                  onClick={handleCheckPhone}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
