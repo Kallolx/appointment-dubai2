@@ -144,7 +144,7 @@ const SuperAdminApiConfig: React.FC = () => {
       setTesting(serviceName);
       
       const response = await axios.post(
-        `http://localhost:3001/api/superadmin/api-configs/${serviceName}/test`,
+        buildApiUrl(`/api/superadmin/api-configs/${serviceName}/test`),
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

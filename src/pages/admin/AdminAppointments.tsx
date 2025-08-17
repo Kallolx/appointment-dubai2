@@ -61,7 +61,7 @@ const AdminAppointments: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/admin/appointments/${appointmentId}/status`, {
+      const response = await fetch(buildApiUrl(`/api/admin/appointments/${appointmentId}/status`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

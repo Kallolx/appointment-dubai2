@@ -223,7 +223,7 @@ const UserLocations: React.FC = () => {
         return;
       }
 
-      await axios.put(`http://localhost:3001/api/user/addresses/${currentAddressId}`, formData, {
+      await axios.put(buildApiUrl(`/api/user/addresses/${currentAddressId}`), formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -256,7 +256,7 @@ const UserLocations: React.FC = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3001/api/user/addresses/${currentAddressId}`, {
+      await axios.delete(buildApiUrl(`/api/user/addresses/${currentAddressId}`), {
         headers: { Authorization: `Bearer ${token}` }
       });
 

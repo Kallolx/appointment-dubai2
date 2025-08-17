@@ -87,7 +87,7 @@ const AdminTimeSlots: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/admin/available-time-slots/${slotId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/available-time-slots/${slotId}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -116,7 +116,7 @@ const AdminTimeSlots: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/admin/available-time-slots/${slotId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/available-time-slots/${slotId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

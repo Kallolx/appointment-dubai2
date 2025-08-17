@@ -16,7 +16,7 @@ export const getApiKey = async (service: string): Promise<string | null> => {
       return apiCache[service];
     }
 
-    const response = await axios.get(`http://localhost:3001/api/config/${service}`);
+    const response = await axios.get(buildApiUrl(`/api/config/${service}`));
     
     if (response.data && response.data.api_key) {
       // Update cache

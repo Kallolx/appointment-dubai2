@@ -87,7 +87,7 @@ const AdminAvailableDates: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/admin/available-dates/${dateId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/available-dates/${dateId}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -116,7 +116,7 @@ const AdminAvailableDates: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/admin/available-dates/${dateId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/available-dates/${dateId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

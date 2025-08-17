@@ -74,7 +74,7 @@ const MyAppointments: React.FC = () => {
         return;
       }
 
-      await axios.put(`http://localhost:3001/api/user/appointments/${id}`, 
+      await axios.put(buildApiUrl(`/api/user/appointments/${id}`), 
         { status: 'cancelled' },
         { headers: { Authorization: `Bearer ${token}` }}
       );

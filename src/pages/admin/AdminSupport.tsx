@@ -116,7 +116,7 @@ const AdminSupport: React.FC = () => {
   const updateTicketStatus = async (ticketId: number, newStatus: string) => {
     try {
       const response = await axios.put(
-        `http://localhost:3001/api/admin/support-tickets/${ticketId}/status`,
+        buildApiUrl(`/api/admin/support-tickets/${ticketId}/status`),
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -152,7 +152,7 @@ const AdminSupport: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:3001/api/admin/support-tickets/${selectedTicket.id}/response`,
+        buildApiUrl(`/api/admin/support-tickets/${selectedTicket.id}/response`),
         { admin_response: adminResponse },
         { headers: { Authorization: `Bearer ${token}` } }
       );
