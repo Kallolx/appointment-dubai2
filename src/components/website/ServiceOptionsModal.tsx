@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
-import { X, ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { buildApiUrl } from "@/config/api";
 
 interface ServiceOption {
   id: string;
   name: string;
   description: string;
   price: number;
+  discount_price?: number | null;
   image: string;
+  room_type_id: number;
+  room_type_slug: string;
 }
 
 interface ServiceOptionsModalProps {
@@ -19,152 +24,58 @@ interface ServiceOptionsModalProps {
   onRemoveService?: (service: ServiceOption) => void;
 }
 
-// Centralized image mapping to avoid duplication
+interface ServicePricing {
+  id: number;
+  service_category_id: number;
+  property_type_id: number;
+  room_type_id: number;
+  price: number;
+  discount_price: number | null;
+  category_name: string;
+  property_type_name: string;
+  room_type_name: string;
+  room_type_slug: string;
+  room_icon_url: string | null;
+  room_description: string | null;
+}
+
+// Centralized image mapping to avoid duplication (fallback for when no icons are provided)
 const PROPERTY_IMAGES = {
   apartment: {
     studio: "/steps/apart/1.png",
     "1bed": "/steps/apart/2.png", 
+    "1-bed": "/steps/apart/2.png",
     "2bed": "/steps/apart/3.png",
+    "2-bed": "/steps/apart/3.png",
     "3bed": "/steps/apart/4.png",
-    "4bed": "/steps/apart/5.png"
+    "3-bed": "/steps/apart/4.png",
+    "4bed": "/steps/apart/5.png",
+    "4-bed": "/steps/apart/5.png"
   },
   villa: {
     "2bed": "/steps/villa/1.png",
+    "2-bed": "/steps/villa/1.png",
     "3bed": "/steps/villa/2.png", 
+    "3-bed": "/steps/villa/2.png",
     "4bed": "/steps/villa/3.png",
-    "5bed": "/steps/villa/4.png"
+    "4-bed": "/steps/villa/3.png",
+    "5bed": "/steps/villa/4.png",
+    "5-bed": "/steps/villa/4.png"
   },
   special: "/pest.webp" // For special cases
 };
 
 // Function to get category display name
 const getCategoryDisplayName = (category: string): string => {
-  const categoryNames = {
-    general: "General",
-    cockroaches: "Cockroaches",
-    "bed bugs": "Bed Bugs",
-    bedbugs: "Bed Bugs", 
-    termite: "Termite",
-    ants: "Ants",
-    mosquitoes: "Mosquitoes",
-    "deep-clean": "Deep Clean",
-    maintenance: "Maintenance"
-  };
-  return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+  return category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ');
 };
 
-// Helper function to get image path
-const getImagePath = (propertyType: string, roomType: string, isSpecial = false): string => {
-  if (isSpecial) return PROPERTY_IMAGES.special;
+// Helper function to get image path (fallback when room type doesn't have icon)
+const getImagePath = (propertyType: string, roomSlug: string, iconUrl?: string | null): string => {
+  if (iconUrl) return iconUrl;
   
   const propertyKey = propertyType.toLowerCase() as keyof typeof PROPERTY_IMAGES;
-  return PROPERTY_IMAGES[propertyKey]?.[roomType] || PROPERTY_IMAGES.special;
-};
-
-// Base service configurations - prices only, images generated dynamically
-const SERVICE_CONFIGS = {
-  apartment: {
-    general: {
-      studio: { price: 149, description: "Specialized treatment aimed at eradicating bed bugs." },
-      "1bed": { price: 179, description: "Specialized treatment aimed at eradicating bed bugs." },
-      "2bed": { price: 199, description: "Specialized treatment aimed at eradicating bed bugs." },
-      "3bed": { price: 229, description: "Specialized treatment aimed at eradicating bed bugs." },
-      "4bed": { price: 249, description: "Specialized treatment aimed at eradicating bed bugs." }
-    },
-    cockroaches: {
-      studio: { price: 129, description: "Professional cockroach control for studio apartments." },
-      "1bed": { price: 159, description: "Professional cockroach control for 1 bedroom apartments." },
-      "2bed": { price: 179, description: "Professional cockroach control for 2 bedroom apartments." },
-      "3bed": { price: 209, description: "Professional cockroach control for 3 bedroom apartments.", special: true },
-      "4bed": { price: 229, description: "Professional cockroach control for 4 bedroom apartments." }
-    },
-    ants: {
-      studio: { price: 119, description: "Professional ant control for studio apartments." },
-      "1bed": { price: 149, description: "Professional ant control for 1 bedroom apartments." },
-      "2bed": { price: 169, description: "Professional ant control for 2 bedroom apartments." },
-      "3bed": { price: 199, description: "Professional ant control for 3 bedroom apartments." },
-      "4bed": { price: 219, description: "Professional ant control for 4 bedroom apartments." }
-    },
-    mosquitoes: {
-      studio: { price: 139, description: "Professional mosquito control for studio apartments." },
-      "1bed": { price: 169, description: "Professional mosquito control for 1 bedroom apartments." },
-      "2bed": { price: 189, description: "Professional mosquito control for 2 bedroom apartments." },
-      "3bed": { price: 219, description: "Professional mosquito control for 3 bedroom apartments." },
-      "4bed": { price: 239, description: "Professional mosquito control for 4 bedroom apartments." }
-    },
-    "bed bugs": {
-      studio: { price: 159, description: "Professional bed bug control for studio apartments." },
-      "1bed": { price: 189, description: "Professional bed bug control for 1 bedroom apartments." },
-      "2bed": { price: 209, description: "Professional bed bug control for 2 bedroom apartments." },
-      "3bed": { price: 239, description: "Professional bed bug control for 3 bedroom apartments." },
-      "4bed": { price: 259, description: "Professional bed bug control for 4 bedroom apartments." }
-    }
-  },
-  villa: {
-    general: {
-      "2bed": { price: 299, description: "Comprehensive cleaning service for 2 bedroom villas." },
-      "3bed": { price: 349, description: "Comprehensive cleaning service for 3 bedroom villas." },
-      "4bed": { price: 399, description: "Comprehensive cleaning service for 4 bedroom villas." },
-      "5bed": { price: 449, description: "Comprehensive cleaning service for 5 bedroom villas." }
-    },
-    cockroaches: {
-      "2bed": { price: 279, description: "Professional cockroach control for 2 bedroom villas." },
-      "3bed": { price: 329, description: "Professional cockroach control for 3 bedroom villas." },
-      "4bed": { price: 379, description: "Professional cockroach control for 4 bedroom villas." },
-      "5bed": { price: 429, description: "Professional cockroach control for 5 bedroom villas." }
-    },
-    ants: {
-      "2bed": { price: 259, description: "Professional ant control for 2 bedroom villas." },
-      "3bed": { price: 309, description: "Professional ant control for 3 bedroom villas." },
-      "4bed": { price: 359, description: "Professional ant control for 4 bedroom villas." },
-      "5bed": { price: 409, description: "Professional ant control for 5 bedroom villas." }
-    },
-    mosquitoes: {
-      "2bed": { price: 289, description: "Professional mosquito control for 2 bedroom villas." },
-      "3bed": { price: 339, description: "Professional mosquito control for 3 bedroom villas." },
-      "4bed": { price: 389, description: "Professional mosquito control for 4 bedroom villas." },
-      "5bed": { price: 439, description: "Professional mosquito control for 5 bedroom villas." }
-    },
-    "bed bugs": {
-      "2bed": { price: 309, description: "Professional bed bug control for 2 bedroom villas." },
-      "3bed": { price: 359, description: "Professional bed bug control for 3 bedroom villas.", special: true },
-      "4bed": { price: 409, description: "Professional bed bug control for 4 bedroom villas." },
-      "5bed": { price: 459, description: "Professional bed bug control for 5 bedroom villas." }
-    }
-  }
-};
-
-// Room type display names
-const ROOM_DISPLAY_NAMES = {
-  studio: "Studio",
-  "1bed": "1 Bedroom Apartment",
-  "2bed": "2 Bedroom",
-  "3bed": "3 Bedroom", 
-  "4bed": "4 Bedroom",
-  "5bed": "5 Bedroom"
-};
-
-// Generate service options dynamically
-const generateServiceOptions = (propertyType: string, category: string): ServiceOption[] => {
-  const propertyKey = propertyType.toLowerCase() as keyof typeof SERVICE_CONFIGS;
-  const categoryKey = category as keyof typeof SERVICE_CONFIGS.apartment;
-  const configs = SERVICE_CONFIGS[propertyKey]?.[categoryKey];
-  
-  if (!configs) return [];
-  
-  return Object.entries(configs).map(([roomType, config]) => {
-    const propertyTypeSuffix = propertyType === "Apartment" ? 
-      (roomType === "studio" ? "" : " Apartment") : 
-      " Villa";
-    
-    return {
-      id: `${propertyType.toLowerCase()}-${roomType}-${category.replace(/\s+/g, '')}`,
-      name: `${ROOM_DISPLAY_NAMES[roomType]}${propertyTypeSuffix}`,
-      description: config.description,
-      price: config.price,
-      image: getImagePath(propertyType, roomType, (config as { special?: boolean }).special || false)
-    };
-  });
+  return PROPERTY_IMAGES[propertyKey]?.[roomSlug] || PROPERTY_IMAGES.special;
 };
 
 const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
@@ -176,6 +87,54 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   onRemoveService
 }) => {
   const [selectedServices, setSelectedServices] = useState<Record<string, number>>({});
+
+  // Fetch service pricing data
+  const {
+    data: servicePricing = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["service-pricing", propertyType, category],
+    queryFn: async () => {
+      try {
+        const response = await fetch(buildApiUrl('/api/service-pricing'));
+        if (!response.ok) {
+          throw new Error('Failed to fetch pricing data');
+        }
+        const data: ServicePricing[] = await response.json();
+        
+        // Filter by current property type and category
+        return data.filter(pricing => 
+          pricing.property_type_name.toLowerCase() === propertyType.toLowerCase() &&
+          pricing.category_name.toLowerCase() === category.toLowerCase()
+        );
+      } catch (error) {
+        console.warn('Error fetching pricing data:', error);
+        return [];
+      }
+    },
+    enabled: isOpen, // Only fetch when modal is open
+  });
+
+  // Generate service options from pricing data
+  const generateServiceOptions = (): ServiceOption[] => {
+    return servicePricing.map((pricing) => {
+      const propertyTypeSuffix = propertyType === "Apartment" ? 
+        (pricing.room_type_slug === "studio" ? "" : " Apartment") : 
+        " Villa";
+      
+      return {
+        id: `${propertyType.toLowerCase()}-${pricing.room_type_slug}-${category.replace(/\s+/g, '')}`,
+        name: `${pricing.room_type_name}${propertyTypeSuffix}`,
+        description: pricing.room_description || `Professional ${category} service for ${pricing.room_type_name.toLowerCase()}.`,
+        price: pricing.price,
+        discount_price: pricing.discount_price,
+        image: getImagePath(propertyType, pricing.room_type_slug, pricing.room_icon_url),
+        room_type_id: pricing.room_type_id,
+        room_type_slug: pricing.room_type_slug
+      };
+    });
+  };
 
   // Reset selected services when category or property type changes
   useEffect(() => {
@@ -198,14 +157,16 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
 
   // Debug logging to track category changes
   useEffect(() => {
-    console.log("Modal category changed to:", category);
-    console.log("Property type:", propertyType);
-  }, [category, propertyType]);
+    if (isOpen) {
+      console.log("Modal category changed to:", category);
+      console.log("Property type:", propertyType);
+    }
+  }, [category, propertyType, isOpen]);
 
   if (!isOpen) return null;
 
   // Generate options dynamically
-  const options = generateServiceOptions(propertyType, category);
+  const options = generateServiceOptions();
 
   console.log("Generated options:", { propertyType, category, optionsFound: options.length });
 
@@ -277,7 +238,17 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          {options.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+              <p className="text-gray-500">Loading pricing options...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-2">Failed to load pricing data</p>
+              <p className="text-gray-500 text-sm">Please try again later</p>
+            </div>
+          ) : options.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">No options available for this category and property type.</p>
             </div>
@@ -297,7 +268,16 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                     <h3 className="font-semibold text-gray-900 mb-1">{option.name}</h3>
                     <p className="text-sm text-gray-600 mb-2">{option.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-900">AED {option.price}</span>
+                      <div className="flex items-center gap-2">
+                        {option.discount_price ? (
+                          <>
+                            <span className="font-semibold text-green-600">AED {option.discount_price}</span>
+                            <span className="text-sm text-gray-500 line-through">AED {option.price}</span>
+                          </>
+                        ) : (
+                          <span className="font-semibold text-gray-900">AED {option.price}</span>
+                        )}
+                      </div>
                       {(selectedServices[option.id] || 0) === 0 ? (
                         <Button
                           onClick={() => handleAddService(option)}

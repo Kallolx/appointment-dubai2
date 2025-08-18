@@ -4,9 +4,12 @@ import React, { useState } from "react";
 interface ServiceItem {
   id: string;
   title?: string;
+  name?: string;
   count: number;
   discountPrice?: number;
   currentPrice?: number;
+  price?: number;
+  discount_price?: number;
 }
 
 interface SelectedDateTime {
@@ -35,9 +38,21 @@ const Calculation: React.FC<CalculationProps> = ({
   const { professional, date, time } = selectedDateTime || {};
   const [showDrawer, setShowDrawer] = useState(false);
 
+  // Helper function to safely get price from any service structure
+  const getServicePrice = (item: ServiceItem): number => {
+    // Try discount price first, then regular price, then fallback to 0
+    const price = Number(
+      item.discount_price ?? 
+      item.discountPrice ?? 
+      item.price ?? 
+      item.currentPrice ?? 
+      0
+    );
+    return isNaN(price) ? 0 : price;
+  };
+
   const totalPrice = Object.values(cartItems).reduce(
-    (sum, item) =>
-      sum + (item.discountPrice ?? item.currentPrice ?? 0) * (item.count ?? 1),
+    (sum, item) => sum + getServicePrice(item) * (item.count ?? 1),
     0
   );
 
@@ -66,7 +81,7 @@ const Calculation: React.FC<CalculationProps> = ({
               <div className="w-1/2 flex flex-col space-y-1">
                 {Object.values(cartItems).map((item, index) => (
                   <p key={index}>
-                    {item.count ?? 1}× {item.title}
+                    {item.count ?? 1}× {item.title || item.name}
                   </p>
                 ))}
               </div>
@@ -131,12 +146,9 @@ const Calculation: React.FC<CalculationProps> = ({
                   className="flex justify-between items-center mb-3"
                 >
                   <div className="flex flex-col w-3/4">
-                    <p className="font-semibold text-gray-800">{item.title}</p>
+                    <p className="font-semibold text-gray-800">{item.title || item.name}</p>
                     <p className="text-gray-500 text-sm">
-                      AED{" "}
-                      {(item.discountPrice ?? item.currentPrice ?? 0).toFixed(
-                        2
-                      )}
+                      AED {getServicePrice(item).toFixed(2)}
                     </p>
                   </div>
 

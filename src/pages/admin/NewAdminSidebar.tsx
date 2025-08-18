@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  Calendar, 
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  Calendar,
   Clock,
-  Users, 
-  BarChart3, 
-  Settings, 
+  Users,
+  BarChart3,
+  Settings,
   Shield,
   Database,
   FileText,
   ChevronLeft,
   ChevronRight,
   Menu,
-  User
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+  User,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NewAdminSidebarProps {
   isCollapsed: boolean;
@@ -23,19 +23,32 @@ interface NewAdminSidebarProps {
   setIsMobileOpen: (open: boolean) => void;
 }
 
-const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
+const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
+  isCollapsed,
+  setIsCollapsed,
+  isMobileOpen,
+  setIsMobileOpen,
+}) => {
   const location = useLocation();
   const { user } = useAuth();
 
   const menuItems = [
-    { icon: BarChart3, label: 'Dashboard', path: '/admin' },
-    { icon: Calendar, label: 'Appointments', path: '/admin/appointments' },
-    { icon: Clock, label: 'Available Dates', path: '/admin/available-dates' },
-    { icon: Clock, label: 'Time Slots', path: '/admin/time-slots' },
-    { icon: Users, label: 'Users', path: '/admin/users' },
-    { icon: FileText, label: 'Reports', path: '/admin/reports' },
-    { icon: Database, label: 'Support Tickets', path: '/admin/support' },
-    { icon: User, label: 'Profile', path: '/admin/profile' }
+    { icon: BarChart3, label: "Dashboard", path: "/admin" },
+    { icon: Calendar, label: "Appointments", path: "/admin/appointments" },
+    { icon: Settings, label: "Property Types", path: "/admin/property-types" },
+    {
+      icon: User,
+      label: "Service Categories",
+      path: "/admin/service-categories",
+    },
+    { icon: Menu, label: "Room Types", path: "/admin/room-types" },
+    { icon: User, label: "Service Pricing", path: "/admin/service-pricing" },
+    { icon: Clock, label: "Available Dates", path: "/admin/available-dates" },
+    { icon: Clock, label: "Time Slots", path: "/admin/time-slots" },
+    { icon: Users, label: "Users", path: "/admin/users" },
+    { icon: FileText, label: "Reports", path: "/admin/reports" },
+    { icon: Database, label: "Support Tickets", path: "/admin/support" },
+    { icon: User, label: "Profile", path: "/admin/profile" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -44,18 +57,20 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({ isCollapsed, setIsCol
     <>
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
-      
+
       {/* Sidebar */}
-      <div className={`
-        ${isCollapsed ? 'w-16' : 'w-64'} 
+      <div
+        className={`
+        ${isCollapsed ? "w-16" : "w-64"} 
         bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0 z-50 transition-all duration-300 shadow-lg overflow-y-auto
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+        ${isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
+      >
         {/* Admin Header Section */}
         {!isCollapsed && (
           <div className="px-4 py-6 border-b border-gray-200">
@@ -64,10 +79,10 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({ isCollapsed, setIsCol
               <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center mb-3 shadow-lg">
                 <Shield className="w-8 h-8 text-white" />
               </div>
-              
+
               {/* Admin Name */}
               <h3 className="text-base font-semibold text-gray-900 mb-1">
-                {user?.fullName || 'Admin'}
+                {user?.fullName || "Admin"}
               </h3>
               <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
                 Administrator
@@ -97,12 +112,16 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({ isCollapsed, setIsCol
                     onClick={() => setIsMobileOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                       isActive(item.path)
-                        ? 'bg-red-50 text-red-600 shadow-sm'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        ? "bg-red-50 text-red-600 shadow-sm"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                     }`}
-                    title={isCollapsed ? item.label : ''}
+                    title={isCollapsed ? item.label : ""}
                   >
-                    <Icon className={`w-4 h-4 ${isCollapsed ? 'mx-auto' : ''} flex-shrink-0`} />
+                    <Icon
+                      className={`w-4 h-4 ${
+                        isCollapsed ? "mx-auto" : ""
+                      } flex-shrink-0`}
+                    />
                     {!isCollapsed && (
                       <span className="font-medium text-sm">{item.label}</span>
                     )}

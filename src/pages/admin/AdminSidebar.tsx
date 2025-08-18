@@ -20,7 +20,7 @@ import {
 
   Edit,
   FolderTree,
- 
+  Home,
   Layout,
 
   UserCog,
@@ -74,7 +74,7 @@ const adminMenuItems = [
   },
   {
     title: "User Management",
-    url: "/dashboard/users", 
+    url: "/admin/users", 
     icon: Users,
     badge: "2,847",
     description: "Manage all users",
@@ -92,7 +92,7 @@ const adminMenuItems = [
   // Appointments & Services
   {
     title: "Appointments",
-    url: "/dashboard/appointments",
+    url: "/admin/appointments",
     icon: Calendar,
     badge: "156",
     description: "All bookings",
@@ -100,24 +100,44 @@ const adminMenuItems = [
   },
   {
     title: "Service Categories",
-    url: "/dashboard/service-categories",
+    url: "/admin/service-categories",
     icon: FolderTree,
-    description: "Categories & subcategories",
+    description: "Manage service categories",
     category: "operations"
   },
   {
-    title: "Service Management",
-    url: "/admin/services",
+    title: "Property Types",
+    url: "/admin/property-types",
     icon: Building2,
-    badge: "47",
-    description: "Pricing, locations, details",
+    description: "Apartment & Villa types",
+    category: "operations"
+  },
+  {
+    title: "Room Types",
+    url: "/admin/room-types",
+    icon: Layout,
+    description: "Room configurations",
+    category: "operations"
+  },
+  {
+    title: "Service Pricing",
+    url: "/admin/service-pricing",
+    icon: DollarSign,
+    description: "Pricing for all services",
     category: "operations"
   },
   {
     title: "Time Slots",
-    url: "/admin/slots",
+    url: "/admin/time-slots",
     icon: Clock,
     description: "Service availability",
+    category: "operations"
+  },
+  {
+    title: "Available Dates",
+    url: "/admin/available-dates",
+    icon: CalendarIcon,
+    description: "Calendar management",
     category: "operations"
   },
   
@@ -148,7 +168,7 @@ const adminMenuItems = [
   // Support & Communication
   {
     title: "Support Tickets",
-    url: "/admin/tickets",
+    url: "/admin/support",
     icon: Ticket,
     badge: "23",
     description: "Customer support",

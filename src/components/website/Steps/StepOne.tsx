@@ -9,75 +9,64 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import ServiceOptionsModal from "@/components/website/ServiceOptionsModal";
+import { buildApiUrl } from "@/config/api";
 
-const category = [
-  { name: "general", image: "/general_cleaning/homecleaning.webp" },
-  { name: "cockroaches", image: "/pest.webp" },
-  { name: "mosquitoes", image: "/pest.webp" },
-  { name: "ants", image: "/pest.webp" },
-  { name: "bed bugs", image: "/pest.webp" },
-];
-
-// Category configuration with specific images for hero banners
-const categoryConfig = {
-  general: {
-    heroImage: "/steps/s1.png",
-    title: "General",
-  },
-  cockroaches: {
-    heroImage: "/steps/s2.png",
-    title: "Cockroaches",
-  },
-  ants: {
-    heroImage: "/steps/s3.png",
-    title: "Ants",
-  },
-  mosquitoes: {
-    heroImage: "/steps/s4.png",
-    title: "Mosquitoes",
-  },
-  "bed bugs": {
-    heroImage: "/steps/s5.png",
-    title: "Bed Bugs",
-  },
-};
-
-// Property types data
-const propertyTypes = [
-  {
-    name: "Apartment",
-    description:
-      "Get rid of common pests and keep your home safe with General Pest Control.",
-    price: "199",
-    image: "/steps/apart.png",
-  },
-  {
-    name: "Villa",
-    description:
-      "Keep your villa pest-free with our easy and effective General Pest Control service.",
-    price: "299",
-    image: "/steps/villa.png",
-  },
-];
+// No fallback data - force database usage only
 
 const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
-  const [selected, setSelected] = useState("general");
+  const [selected, setSelected] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
-  // NEW: Store the category that was selected when opening the modal
   const [modalCategory, setModalCategory] = useState("");
   const inputRef = useRef(null);
   const categoryRef = useRef(null);
   const sectionRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
+  // Fetch service categories from API
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useQuery({
+    queryKey: ["service-categories"],
+    queryFn: async () => {
+      const response = await fetch(buildApiUrl('/api/service-categories'));
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories from database');
+      }
+      const data = await response.json();
+      console.log('Categories fetched from database:', data);
+      return data;
+    },
+  });
+
+  // Fetch property types from API
+  const {
+    data: propertyTypes = [],
+    isLoading: propertyTypesLoading,
+    error: propertyTypesError,
+  } = useQuery({
+    queryKey: ["property-types"],
+    queryFn: async () => {
+      const response = await fetch(buildApiUrl('/api/property-types'));
+      if (!response.ok) {
+        throw new Error('Failed to fetch property types from database');
+      }
+      const data = await response.json();
+      console.log('Property types fetched from database:', data);
+      return data;
+    },
+  });
+
+  // Legacy services data for search functionality
   const {
     data: services = [],
-    isLoading,
-    error,
+    isLoading: servicesLoading,
+    error: servicesError,
   } = useQuery({
     queryKey: ["services"],
     queryFn: async () => {
@@ -85,21 +74,27 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
         const res = await fetch("/data.json");
         if (!res.ok) throw new Error("Failed to fetch services");
         const data = await res.json();
-        console.log("Fetched services:", data);
         return data;
       } catch (err) {
         console.error("Error fetching services:", err);
-        throw err;
+        return [];
       }
     },
   });
 
-  // Group services by category with search filtering
-  const servicesByCategory = category.reduce((acc, cat) => {
-    acc[cat.name] = services.filter(
+  // Set initial selected category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !selected) {
+      setSelected(categories[0].slug);
+    }
+  }, [categories, selected]);
+
+  // Group services by category with search filtering (for legacy search)
+  const servicesByCategory = categories.reduce((acc, cat) => {
+    acc[cat.slug] = services.filter(
       (s) =>
         s.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        s.category === cat.name
+        s.category === cat.slug
     );
     return acc;
   }, {});
@@ -112,7 +107,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
 
   // Detect current category based on scroll position (services list)
   useEffect(() => {
-    if (searchOpen) return; // skip while searching
+    if (searchOpen || categories.length === 0) return; // skip while searching
 
     const handleScroll = () => {
       if (!scrollContainerRef.current) return;
@@ -122,8 +117,8 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
 
       let currentCat = selected;
 
-      for (const cat of category) {
-        const section = sectionRefs.current[cat.name];
+      for (const cat of categories) {
+        const section = sectionRefs.current[cat.slug];
         if (section) {
           const offsetTop = section.offsetTop - containerOffsetTop;
           const offsetHeight = section.offsetHeight;
@@ -131,7 +126,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
             scrollTop >= offsetTop - 50 &&
             scrollTop < offsetTop + offsetHeight - 50
           ) {
-            currentCat = cat.name;
+            currentCat = cat.slug;
             break;
           }
         }
@@ -147,19 +142,19 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
     return () => {
       scrollContainer?.removeEventListener("scroll", handleScroll);
     };
-  }, [category, selected]);
+  }, [categories, selected, searchOpen]);
 
   // Scroll to section when category clicked
-  const scrollToCategory = (catName) => {
-    if (!sectionRefs.current[catName]) return;
+  const scrollToCategory = (catSlug) => {
+    if (!sectionRefs.current[catSlug]) return;
 
-    sectionRefs.current[catName].scrollIntoView({
+    sectionRefs.current[catSlug].scrollIntoView({
       behavior: "smooth",
       block: "center",
       inline: "nearest",
     });
 
-    setSelected(catName);
+    setSelected(catSlug);
   };
 
   // Scroll categories container by fixed amount with arrows
@@ -181,7 +176,6 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
   const PropertyTypeCard = ({ property, currentCategory }) => {
     const handleOptionsClick = () => {
       setSelectedPropertyType(property.name);
-      // FIXED: Store the current category when opening modal
       setModalCategory(currentCategory);
       setIsModalOpen(true);
     };
@@ -190,7 +184,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
       <div className="flex gap-4 items-center bg-white pb-4 border-b border-gray-300">
         <div className="w-24 h-24 flex-shrink-0">
           <img
-            src={property.image}
+            src={property.image_url || property.image}
             alt={`${property.name} Cleaning`}
             className="w-full h-full object-cover rounded-sm"
           />
@@ -208,7 +202,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
                 Starting from
               </span>
               <span className="text-base md:text-lg font-semibold">
-                AED {property.price}
+                AED {property.base_price || property.price}
               </span>
             </div>
             <Button
@@ -226,17 +220,16 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
   };
 
   // Component for rendering category section
-  const CategorySection = ({ categoryName }) => {
-    const config = categoryConfig[categoryName];
-    if (!config) return null;
+  const CategorySection = ({ category }) => {
+    if (!category) return null;
 
     return (
-      <div ref={(el) => (sectionRefs.current[categoryName] = el)}>
+      <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
         {/* Hero Banner */}
         <div className="relative mb-8 rounded-sm overflow-hidden h-[200px]">
           <img
-            src={config.heroImage}
-            alt={`${config.title} Cleaning`}
+            src={category.hero_image_url || "/steps/s1.png"}
+            alt={`${category.name} Cleaning`}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 items-center bg-black bg-opacity-20 flex">
@@ -249,7 +242,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
             <PropertyTypeCard
               key={index}
               property={property}
-              currentCategory={categoryName}
+              currentCategory={category.slug}
             />
           ))}
         </div>
@@ -321,8 +314,28 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
     </div>
   );
 
-  if (isLoading) return <div className="px-4 py-6">Loading services...</div>;
-  if (error) return <div className="px-4 py-6">Error loading services.</div>;
+  if (categoriesLoading || propertyTypesLoading) {
+    return <div className="px-4 py-6">Loading services from database...</div>;
+  }
+  
+  if (categoriesError || propertyTypesError) {
+    console.error('Database fetch errors:', { categoriesError, propertyTypesError });
+    return (
+      <div className="px-4 py-6">
+        <div className="text-red-600 font-semibold">Error loading services from database:</div>
+        {categoriesError && <div className="text-sm text-red-500">Categories: {categoriesError.message}</div>}
+        {propertyTypesError && <div className="text-sm text-red-500">Property types: {propertyTypesError.message}</div>}
+        <div className="text-sm text-gray-600 mt-2">Please check console for detailed logs.</div>
+      </div>
+    );
+  }
+
+  console.log('Final data loaded:', { 
+    categories: categories?.length, 
+    propertyTypes: propertyTypes?.length,
+    categoriesList: categories,
+    propertyTypesList: propertyTypes
+  });
 
   const handleModalAddService = (service) => {
     handleAddItemsClick(service);
@@ -369,12 +382,12 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
               className="flex gap-3 overflow-x-auto scrollbar-hide mx-6 max-w-[calc(100vw-100px)] md:max-w-[600px]"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              {category.map((cat) => (
+              {categories.map((cat) => (
                 <button
-                  key={cat.name}
-                  onClick={() => scrollToCategory(cat.name)}
+                  key={cat.slug}
+                  onClick={() => scrollToCategory(cat.slug)}
                   className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all ${
-                    selected === cat.name
+                    selected === cat.slug
                       ? "bg-gray-50 border border-black"
                       : "bg-gray-50 border border-gray-300"
                   }`}
@@ -410,8 +423,8 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
         ) : (
           <div className="space-y-8">
             {/* Render all category sections */}
-            {category.map((cat) => (
-              <CategorySection key={cat.name} categoryName={cat.name} />
+            {categories.map((cat) => (
+              <CategorySection key={cat.slug} category={cat} />
             ))}
 
             {/* Special Instructions */}

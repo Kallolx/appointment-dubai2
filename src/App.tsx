@@ -49,6 +49,10 @@ import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
 import SuperAdminApiConfig from "./pages/superadmin/SuperAdminApiConfig";
 import SuperAdminUserManagement from "./pages/superadmin/SuperAdminUserManagement";
 import SuperAdminProfile from "./pages/superadmin/SuperAdminProfile";
+import ServiceCategoriesManagement from "./pages/admin/ServiceCategoriesManagement";
+import PropertyTypesManagement from "./pages/admin/PropertyTypesManagement";
+import RoomTypesManagement from "./pages/admin/RoomTypesManagement";
+import ServicePricingManagement from "./pages/admin/ServicePricingManagement";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 
 const queryClient = new QueryClient();
@@ -100,6 +104,10 @@ const App = () => (
           <Route path="/admin/reports" element={<AdminProtectedRoute><AdminReports /></AdminProtectedRoute>} />
           <Route path="/admin/support" element={<AdminProtectedRoute><AdminSupport /></AdminProtectedRoute>} />
           <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
+          <Route path="/admin/service-categories" element={<AdminProtectedRoute><ServiceCategoriesManagement /></AdminProtectedRoute>} />
+          <Route path="/admin/property-types" element={<AdminProtectedRoute><PropertyTypesManagement /></AdminProtectedRoute>} />
+          <Route path="/admin/room-types" element={<AdminProtectedRoute><RoomTypesManagement /></AdminProtectedRoute>} />
+          <Route path="/admin/service-pricing" element={<AdminProtectedRoute><ServicePricingManagement /></AdminProtectedRoute>} />
           <Route path="/admin/pages" element={<WebsiteSettings />} />
           <Route path="/admin/slots" element={<ProtectedRoute><AdminTimeSlots /></ProtectedRoute>} />
           <Route path="/admin/profile" element={<ProfileSettings />} />
