@@ -1,10 +1,12 @@
 import AppDownloadSection from "@/components/website/AppDownloadSection";
 import NavbarForContentPage from "@/components/website/NavbarForContentPage";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { buildApiUrl } from "@/config/api";
 
-const categories = [
+// Fallback data in case API fails
+const fallbackCategories = [
   "Doctor at Home",
   "General",
   "Payment",
@@ -12,10 +14,10 @@ const categories = [
   "My Account",
 ];
 
-const faqs = {
+const fallbackFaqs = {
   "Doctor at Home": [
     {
-      question: "Will the doctor’s visit be covered under my insurance?",
+      question: "be covered under my insurance?",
       answer: `The reimbursement for consultation is directly dependent on the terms and conditions provided by your insurance provider. Please check with your insurance provider directly whether this service will be covered or not. Neither Justlife nor its partners are responsible for reimbursement. An invoice can be arranged upon the patient's request.`,
     },
     {
@@ -100,85 +102,162 @@ const faqs = {
 };
 
 const FaqPage = () => {
+  const [categories, setCategories] = useState(fallbackCategories);
+  const [faqs, setFaqs] = useState(fallbackFaqs);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Doctor at Home");
-  const [openIndex, setOpenIndex] = useState(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    
+    // Fetch FAQ data from API
+    fetch(buildApiUrl('/api/faqs'))
+      .then((res) => {
+        console.log('FAQ API response status:', res.status);
+        if (!res.ok) {
+          console.log('FAQ API response not ok:', res.status, res.statusText);
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (!mounted) return;
+        
+        console.log('FAQ data received:', data);
+        
+        if (data.categories && data.faqs) {
+          setCategories(data.categories);
+          setFaqs(data.faqs);
+          
+          // Set active category to first available category
+          if (data.categories.length > 0) {
+            setActiveCategory(data.categories[0]);
+          }
+        } else {
+          console.log('Invalid FAQ data structure:', data);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching FAQs:', error);
+        // Keep fallback data if API fails
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Ensure activeCategory exists in current categories
+  useEffect(() => {
+    if (categories && !categories.includes(activeCategory) && categories.length > 0) {
+      setActiveCategory(categories[0]);
+      setOpenIndex(null);
+    }
+  }, [categories, activeCategory]);
+
+    // Always scroll to top when this page is mounted (no button).
+    useEffect(() => {
+      try {
+        if (typeof window !== 'undefined') {
+          window.scrollTo(0, 0);
+        }
+      } catch (e) {
+        // ignore in non-browser environments
+      }
+    }, []);
+
   return (
     <div>
-      <NavbarForContentPage />
-      <div className="md:text-center mb-6 px-3 mt-6">
+      <div className="text-center mb-6 px-3 mt-6">
         <Link
           to={"/"}
           className="text-sm tracking-widest text-gray-400 uppercase"
         >
           Home
         </Link>
-        <h1 className="text-3xl font-bold text-gray-800 mt-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mt-4">
           Frequently asked questions
         </h1>
       </div>
-      <div className="md:px-4 mt-10 max-w-6xl mx-auto">
-        <section className=" border border-gray-200 mx-auto bg-white p-4 rounded-lg  ">
-          {/* Category buttons */}
-          <div className="flex justify-between space-x-6 mb-6 pb-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                className={`relative pb-2 font-semibold uppercase transition-all
-                ${
-                  activeCategory === cat
-                    ? "text-sky-400 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-sky-300"
-                    : "text-gray-500 hover:text-black"
-                }`}
-                onClick={() => {
-                  setActiveCategory(cat);
-                  setOpenIndex(null);
-                }}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* FAQ list */}
-          <div className="space-y-4">
-            {(faqs[activeCategory] || []).map((faq, idx) => (
-              <div key={idx} className="border-b border-gray-300 pb-4">
-                <button
-                  onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                  className="w-full text-left text-lg font-medium flex items-center"
-                  aria-expanded={openIndex === idx}
-                  aria-controls={`faq-answer-${idx}`}
-                  id={`faq-question-${idx}`}
-                >
-                  <span
-                    className="text-gray-400 text-3xl mr-3"
-                    aria-hidden="true"
-                  >
-                    {openIndex === idx ? "−" : "+"}
-                  </span>
-                  <span className="flex-1">{faq.question}</span>
-                </button>
-
-                <AnimatePresence initial={false} mode="wait">
-                  {openIndex === idx && (
-                    <motion.div
-                      key="content"
-                      id={`faq-answer-${idx}`}
-                      role="region"
-                      aria-labelledby={`faq-question-${idx}`}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
+      <div className="px-4 md:px-6 mt-8 max-w-5xl mx-auto">
+        <section className="border border-gray-200 mx-auto bg-white p-4 md:p-6 rounded-lg">
+          {loading && (
+            <div className="text-center py-8">
+              <div className="text-gray-500">Loading FAQs...</div>
+            </div>
+          )}
+          
+          {!loading && (
+            <>
+              {/* Category buttons - horizontally scrollable on small screens */}
+              <div className="mb-6 pb-2">
+                <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      className={`whitespace-nowrap px-3 py-2 rounded-md font-semibold uppercase text-sm md:text-base transition-colors flex-shrink-0 ${
+                        activeCategory === cat
+                          ? 'text-sky-600 bg-sky-50 ring-1 ring-sky-100'
+                          : 'text-gray-600 hover:text-black bg-white'
+                      }`}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setOpenIndex(null);
+                      }}
+                      aria-pressed={activeCategory === cat}
                     >
-                      <p className="mt-2 text-gray-600">{faq.answer}</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* FAQ list */}
+              <div className="space-y-4">
+                {(faqs[activeCategory] || []).map((faq, idx) => (
+                  <div key={idx} className="border-b border-gray-300 pb-4">
+                    <button
+                      onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
+                      className="w-full text-left text-base md:text-lg font-medium flex items-start md:items-center gap-3"
+                      aria-expanded={openIndex === idx}
+                      aria-controls={`faq-answer-${idx}`}
+                      id={`faq-question-${idx}`}
+                    >
+                      <span
+                        className="text-gray-400 text-2xl md:text-3xl leading-none mt-0.5 md:mt-0"
+                        aria-hidden="true"
+                      >
+                        {openIndex === idx ? '−' : '+'}
+                      </span>
+                      <span className="flex-1 break-words">{faq.question}</span>
+                    </button>
+
+                    <AnimatePresence initial={false} mode="wait">
+                      {openIndex === idx && (
+                        <motion.div
+                          key="content"
+                          id={`faq-answer-${idx}`}
+                          role="region"
+                          aria-labelledby={`faq-question-${idx}`}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.28 }}
+                          className="overflow-hidden mt-2"
+                        >
+                          <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </section>
         <AppDownloadSection></AppDownloadSection>
       </div>

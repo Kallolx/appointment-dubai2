@@ -142,8 +142,8 @@ const Footer = () => {
             <Link to={"faq"}>F.A.Q</Link>
             <Link to={"terms"}>Terms</Link>
             <Link to={"privacy-policy"}>Privacy</Link>
-            <a href="#">Sitemap</a>
-            <a href="#">Career</a>
+            <Link to={"sitemap"}>Sitemap</Link>
+            <Link to={"careers"}>Careers</Link>
           </div>
         </div>
       </div>

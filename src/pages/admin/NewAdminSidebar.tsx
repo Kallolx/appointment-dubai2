@@ -46,9 +46,11 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
     { icon: Clock, label: "Available Dates", path: "/admin/available-dates" },
     { icon: Clock, label: "Time Slots", path: "/admin/time-slots" },
     { icon: Users, label: "Users", path: "/admin/users" },
+    { icon: FileText, label: "Content Management", path: "/admin/content" },
     { icon: FileText, label: "Reports", path: "/admin/reports" },
     { icon: Database, label: "Support Tickets", path: "/admin/support" },
     { icon: User, label: "Profile", path: "/admin/profile" },
+    { icon: Shield, label: "Website Settings", path: "/admin/website" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -75,10 +77,6 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
         {!isCollapsed && (
           <div className="px-4 py-6 border-b border-gray-200">
             <div className="flex flex-col items-center text-center">
-              {/* Admin Badge */}
-              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center mb-3 shadow-lg">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
 
               {/* Admin Name */}
               <h3 className="text-base font-semibold text-gray-900 mb-1">

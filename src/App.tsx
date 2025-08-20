@@ -24,7 +24,6 @@ import UserLocations from "./pages/users/pages/UserLocations";
 import MyAddresses from "./pages/MyAddresses";
 import Support from "./pages/users/pages/Support";
 import Profile from "./pages/users/pages/Profile";
-import WebsiteSettings from "./pages/dashboard/WebsiteSettings";
 import BlogPage from "./pages/websitePages/BlogPage";
 import FaqPage from "./pages/websitePages/FaqPage";
 import Home from "./pages/websitePages/Home";
@@ -53,7 +52,11 @@ import ServiceCategoriesManagement from "./pages/admin/ServiceCategoriesManageme
 import PropertyTypesManagement from "./pages/admin/PropertyTypesManagement";
 import RoomTypesManagement from "./pages/admin/RoomTypesManagement";
 import ServicePricingManagement from "./pages/admin/ServicePricingManagement";
+import ContentManagement from "./pages/admin/ContentManagement";
 import ImpersonationBanner from "./components/ImpersonationBanner";
+import Careers from "./pages/websitePages/Careers";
+import Sitemap from "./pages/websitePages/Sitemap";
+import WebsiteSettings from "./pages/admin/WebsiteSettings";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +83,8 @@ const App = () => (
             <Route path="privacy-policy" element={<PrivacyPolicy />} />
             <Route path="terms" element={<Terms />} />
             <Route path="faq" element={<FaqPage />} />
+            <Route path="careers" element={<Careers />} />
+            <Route path="sitemap" element={<Sitemap />} />
           </Route>
           
           {/* Order Confirmation - Standalone page with navbar */}
@@ -99,7 +104,6 @@ const App = () => (
           <Route path="/admin/time-slots" element={<AdminProtectedRoute><AdminTimeSlots /></AdminProtectedRoute>} />
           <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
           <Route path="/admin/managers" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
-          <Route path="/admin/services" element={<ServiceAreas />} />
           <Route path="/admin/tickets" element={<AppointmentManagement />} />
           <Route path="/admin/reports" element={<AdminProtectedRoute><AdminReports /></AdminProtectedRoute>} />
           <Route path="/admin/support" element={<AdminProtectedRoute><AdminSupport /></AdminProtectedRoute>} />
@@ -108,9 +112,10 @@ const App = () => (
           <Route path="/admin/property-types" element={<AdminProtectedRoute><PropertyTypesManagement /></AdminProtectedRoute>} />
           <Route path="/admin/room-types" element={<AdminProtectedRoute><RoomTypesManagement /></AdminProtectedRoute>} />
           <Route path="/admin/service-pricing" element={<AdminProtectedRoute><ServicePricingManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/pages" element={<WebsiteSettings />} />
-          <Route path="/admin/slots" element={<ProtectedRoute><AdminTimeSlots /></ProtectedRoute>} />
-          <Route path="/admin/profile" element={<ProfileSettings />} />
+          <Route path="/admin/content" element={<AdminProtectedRoute><ContentManagement /></AdminProtectedRoute>} />
+          <Route path="/admin/website" element={<AdminProtectedRoute><WebsiteSettings /></AdminProtectedRoute>} />
+
+          {/* Admin Dashboard - Redirect to role-based */}
 
           {/* Super Admin Routes */}
           <Route path="/administrator" element={<SuperAdminProtectedRoute><SuperAdminDashboard /></SuperAdminProtectedRoute>} />
@@ -126,7 +131,6 @@ const App = () => (
           <Route path="/manager/services" element={<ServiceAreas />} />
           <Route path="/manager/tickets" element={<AppointmentManagement />} />
           <Route path="/manager/reports" element={<Dashboard />} />
-          <Route path="/manager/pages" element={<WebsiteSettings />} />
           <Route path="/manager/profile" element={<ProfileSettings />} />
 
           <Route path="/user" element={<ProtectedRoute><NewUserDashboard /></ProtectedRoute>} />
@@ -159,14 +163,12 @@ const App = () => (
             element={<AppointmentManagement />}
           />
           <Route path="/dashboard/reports" element={<Dashboard />} />
-          <Route path="/dashboard/pages" element={<WebsiteSettings />} />
           <Route path="/dashboard/slots" element={<AppointmentManagement />} />
 
           {/* Super Admin Routes */}
           <Route path="/dashboard/roles" element={<RoleManagement />} />
           <Route
             path="/dashboard/website-settings"
-            element={<WebsiteSettings />}
           />
           <Route
             path="/dashboard/api-credentials"
