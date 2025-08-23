@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import NewAdminLayout from "@/pages/admin/NewAdminLayout";
+import SuperAdminLayout from "@/pages/superadmin/SuperAdminLayout";
 import {
   Card,
   CardHeader,
@@ -103,10 +103,7 @@ const WebsiteSettingsPage: React.FC = () => {
   };
 
   return (
-    <NewAdminLayout
-      title="Website Settings"
-      subtitle="Customize basic website appearance"
-    >
+    <SuperAdminLayout title="Website Settings" subtitle="Customize basic website appearance">
       <div className="space-y-6">
         {/* Settings Card */}
         <Card>
@@ -258,7 +255,7 @@ const WebsiteSettingsPage: React.FC = () => {
           </CardFooter>
         </Card>
       </div>
-    </NewAdminLayout>
+    </SuperAdminLayout>
   );
 };
 

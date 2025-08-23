@@ -14,7 +14,6 @@ interface ServiceCategory {
   name: string;
   slug: string;
   image_url: string | null;
-  hero_image_url: string | null;
   description: string | null;
   is_active: boolean;
   sort_order: number;
@@ -26,7 +25,6 @@ interface CategoryForm {
   name: string;
   slug: string;
   image_url: string;
-  hero_image_url: string;
   description: string;
   is_active: boolean;
   sort_order: number;
@@ -43,7 +41,6 @@ const ServiceCategoriesManagement: React.FC = () => {
     name: '',
     slug: '',
     image_url: '',
-    hero_image_url: '',
     description: '',
     is_active: true,
     sort_order: 0
@@ -80,9 +77,6 @@ const ServiceCategoriesManagement: React.FC = () => {
     handleFormChange('image_url', e.target.value);
   }, [handleFormChange]);
 
-  const handleHeroImageUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFormChange('hero_image_url', e.target.value);
-  }, [handleFormChange]);
 
   const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     handleFormChange('description', e.target.value);
@@ -212,7 +206,6 @@ const ServiceCategoriesManagement: React.FC = () => {
       name: category.name,
       slug: category.slug,
       image_url: category.image_url || '',
-      hero_image_url: category.hero_image_url || '',
       description: category.description || '',
       is_active: category.is_active,
       sort_order: category.sort_order
@@ -225,7 +218,6 @@ const ServiceCategoriesManagement: React.FC = () => {
       name: '',
       slug: '',
       image_url: '',
-      hero_image_url: '',
       description: '',
       is_active: true,
       sort_order: 0
@@ -418,15 +410,6 @@ const ServiceCategoriesManagement: React.FC = () => {
                       placeholder="/path/to/image.webp"
                     />
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Hero Image URL</label>
-                    <Input
-                      value={form.hero_image_url}
-                      onChange={handleHeroImageUrlChange}
-                      placeholder="/path/to/hero-image.png"
-                    />
-                  </div>
                 </div>
 
                 <div>
@@ -517,15 +500,6 @@ const ServiceCategoriesManagement: React.FC = () => {
                       value={form.image_url}
                       onChange={handleImageUrlChange}
                       placeholder="/path/to/image.webp"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Hero Image URL</label>
-                    <Input
-                      value={form.hero_image_url}
-                      onChange={handleHeroImageUrlChange}
-                      placeholder="/path/to/hero-image.png"
                     />
                   </div>
                 </div>

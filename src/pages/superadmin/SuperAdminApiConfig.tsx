@@ -298,20 +298,6 @@ const SuperAdminApiConfig: React.FC = () => {
                     <Save className="w-4 h-4" />
                     {saving ? 'Saving...' : 'Save Configuration'}
                   </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    onClick={() => testApiConfiguration('google_maps')}
-                    disabled={testing === 'google_maps' || !googleMapsKey.trim()}
-                    className="flex items-center gap-2"
-                  >
-                    {testing === 'google_maps' ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <TestTube className="w-4 h-4" />
-                    )}
-                    {testing === 'google_maps' ? 'Testing...' : 'Test API'}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -373,20 +359,6 @@ const SuperAdminApiConfig: React.FC = () => {
                   >
                     <Save className="w-4 h-4" />
                     {saving ? 'Saving...' : 'Save Configuration'}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    onClick={() => testApiConfiguration('twilio')}
-                    disabled={testing === 'twilio' || !twilioAccountSid.trim() || !twilioAuthToken.trim()}
-                    className="flex items-center gap-2"
-                  >
-                    {testing === 'twilio' ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <TestTube className="w-4 h-4" />
-                    )}
-                    {testing === 'twilio' ? 'Testing...' : 'Test API'}
                   </Button>
                 </div>
               </CardContent>

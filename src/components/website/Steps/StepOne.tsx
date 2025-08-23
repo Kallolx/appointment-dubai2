@@ -13,7 +13,14 @@ import { buildApiUrl } from "@/config/api";
 
 // No fallback data - force database usage only
 
-const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
+const StepOne = ({ 
+  handleAddItemsClick, 
+  handleRemoveItemClick, 
+  cartItems, 
+  category, 
+  serviceSlug 
+}) => {
+  console.log('StepOne props received:', { category, serviceSlug });
   const [selected, setSelected] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -26,40 +33,92 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
   const sectionRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
-  // Fetch service categories from API
+  // Fetch service items categories from API (these will be shown in the tabs)
   const {
     data: categories = [],
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useQuery({
-    queryKey: ["service-categories"],
+    queryKey: ["service-items-category", category, serviceSlug],
     queryFn: async () => {
-      const response = await fetch(buildApiUrl('/api/service-categories'));
+      let url = buildApiUrl('/api/service-items-category');
+      
+      console.log('StepOne received params:', { category, serviceSlug });
+      
+      // If we have a specific service item (serviceSlug), filter by that service item
+      if (serviceSlug) {
+        url += `?parentServiceItemSlug=${encodeURIComponent(serviceSlug)}`;
+        console.log('Filtering by serviceSlug:', serviceSlug);
+      } else if (category) {
+        // Legacy: filter by category if no specific service item
+        url += `?parentCategorySlug=${encodeURIComponent(category)}`;
+        console.log('Filtering by category:', category);
+      }
+      
+      console.log('Fetching from URL:', url);
+      
+      const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch categories from database');
+        throw new Error('Failed to fetch service items categories from database');
       }
       const data = await response.json();
-      console.log('Categories fetched from database:', data);
+      console.log('Service items categories fetched from database:', data);
+      console.log('Number of categories found:', data.length);
+      data.forEach((cat, index) => {
+        console.log(`Category ${index}:`, {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          parent_category_name: cat.parent_category_name,
+          parent_category_slug: cat.parent_category_slug
+        });
+      });
       return data;
     },
   });
 
-  // Fetch property types from API
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
+
+  // Fetch specific service item data when serviceSlug is provided
   const {
-    data: propertyTypes = [],
-    isLoading: propertyTypesLoading,
-    error: propertyTypesError,
+    data: serviceItem = null,
+    isLoading: serviceItemLoading,
+    error: serviceItemError,
   } = useQuery({
-    queryKey: ["property-types"],
+    queryKey: ["service-item", serviceSlug],
     queryFn: async () => {
-      const response = await fetch(buildApiUrl('/api/property-types'));
+      if (!serviceSlug) return null;
+      const response = await fetch(buildApiUrl(`/api/service-item/${serviceSlug}`));
       if (!response.ok) {
-        throw new Error('Failed to fetch property types from database');
+        throw new Error('Failed to fetch service item from database');
       }
       const data = await response.json();
-      console.log('Property types fetched from database:', data);
+      console.log('Service item fetched from database:', data);
       return data;
     },
+    enabled: !!serviceSlug,
+  });
+
+  // Fetch filtered pricing when serviceSlug is provided
+  const {
+    data: filteredPricing = [],
+    isLoading: filteredPricingLoading,
+    error: filteredPricingError,
+  } = useQuery({
+    queryKey: ["service-pricing-filtered", serviceSlug],
+    queryFn: async () => {
+      if (!serviceSlug) return [];
+      const response = await fetch(buildApiUrl(`/api/service-pricing-filtered/${serviceSlug}`));
+      if (!response.ok) {
+        throw new Error('Failed to fetch filtered pricing from database');
+      }
+      const data = await response.json();
+      console.log('Filtered pricing fetched from database:', data);
+      return data;
+    },
+    enabled: !!serviceSlug,
   });
 
   // Legacy services data for search functionality
@@ -84,18 +143,32 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
 
   // Set initial selected category when categories load
   useEffect(() => {
-    if (categories.length > 0 && !selected) {
+    if (serviceItem && categories.length > 0) {
+      // If we have a specific service item and its categories, select the first one
+      setSelected(categories[0].slug);
+    } else if (serviceItem && serviceItem.category && categories.length === 0) {
+      // If we have a service item but no sub-categories, use the service item's category
+      setSelected(serviceItem.category.slug);
+    } else if (categories.length > 0 && !selected) {
+      // Otherwise, select the first category
       setSelected(categories[0].slug);
     }
-  }, [categories, selected]);
+  }, [categories, selected, serviceItem]);
+
+  // Determine which categories to show
+  const displayCategories = serviceItem ? 
+    (categories.length > 0 ? categories : (serviceItem.category ? [serviceItem.category] : [])) 
+    : categories;
 
   // Group services by category with search filtering (for legacy search)
-  const servicesByCategory = categories.reduce((acc, cat) => {
-    acc[cat.slug] = services.filter(
-      (s) =>
-        s.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        s.category === cat.slug
-    );
+  const servicesByCategory = displayCategories.reduce((acc, cat) => {
+    if (cat && cat.slug) {
+      acc[cat.slug] = services.filter(
+        (s) =>
+          s.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          s.category === cat.slug
+      );
+    }
     return acc;
   }, {});
 
@@ -107,7 +180,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
 
   // Detect current category based on scroll position (services list)
   useEffect(() => {
-    if (searchOpen || categories.length === 0) return; // skip while searching
+    if (searchOpen || displayCategories.length === 0) return; // skip while searching
 
     const handleScroll = () => {
       if (!scrollContainerRef.current) return;
@@ -117,7 +190,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
 
       let currentCat = selected;
 
-      for (const cat of categories) {
+      for (const cat of displayCategories) {
         const section = sectionRefs.current[cat.slug];
         if (section) {
           const offsetTop = section.offsetTop - containerOffsetTop;
@@ -142,7 +215,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
     return () => {
       scrollContainer?.removeEventListener("scroll", handleScroll);
     };
-  }, [categories, selected, searchOpen]);
+  }, [displayCategories, selected, searchOpen]);
 
   // Scroll to section when category clicked
   const scrollToCategory = (catSlug) => {
@@ -175,6 +248,11 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
   // Component for rendering property type cards
   const PropertyTypeCard = ({ property, currentCategory }) => {
     const handleOptionsClick = () => {
+      console.log('PropertyTypeCard - handleOptionsClick called with:', {
+        propertyName: property.name,
+        currentCategory: currentCategory,
+        property: property
+      });
       setSelectedPropertyType(property.name);
       setModalCategory(currentCategory);
       setIsModalOpen(true);
@@ -223,6 +301,37 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
   const CategorySection = ({ category }) => {
     if (!category) return null;
 
+    // Fetch property types specific to this category
+    const {
+      data: categoryPropertyTypes = [],
+      isLoading: categoryPropertyTypesLoading,
+    } = useQuery({
+      queryKey: ["service-category-property-types", category.slug],
+      queryFn: async () => {
+        const response = await fetch(buildApiUrl(`/api/service-items-category-property-types/${encodeURIComponent(category.slug)}`));
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log('No property types configured for category:', category.slug);
+            return [];
+          }
+          throw new Error('Failed to fetch property types for service category');
+        }
+        const data = await response.json();
+        console.log('Property types for category:', category.slug, data);
+        data.forEach((prop, index) => {
+          console.log(`Property type ${index} for category ${category.slug}:`, {
+            id: prop.id,
+            name: prop.name,
+            slug: prop.slug,
+            image_url: prop.image_url,
+            description: prop.description
+          });
+        });
+        return data;
+      },
+      enabled: !!category.slug,
+    });
+
     return (
       <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
         {/* Hero Banner */}
@@ -238,13 +347,21 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
 
         {/* Property Type Cards */}
         <div className="mb-8 space-y-4">
-          {propertyTypes.map((property, index) => (
-            <PropertyTypeCard
-              key={index}
-              property={property}
-              currentCategory={category.slug}
-            />
-          ))}
+          {categoryPropertyTypesLoading ? (
+            <div className="text-center py-4">Loading property types...</div>
+          ) : categoryPropertyTypes.length > 0 ? (
+            categoryPropertyTypes.map((property, index) => (
+              <PropertyTypeCard
+                key={index}
+                property={property}
+                currentCategory={category.parent_category_slug || category.slug}
+              />
+            ))
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              No property types available for this service
+            </div>
+          )}
         </div>
       </div>
     );
@@ -314,27 +431,37 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
     </div>
   );
 
-  if (categoriesLoading || propertyTypesLoading) {
+  if (categoriesLoading || (serviceSlug && (serviceItemLoading || filteredPricingLoading))) {
     return <div className="px-4 py-6">Loading services from database...</div>;
   }
   
-  if (categoriesError || propertyTypesError) {
-    console.error('Database fetch errors:', { categoriesError, propertyTypesError });
+  if (categoriesError || serviceItemError || filteredPricingError) {
+    console.error('Database fetch errors:', { 
+      categoriesError, 
+      serviceItemError, 
+      filteredPricingError 
+    });
     return (
       <div className="px-4 py-6">
         <div className="text-red-600 font-semibold">Error loading services from database:</div>
-        {categoriesError && <div className="text-sm text-red-500">Categories: {categoriesError.message}</div>}
-        {propertyTypesError && <div className="text-sm text-red-500">Property types: {propertyTypesError.message}</div>}
+        {categoriesError && <div className="text-sm text-red-500">Service Items Categories: {categoriesError.message}</div>}
+        {serviceItemError && <div className="text-sm text-red-500">Service item: {serviceItemError.message}</div>}
+        {filteredPricingError && <div className="text-sm text-red-500">Filtered pricing: {filteredPricingError.message}</div>}
         <div className="text-sm text-gray-600 mt-2">Please check console for detailed logs.</div>
       </div>
     );
   }
 
   console.log('Final data loaded:', { 
-    categories: categories?.length, 
-    propertyTypes: propertyTypes?.length,
-    categoriesList: categories,
-    propertyTypesList: propertyTypes
+    serviceItemsCategories: categories?.length,
+    serviceItemsCategoriesList: categories,
+    serviceItem,
+    serviceItemCategory: serviceItem?.category,
+    filteredPricing: filteredPricing?.length,
+    serviceSlug,
+    displayCategories: displayCategories?.length,
+    displayCategoriesList: displayCategories,
+    isFilteredByServiceItem: !!serviceSlug && categories.length > 0
   });
 
   const handleModalAddService = (service) => {
@@ -382,7 +509,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
               className="flex gap-3 overflow-x-auto scrollbar-hide mx-6 max-w-[calc(100vw-100px)] md:max-w-[600px]"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              {categories.map((cat) => (
+              {displayCategories.map((cat) => (
                 <button
                   key={cat.slug}
                   onClick={() => scrollToCategory(cat.slug)}
@@ -423,7 +550,7 @@ const StepOne = ({ handleAddItemsClick, handleRemoveItemClick, cartItems }) => {
         ) : (
           <div className="space-y-8">
             {/* Render all category sections */}
-            {categories.map((cat) => (
+            {displayCategories.map((cat) => (
               <CategorySection key={cat.slug} category={cat} />
             ))}
 

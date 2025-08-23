@@ -519,14 +519,13 @@ const ServicePricingManagement: React.FC = () => {
   }
 
   return (
-    <NewAdminLayout>
+    <NewAdminLayout 
+      title="Service Pricing Management"
+      subtitle="Manage pricing for services across property and room types"
+    >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Service Pricing Management</h1>
-            <p className="text-gray-600 mt-1">Manage pricing for service categories across property and room types</p>
-          </div>
           <Button onClick={openAddDialog} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             Add New Pricing

@@ -11,6 +11,14 @@ interface TimeSlotData {
   end_time: string;
   is_available: boolean;
   created_at: string;
+  date?: string; // ISO date (YYYY-MM-DD) - optional if backend provides it
+}
+
+interface AvailableDateOption {
+  id: number;
+  date: string; // YYYY-MM-DD
+  is_available: boolean;
+  max_appointments: number;
 }
 
 const AdminTimeSlots: React.FC = () => {
@@ -23,6 +31,8 @@ const AdminTimeSlots: React.FC = () => {
     end_time: '',
     is_available: true
   });
+  const [availableDates, setAvailableDates] = useState<AvailableDateOption[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
 
   const fetchTimeSlots = async () => {
     try {
@@ -34,7 +44,9 @@ const AdminTimeSlots: React.FC = () => {
         return;
       }
 
-      const response = await fetch(buildApiUrl('/api/admin/available-time-slots'), {
+  // If a date is selected, pass it as a query parameter to fetch slots for that date
+  const url = buildApiUrl('/api/admin/available-time-slots') + (selectedDate ? `?date=${selectedDate}` : '');
+  const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -55,17 +67,53 @@ const AdminTimeSlots: React.FC = () => {
     }
   };
 
+  const fetchAvailableDates = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch(buildApiUrl('/api/admin/available-dates'), {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Normalize date values to YYYY-MM-DD (strip time portion if present)
+      const normalize = (d: any) => {
+        if (!d) return d;
+        if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
+        return d;
+      };
+
+      const normalized = Array.isArray(data)
+        ? data.map((item: any) => ({ ...item, date: normalize(item.date) }))
+        : [];
+
+      setAvailableDates(normalized);
+      // default to first available date if none selected (use normalized date)
+      if (!selectedDate && normalized.length > 0) {
+        setSelectedDate(normalized[0].date);
+      }
+    } catch (err) {
+      console.error('Failed to fetch available dates', err);
+    }
+  };
+
   const addTimeSlot = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+      if (!selectedDate) {
+        alert('Please select a date before adding a time slot');
+        return;
+      }
+
       const response = await fetch(buildApiUrl('/api/admin/available-time-slots'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newSlot)
+        body: JSON.stringify({ ...newSlot, date: selectedDate })
       });
 
       if (!response.ok) {
@@ -76,7 +124,7 @@ const AdminTimeSlots: React.FC = () => {
       // Reset form and refresh slots
       setNewSlot({ start_time: '', end_time: '', is_available: true });
       setIsAddingSlot(false);
-      fetchTimeSlots();
+  fetchTimeSlots();
     } catch (err) {
       console.error('Error adding time slot:', err);
       alert(err instanceof Error ? err.message : 'Failed to add time slot');
@@ -137,8 +185,15 @@ const AdminTimeSlots: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTimeSlots();
+    fetchAvailableDates();
+    // fetch time slots for initial selectedDate (if set) when component mounts or when selectedDate changes
+    // fetchTimeSlots will be called by the effect watching selectedDate below
   }, []);
+
+  useEffect(() => {
+    // whenever selectedDate changes, re-fetch time slots for that date
+    fetchTimeSlots();
+  }, [selectedDate]);
 
   const formatTime = (timeString: string) => {
     return new Date(`1970-01-01T${timeString}`).toLocaleTimeString('en-US', {
@@ -186,6 +241,37 @@ const AdminTimeSlots: React.FC = () => {
   return (
     <NewAdminLayout title="Time Slots" subtitle="Manage appointment time slots">
       <div className="space-y-6">
+        {/* Date filter / selector */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Select Date
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {availableDates.length === 0 ? (
+              <div className="text-sm text-gray-600">No available dates configured. Please add dates on the Available Dates page first.</div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {availableDates.map((d) => (
+                    <option key={d.id} value={d.date}>
+                      {new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    </option>
+                  ))}
+                </select>
+                <div className="text-sm text-gray-500">Showing time slots for the selected date.</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
         {/* Add New Time Slot Section */}
         <Card>
           <CardHeader>

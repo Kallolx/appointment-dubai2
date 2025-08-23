@@ -49,6 +49,8 @@ import SuperAdminApiConfig from "./pages/superadmin/SuperAdminApiConfig";
 import SuperAdminUserManagement from "./pages/superadmin/SuperAdminUserManagement";
 import SuperAdminProfile from "./pages/superadmin/SuperAdminProfile";
 import ServiceCategoriesManagement from "./pages/admin/ServiceCategoriesManagement";
+import ServiceItems from "./pages/admin/ServiceItems";
+import ServiceItemsCategory from "./pages/admin/ServiceItemsCategory";
 import PropertyTypesManagement from "./pages/admin/PropertyTypesManagement";
 import RoomTypesManagement from "./pages/admin/RoomTypesManagement";
 import ServicePricingManagement from "./pages/admin/ServicePricingManagement";
@@ -56,7 +58,7 @@ import ContentManagement from "./pages/admin/ContentManagement";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 import Careers from "./pages/websitePages/Careers";
 import Sitemap from "./pages/websitePages/Sitemap";
-import WebsiteSettings from "./pages/admin/WebsiteSettings";
+import WebsiteSettings from "./pages/superadmin/WebsiteSettings";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +98,10 @@ const App = () => (
             path="/service/:category"
             element={<ServiceLayout></ServiceLayout>}
           />
+          <Route
+            path="/service-item/:serviceSlug"
+            element={<ServiceLayout></ServiceLayout>}
+          />
 
           {/* Role-based Dashboard Routes */}
           <Route path="/admin" element={<AdminProtectedRoute><NewAdminDashboard /></AdminProtectedRoute>} />
@@ -109,11 +115,13 @@ const App = () => (
           <Route path="/admin/support" element={<AdminProtectedRoute><AdminSupport /></AdminProtectedRoute>} />
           <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
           <Route path="/admin/service-categories" element={<AdminProtectedRoute><ServiceCategoriesManagement /></AdminProtectedRoute>} />
+          <Route path="/admin/service-items" element={<AdminProtectedRoute><ServiceItems /></AdminProtectedRoute>} />
+          <Route path="/admin/service-items-category" element={<AdminProtectedRoute><ServiceItemsCategory /></AdminProtectedRoute>} />
           <Route path="/admin/property-types" element={<AdminProtectedRoute><PropertyTypesManagement /></AdminProtectedRoute>} />
           <Route path="/admin/room-types" element={<AdminProtectedRoute><RoomTypesManagement /></AdminProtectedRoute>} />
           <Route path="/admin/service-pricing" element={<AdminProtectedRoute><ServicePricingManagement /></AdminProtectedRoute>} />
           <Route path="/admin/content" element={<AdminProtectedRoute><ContentManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/website" element={<AdminProtectedRoute><WebsiteSettings /></AdminProtectedRoute>} />
+          <Route path="/administrator/website" element={<SuperAdminProtectedRoute><WebsiteSettings /></SuperAdminProtectedRoute>} />
 
           {/* Admin Dashboard - Redirect to role-based */}
 

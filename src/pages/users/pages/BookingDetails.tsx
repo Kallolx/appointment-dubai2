@@ -142,9 +142,9 @@ const BookingDetails: React.FC = () => {
             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <img 
-                  src="/pest.webp" 
+                  src="/icons/pest.webp" 
                   alt="Service" 
-                  className="w-7 h-7 object-contain"
+                  className=" object-contain"
                 />
               </div>
             </div>
@@ -166,20 +166,16 @@ const BookingDetails: React.FC = () => {
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center relative shrink-0">
                   <img 
-                    src="/pest.webp" 
+                    src="/icons/pest.webp" 
                     alt="Service" 
                     className="w-6 h-6 object-contain"
                   />
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-medium">2</span>
-                  </div>
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-base font-medium text-gray-900">{orderData.service}</h3>
                     <p className="font-semibold text-gray-900">AED {formatPrice(orderData.price)}</p>
                   </div>
-                  <p className="text-sm text-gray-600">5 Bedroom Apartment x 1</p>
                 </div>
               </div>
             </CardContent>

@@ -4,12 +4,12 @@ import { useParams } from "react-router-dom";
 import CheckoutService from "./CheckoutService";
 
 const ServiceLayout = () => {
-  const { category } = useParams();
+  const { category, serviceSlug } = useParams();
   return (
     <div>
       <Navbar></Navbar>
 
-      <CheckoutService category={category} />
+      <CheckoutService category={category} serviceSlug={serviceSlug} />
       <div className="hidden md:block">
         <Footer></Footer>
       </div>

@@ -26,11 +26,11 @@ const countries = [
   { name: "Afghanistan", code: "af", dial_code: "+93" },
 ];
 
-const LoginModal = ({ setLoginModalOpen }) => {
+const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (open: boolean) => void; initialPhone?: string }) => {
   const [isCountryDrawerOpen, setIsCountryDrawerOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("United Arab Emirates");
   const [countrySearch, setCountrySearch] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState(initialPhone || "");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState("phone"); // "phone" or "otp"
   const [isLoading, setIsLoading] = useState(false);

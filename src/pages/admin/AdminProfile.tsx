@@ -9,7 +9,6 @@ import {
   EyeOff,
   Shield,
   Calendar,
-  MapPin,
   RefreshCw
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,14 +53,7 @@ const AdminProfile: React.FC = () => {
     phone: ''
   });
   
-  const [addressInfo, setAddressInfo] = useState({
-    recipientName: '',
-    buildingInfo: '',
-    streetInfo: '',
-    locality: '',
-    city: '',
-    country: ''
-  });
+  // address section removed per request
   
   const [passwordInfo, setPasswordInfo] = useState({
     currentPassword: '',
@@ -95,7 +87,7 @@ const AdminProfile: React.FC = () => {
           phone: data.profile.phone
         });
         
-        setAddressInfo(data.profile.address);
+  // address not used in admin profile view
       } else {
         throw new Error('Failed to fetch profile');
       }
@@ -160,44 +152,7 @@ const AdminProfile: React.FC = () => {
     }
   };
 
-  // Update address information
-  const handleUpdateAddress = async () => {
-    try {
-      setIsSaving(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(buildApiUrl('/api/admin/profile/address'), {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(addressInfo)
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Address information updated successfully.",
-          variant: "default"
-        });
-        
-        // Refresh profile data
-        fetchProfile();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update address');
-      }
-    } catch (error) {
-      console.error('Error updating address:', error);
-      toast({
-        title: "Update Failed",
-        description: error.message || "Could not update address. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // address update removed
 
   // Change password
   const handleChangePassword = async () => {
@@ -381,84 +336,7 @@ const AdminProfile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Address Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-green-600" />
-              Address Information
-            </CardTitle>
-            <CardDescription>
-              Update your address details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="recipientName">Recipient Name</Label>
-                <Input
-                  id="recipientName"
-                  value={addressInfo.recipientName}
-                  onChange={(e) => setAddressInfo(prev => ({ ...prev, recipientName: e.target.value }))}
-                  placeholder="Enter recipient name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="buildingInfo">Building Name/Number</Label>
-                <Input
-                  id="buildingInfo"
-                  value={addressInfo.buildingInfo}
-                  onChange={(e) => setAddressInfo(prev => ({ ...prev, buildingInfo: e.target.value }))}
-                  placeholder="Enter building info"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="streetInfo">Street Name/Number</Label>
-                <Input
-                  id="streetInfo"
-                  value={addressInfo.streetInfo}
-                  onChange={(e) => setAddressInfo(prev => ({ ...prev, streetInfo: e.target.value }))}
-                  placeholder="Enter street info"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="locality">Locality</Label>
-                <Input
-                  id="locality"
-                  value={addressInfo.locality}
-                  onChange={(e) => setAddressInfo(prev => ({ ...prev, locality: e.target.value }))}
-                  placeholder="Enter locality"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={addressInfo.city}
-                  onChange={(e) => setAddressInfo(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="Enter city"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={addressInfo.country}
-                  onChange={(e) => setAddressInfo(prev => ({ ...prev, country: e.target.value }))}
-                  placeholder="Enter country"
-                />
-              </div>
-            </div>
-            <Button onClick={handleUpdateAddress} disabled={isSaving} variant="outline" className="flex items-center gap-2">
-              {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isSaving ? 'Saving...' : 'Save Address'}
-            </Button>
-          </CardContent>
-        </Card>
+  {/* Address section removed */}
 
         {/* Change Password */}
         <Card>

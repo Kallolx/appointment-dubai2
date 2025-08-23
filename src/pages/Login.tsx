@@ -8,6 +8,7 @@ import { Calendar, LogIn, Shield, ArrowRight, User, Mail, Lock } from "lucide-re
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildApiUrl } from "@/config/api";
+import LoginModal from "@/components/website/LoginModal";
 
 export default function Login() {
   // Authentication flow states
@@ -31,6 +32,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAuth();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   
   // Check URL parameters on component mount
   useEffect(() => {
@@ -79,8 +81,8 @@ export default function Login() {
         if (data.exists) {
           setStep("password");
         } else {
-          // User doesn't exist, redirect to OTP verification for new user
-          navigate(`/verify-otp?phone=${encodeURIComponent(phone)}&new=true`);
+          // User doesn't exist, show OTP login modal for new user
+          setLoginModalOpen(true);
         }
       } else {
         throw new Error(data.message || 'Failed to check phone number');
@@ -155,10 +157,10 @@ export default function Login() {
     const isOtpVerified = params.get('verified') === 'true';
     
     // Validate input - password is optional for OTP-verified users
-    if (!fullName || !email || !recipientName || !buildingInfo || !streetInfo || !locality || !city || !country) {
+    if (!fullName || !email) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in your name and email.",
         variant: "destructive"
       });
       return;
@@ -186,7 +188,7 @@ export default function Login() {
     
     setIsLoading(true);
     
-    // Make API call to register
+    // Make API call to register (no address sent for signup)
     fetch(buildApiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -194,14 +196,6 @@ export default function Login() {
         phone, 
         fullName, 
         email, 
-        address: {
-          recipientName,
-          buildingInfo,
-          streetInfo,
-          locality,
-          city,
-          country
-        }, 
         password: password || null,
         isOtpVerified
       })
@@ -246,6 +240,7 @@ export default function Login() {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -438,75 +433,7 @@ export default function Login() {
                     required
                   />
                 </div>
-                <div className="space-y-4">
-                  <Label className="text-base font-medium">Physical Address *</Label>
-                  <div className="space-y-2">
-                    <Label htmlFor="recipientName">Recipient's Name</Label>
-                    <Input 
-                      id="recipientName" 
-                      type="text" 
-                      placeholder="Enter recipient's name"
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="buildingInfo">Building Name/Number</Label>
-                    <Input 
-                      id="buildingInfo" 
-                      type="text" 
-                      placeholder="Enter building name or number"
-                      value={buildingInfo}
-                      onChange={(e) => setBuildingInfo(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="streetInfo">Street Name/Number</Label>
-                    <Input 
-                      id="streetInfo" 
-                      type="text" 
-                      placeholder="Enter street name or number"
-                      value={streetInfo}
-                      onChange={(e) => setStreetInfo(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="locality">Locality</Label>
-                    <Input 
-                      id="locality" 
-                      type="text" 
-                      placeholder="Enter locality"
-                      value={locality}
-                      onChange={(e) => setLocality(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input 
-                      id="city" 
-                      type="text" 
-                      placeholder="Enter city"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input 
-                      id="country" 
-                      type="text" 
-                      placeholder="Enter country"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
+                {/* Physical address removed for signup flow */}
                 
                 {/* Password fields - optional for OTP verified users */}
                 {(() => {
@@ -568,11 +495,11 @@ export default function Login() {
             )}
           </CardContent>
         </Card>
-        
-        <div className="text-center mt-6 text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} AppointPro. All rights reserved.
-        </div>
       </div>
     </div>
+    {loginModalOpen && (
+      <LoginModal setLoginModalOpen={setLoginModalOpen} initialPhone={phone} />
+    )}
+    </>
   );
 }

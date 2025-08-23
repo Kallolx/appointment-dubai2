@@ -32,6 +32,7 @@ interface ServicePricing {
   price: number;
   discount_price: number | null;
   category_name: string;
+  category_slug: string;
   property_type_name: string;
   room_type_name: string;
   room_type_slug: string;
@@ -87,6 +88,9 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   onRemoveService
 }) => {
   const [selectedServices, setSelectedServices] = useState<Record<string, number>>({});
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailOption, setDetailOption] = useState<ServiceOption | null>(null);
+  const [detailQuantity, setDetailQuantity] = useState(1);
 
   // Fetch service pricing data
   const {
@@ -103,11 +107,34 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         }
         const data: ServicePricing[] = await response.json();
         
+        console.log('ServiceOptionsModal - Fetched pricing data:', data);
+        console.log('ServiceOptionsModal - Filtering by:', { propertyType, category });
+        
+        // Log detailed comparison for debugging
+        data.forEach((pricing, index) => {
+          console.log(`Pricing ${index}:`, {
+            id: pricing.id,
+            category_name: pricing.category_name,
+            category_slug: pricing.category_slug, 
+            property_type_name: pricing.property_type_name,
+            room_type_name: pricing.room_type_name,
+            price: pricing.price,
+            matches_property: pricing.property_type_name.toLowerCase() === propertyType.toLowerCase(),
+            matches_category: pricing.category_slug.toLowerCase() === category.toLowerCase(),
+            propertyType_passed: propertyType,
+            category_passed: category
+          });
+        });
+        
         // Filter by current property type and category
-        return data.filter(pricing => 
+        // Note: StepOne passes category.slug as category, so we filter by category_slug
+        const filtered = data.filter(pricing => 
           pricing.property_type_name.toLowerCase() === propertyType.toLowerCase() &&
-          pricing.category_name.toLowerCase() === category.toLowerCase()
+          pricing.category_slug.toLowerCase() === category.toLowerCase()
         );
+        
+        console.log('ServiceOptionsModal - Filtered pricing data:', filtered);
+        return filtered;
       } catch (error) {
         console.warn('Error fetching pricing data:', error);
         return [];
@@ -119,14 +146,12 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   // Generate service options from pricing data
   const generateServiceOptions = (): ServiceOption[] => {
     return servicePricing.map((pricing) => {
-      const propertyTypeSuffix = propertyType === "Apartment" ? 
-        (pricing.room_type_slug === "studio" ? "" : " Apartment") : 
-        " Villa";
-      
       return {
         id: `${propertyType.toLowerCase()}-${pricing.room_type_slug}-${category.replace(/\s+/g, '')}`,
-        name: `${pricing.room_type_name}${propertyTypeSuffix}`,
-        description: pricing.room_description || `Professional ${category} service for ${pricing.room_type_name.toLowerCase()}.`,
+        // Use exactly the room type name from the database
+        name: pricing.room_type_name,
+        // Use exact room description from DB or empty string if null
+        description: pricing.room_description || '',
         price: pricing.price,
         discount_price: pricing.discount_price,
         image: getImagePath(propertyType, pricing.room_type_slug, pricing.room_icon_url),
@@ -141,11 +166,10 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
     setSelectedServices({});
   }, [category, propertyType]);
 
-  // Prevent body scroll when modal is open and ensure modal opens from top
+  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      window.scrollTo(0, 0);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -179,7 +203,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
     
     const serviceWithCategory = {
       ...service,
-      name: `${service.name} - ${getCategoryDisplayName(category)}`,
+      name: service.name,
       category: category,
       propertyType: propertyType
     };
@@ -200,7 +224,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
       if (service && onRemoveService) {
         const serviceWithCategory = {
           ...service,
-          name: `${service.name} - ${getCategoryDisplayName(category)}`,
+          name: service.name,
           category: category,
           propertyType: propertyType
         };
@@ -217,12 +241,13 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[60] p-4 overflow-y-auto">
+  <>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
       <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 mb-4">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-center p-4">
           <h2 className="text-xl font-semibold text-gray-900 text-center flex-1">
-            {propertyType} - {getCategoryDisplayName(category)}
+            {propertyType}
           </h2>
           <button
             onClick={() => {
@@ -255,7 +280,13 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
           ) : (
             options.map((option) => (
               <div key={option.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                <div className="flex gap-3">
+                <div
+                  className="flex gap-3 cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); } }}
+                >
                   <div className="w-16 h-16 flex-shrink-0">
                     <img
                       src={option.image}
@@ -271,16 +302,34 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                       <div className="flex items-center gap-2">
                         {option.discount_price ? (
                           <>
-                            <span className="font-semibold text-green-600">AED {option.discount_price}</span>
-                            <span className="text-sm text-gray-500 line-through">AED {option.price}</span>
+                            <button
+                              type="button"
+                              onClick={() => { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
+                              className="font-semibold text-green-600 text-left"
+                            >
+                              AED {option.discount_price}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
+                              className="text-sm text-gray-500 line-through"
+                            >
+                              AED {option.price}
+                            </button>
                           </>
                         ) : (
-                          <span className="font-semibold text-gray-900">AED {option.price}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
+                            className="font-semibold text-gray-900 text-left"
+                          >
+                            AED {option.price}
+                          </button>
                         )}
                       </div>
                       {(selectedServices[option.id] || 0) === 0 ? (
                         <Button
-                          onClick={() => handleAddService(option)}
+                          onClick={(e) => { e.stopPropagation(); handleAddService(option); }}
                           variant="outline"
                           size="sm"
                           className="text-blue-600 border-blue-600 hover:bg-blue-50"
@@ -290,7 +339,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                       ) : (
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleRemoveService(option.id)}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveService(option.id); }}
                             className="w-8 h-8 rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center justify-center"
                           >
                             −
@@ -299,7 +348,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                             {selectedServices[option.id]}
                           </span>
                           <button
-                            onClick={() => handleAddService(option)}
+                            onClick={(e) => { e.stopPropagation(); handleAddService(option); }}
                             className="w-8 h-8 rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center justify-center"
                           >
                             +
@@ -326,6 +375,74 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         </div>
       </div>
     </div>
+
+    {/* Detail modal for a single price/option */}
+    {detailModalOpen && detailOption && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+        <div className="bg-white rounded-lg max-w-sm w-full p-6">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-lg font-semibold">{detailOption.name}</h3>
+            <button onClick={() => setDetailModalOpen(false)} className="text-gray-500">✕</button>
+          </div>
+
+          <div className="flex gap-4 mb-4">
+            <div className="w-20 h-20">
+              <img src={detailOption.image} alt={detailOption.name} className="w-full h-full object-cover rounded" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-gray-600 mb-2">{detailOption.description}</p>
+              <div className="text-lg font-semibold">AED {detailOption.discount_price ?? detailOption.price}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDetailQuantity(q => Math.max(1, q - 1))}
+                className="w-8 h-8 rounded-full border flex items-center justify-center"
+              >-</button>
+              <div className="min-w-[36px] text-center">{detailQuantity}</div>
+              <button
+                onClick={() => setDetailQuantity(q => q + 1)}
+                className="w-8 h-8 rounded-full border flex items-center justify-center"
+              >+</button>
+            </div>
+            <div className="text-sm text-gray-600">Total: <span className="font-semibold">AED {(detailOption.discount_price ?? detailOption.price) * detailQuantity}</span></div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                // Add quantity times
+                for (let i = 0; i < detailQuantity; i++) {
+                  handleAddService(detailOption);
+                }
+                setDetailModalOpen(false);
+              }}
+              className="flex-1"
+            >
+              Add {detailQuantity}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // If any selected, remove one per click up to quantity
+                const current = selectedServices[detailOption.id] || 0;
+                const toRemove = Math.min(detailQuantity, current);
+                for (let i = 0; i < toRemove; i++) {
+                  handleRemoveService(detailOption.id);
+                }
+                setDetailModalOpen(false);
+              }}
+              className="flex-1"
+            >
+              Remove {detailQuantity}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

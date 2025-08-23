@@ -288,7 +288,9 @@ const Profile: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -433,49 +435,31 @@ const Profile: React.FC = () => {
                 )}
               </div>
               <div className="space-y-4">
-                {profile.address && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-500">Address</p>
-                      {(() => {
-                        const addressComponents = getAddressComponents(profile.address);
-                        if (addressComponents) {
-                          return (
-                            <div className="font-medium space-y-1">
-                              {(addressComponents.building || addressComponents.street) && (
-                                <p>
-                                  {[addressComponents.building, addressComponents.street]
-                                    .filter(Boolean)
-                                    .join(', ')}
-                                </p>
-                              )}
-                              {addressComponents.locality && (
-                                <p className="text-gray-600">{addressComponents.locality}</p>
-                              )}
-                              {(addressComponents.city || addressComponents.country) && (
-                                <p className="text-gray-600">
-                                  {[addressComponents.city, addressComponents.country]
-                                    .filter(Boolean)
-                                    .join(', ')}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        } else {
-                          return <p className="font-medium">{profile.address}</p>;
-                        }
-                      })()}
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Location</p>
+                    {addressesLoading ? (
+                      <p className="font-medium text-gray-600">Loading locations...</p>
+                    ) : savedAddresses && savedAddresses.length > 0 ? (
+                      <div className="font-medium space-y-1">
+                        <p>{savedAddresses[0].address_line1}</p>
+                        <p className="text-gray-600">{savedAddresses[0].city}{savedAddresses[0].state ? ', ' + savedAddresses[0].state : ''}{savedAddresses[0].country ? ', ' + savedAddresses[0].country : ''}</p>
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-600">No location added</p>
+                    )}
+                  </div>
+                </div>
+                {formatDate(profile.created_at) && (
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-500">Member Since</p>
+                      <p className="font-medium">{formatDate(profile.created_at)}</p>
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Member Since</p>
-                    <p className="font-medium">{formatDate(profile.created_at)}</p>
-                  </div>
-                </div>
               </div>
             </div>
           </CardContent>

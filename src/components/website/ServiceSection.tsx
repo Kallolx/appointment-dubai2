@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 type Service = {
   title: string;
   image: string;
+  slug?: string; // Add slug for service items
+  isServiceItem?: boolean; // Flag to distinguish between categories and items
 };
 
 type Props = {
@@ -63,29 +65,36 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
         }}
         className="flex overflow-x-auto space-x-4 pb-2 scroll-smooth no-scrollbar"
       >
-        {services.map((service, index) => (
-          <div
-            key={index}
-            className="min-w-[240px] hover:cursor-pointer rounded-md flex flex-col"
-          >
-            <Link
-              to={`/service/${heading}`}
-              className="relative block"
+        {services.map((service, index) => {
+          // Determine the correct link based on whether it's a service item or category
+          const linkTo = service.isServiceItem && service.slug 
+            ? `/service-item/${service.slug}` 
+            : `/service/${encodeURIComponent(service.title)}`;
+            
+          return (
+            <div
+              key={index}
+              className="min-w-[240px] hover:cursor-pointer rounded-md flex flex-col"
             >
-              {/* Image */}
-              <img
-                src={service.image}
-                alt={service.title}
-                className="w-full h-48 object-cover rounded-md"
-              />
+              <Link
+                to={linkTo}
+                className="relative block"
+              >
+                {/* Image */}
+                <img
+                  src={service.image}
+                  alt={service.title}
+                  className="w-full h-48 object-cover rounded-md"
+                />
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black rounded-md opacity-20 hover:opacity-0 transition-opacity "></div>
-            </Link>
-            {/* Title */}
-            <p className="font-bold pt-2 text-left">{service.title}</p>
-          </div>
-        ))}
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-black rounded-md opacity-20 hover:opacity-0 transition-opacity "></div>
+              </Link>
+              {/* Title */}
+              <p className="font-bold pt-2 text-left">{service.title}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
@@ -13,6 +13,10 @@ import {
   ChevronRight,
   Menu,
   User,
+  Layers,
+  Tag,
+  Box,
+  List,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -32,28 +36,106 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
   const location = useLocation();
   const { user } = useAuth();
 
-  const menuItems = [
-    { icon: BarChart3, label: "Dashboard", path: "/admin" },
-    { icon: Calendar, label: "Appointments", path: "/admin/appointments" },
-    { icon: Settings, label: "Property Types", path: "/admin/property-types" },
+  // Grouped menu to support collapsible tree structure
+  const menuGroups = [
     {
-      icon: User,
-      label: "Service Categories",
-      path: "/admin/service-categories",
+      id: 'main',
+      icon: BarChart3,
+      label: 'Main',
+      children: [
+        { icon: BarChart3, label: 'Dashboard', path: '/admin' },
+        { icon: Calendar, label: 'Appointments', path: '/admin/appointments' },
+      ],
     },
-    { icon: Menu, label: "Room Types", path: "/admin/room-types" },
-    { icon: User, label: "Service Pricing", path: "/admin/service-pricing" },
-    { icon: Clock, label: "Available Dates", path: "/admin/available-dates" },
-    { icon: Clock, label: "Time Slots", path: "/admin/time-slots" },
-    { icon: Users, label: "Users", path: "/admin/users" },
-    { icon: FileText, label: "Content Management", path: "/admin/content" },
-    { icon: FileText, label: "Reports", path: "/admin/reports" },
-    { icon: Database, label: "Support Tickets", path: "/admin/support" },
-    { icon: User, label: "Profile", path: "/admin/profile" },
-    { icon: Shield, label: "Website Settings", path: "/admin/website" },
+    {
+      id: 'services',
+      icon: Layers,
+      label: 'Services',
+      children: [
+        { icon: Tag, label: 'Service Categories', path: '/admin/service-categories' },
+        { icon: Menu, label: 'Service Items', path: '/admin/service-items' },
+        { icon: Settings, label: 'Property Types', path: '/admin/property-types' },
+        { icon: List, label: 'Service Items Category', path: '/admin/service-items-category' },
+        { icon: Box, label: 'Room Types', path: '/admin/room-types' },
+        { icon: FileText, label: 'Service Pricing', path: '/admin/service-pricing' },
+      ],
+    },
+    {
+      id: 'scheduling',
+      icon: Clock,
+      label: 'Scheduling',
+      children: [
+        { icon: Clock, label: 'Available Dates', path: '/admin/available-dates' },
+        { icon: Clock, label: 'Time Slots', path: '/admin/time-slots' },
+      ],
+    },
+    {
+      id: 'management',
+      icon: Users,
+      label: 'Management',
+      children: [
+        { icon: Users, label: 'Users', path: '/admin/users' },
+        { icon: FileText, label: 'Content Management', path: '/admin/content' },
+        { icon: Database, label: 'Reports', path: '/admin/reports' },
+        { icon: Database, label: 'Support Tickets', path: '/admin/support' },
+      ],
+    },
+    {
+      id: 'settings',
+      icon: Settings,
+      label: 'Settings',
+      children: [
+        { icon: User, label: 'Profile', path: '/admin/profile' },
+      ],
+    },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const STORAGE_KEY = 'adminSidebarExpanded';
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // ignore
+    }
+
+    // default: expand main and services
+    return { main: true, services: true };
+  });
+
+  // On first mount, if there is no saved state, ensure the group containing the active route is expanded
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) {
+        const next = { ...expandedGroups };
+        menuGroups.forEach(g => {
+          if (g.children.some((c: any) => c.path === location.pathname)) {
+            next[g.id] = true;
+          }
+        });
+        setExpandedGroups(next);
+      }
+    } catch (e) {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   return (
     <>
@@ -100,44 +182,52 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
 
         {/* Navigation Menu */}
         <nav className="flex-1 p-3">
-          <ul className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
+          <ul className="space-y-2">
+            {menuGroups.map(group => {
+              const GroupIcon = group.icon;
+              const isGroupExpanded = !!expandedGroups[group.id];
               return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    onClick={() => setIsMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                      isActive(item.path)
-                        ? "bg-red-50 text-red-600 shadow-sm"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
-                    title={isCollapsed ? item.label : ""}
+                <li key={group.id} className="">
+                  <div
+                    className={`flex items-center justify-between px-2 py-2 rounded-md cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
+                    onClick={() => toggleGroup(group.id)}
+                    title={isCollapsed ? group.label : ''}
                   >
-                    <Icon
-                      className={`w-4 h-4 ${
-                        isCollapsed ? "mx-auto" : ""
-                      } flex-shrink-0`}
-                    />
+                    <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+                      <GroupIcon className="w-4 h-4 text-gray-600" />
+                      {!isCollapsed && <span className="font-semibold text-sm text-gray-700">{group.label}</span>}
+                    </div>
                     {!isCollapsed && (
-                      <span className="font-medium text-sm">{item.label}</span>
+                      <button className={`p-1 rounded-md text-gray-500 hover:bg-gray-100`}>
+                        <ChevronRight className={`w-4 h-4 transform transition-transform ${isGroupExpanded ? 'rotate-90' : ''}`} />
+                      </button>
                     )}
-                  </Link>
+                  </div>
+
+                  {isGroupExpanded && (
+                    <ul className={`mt-2 pl-6 pr-2 ${isCollapsed ? 'hidden' : ''}`}>
+                      {group.children.map(child => {
+                        const Icon = child.icon;
+                        return (
+                          <li key={child.path} className="mb-1">
+                            <Link
+                              to={child.path}
+                              onClick={() => setIsMobileOpen(false)}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group ${isActive(child.path) ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                            >
+                              <Icon className="w-4 h-4 flex-shrink-0" />
+                              <span className="text-sm">{child.label}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </li>
               );
             })}
           </ul>
         </nav>
-
-        {/* Footer/Bottom Section */}
-        {!isCollapsed && (
-          <div className="p-3 border-t border-gray-200">
-            <div className="text-xs text-gray-500 text-center">
-              © 2025 AppointPro Admin
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

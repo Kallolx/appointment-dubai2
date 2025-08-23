@@ -21,7 +21,7 @@ All colors MUST be HSL. Dark theme with #00C3FF accent.
     --popover-foreground: 222 47% 11%;
 
     /* Primary Brand Color - #00C3FF */
-    --primary: 196 100% 50%;
+    --primary: 18, 84%, 55%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 196 100% 45%;
     --primary-light: 196 100% 95%;

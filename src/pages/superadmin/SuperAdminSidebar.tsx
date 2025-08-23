@@ -33,6 +33,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setI
     { icon: Users, label: 'User Management', path: '/administrator/users' },
     { icon: Key, label: 'API Configuration', path: '/administrator/apis' },
     { icon: User, label: 'Profile Settings', path: '/administrator/profile' },
+    { icon: Globe, label: 'Website Settings', path: '/administrator/website' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -127,15 +128,6 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setI
             )}
           </button>
         </div>
-
-        {/* Footer/Bottom Section */}
-        {!isCollapsed && (
-          <div className="p-3 border-t border-purple-700">
-            <div className="text-xs text-purple-300 text-center">
-              © 2025 AppointPro Super Admin
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

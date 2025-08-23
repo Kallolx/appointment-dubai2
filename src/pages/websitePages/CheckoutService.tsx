@@ -36,7 +36,12 @@ interface SelectedAddress {
   apartmentNo?: string;
 }
 
-const CheckoutService = ({ category }) => {
+interface CheckoutServiceProps {
+  category?: string;
+  serviceSlug?: string;
+}
+
+const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
   const [step, setStep] = useState<number>(1);
   const [cartItems, setCartItems] = useState<Record<string, CartItem>>({});
   const [selectedDateTime, setSelectedDateTime] = useState<SelectedDateTime>({
@@ -142,6 +147,8 @@ const CheckoutService = ({ category }) => {
             handleAddItemsClick={handleAddItemsClick}
             handleRemoveItemClick={handleRemoveItemClick}
             cartItems={cartItems}
+            category={category}
+            serviceSlug={serviceSlug}
           />
         );
       case 2:

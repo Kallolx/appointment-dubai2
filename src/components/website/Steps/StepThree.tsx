@@ -6,6 +6,7 @@ const StepThree = ({ onSelectionChange }) => {
   const dateScrollRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedDbDate, setSelectedDbDate] = useState("");
   const [dates, setDates] = useState<any[]>([]);
   const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,16 +25,24 @@ const StepThree = ({ onSelectionChange }) => {
       }
       const datesData = await datesResponse.json();
       
-      // Fetch available time slots
-      const timeSlotsResponse = await fetch(buildApiUrl('/api/available-time-slots'));
-      if (!timeSlotsResponse.ok) {
-        throw new Error('Failed to fetch available time slots');
-      }
-      const timeSlotsData = await timeSlotsResponse.json();
+  // We will fetch time slots per-selected-date. Do not fetch all slots here.
       
       // Format dates for display
       const formattedDates = datesData.map((dateItem, index) => {
-        const date = new Date(dateItem.date);
+        // Normalize db date to YYYY-MM-DD without time portion
+        const rawDate = dateItem.date;
+        let dbDateStr = rawDate;
+        if (typeof rawDate === 'string') {
+          if (rawDate.includes('T')) {
+            dbDateStr = rawDate.split('T')[0];
+          } else if (rawDate.length >= 10) {
+            dbDateStr = rawDate.slice(0, 10);
+          }
+        } else if (rawDate instanceof Date) {
+          dbDateStr = rawDate.toISOString().split('T')[0];
+        }
+
+        const date = new Date(dbDateStr);
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         
@@ -44,13 +53,48 @@ const StepThree = ({ onSelectionChange }) => {
           month: monthNames[date.getMonth()],
           fullDate: `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
           dateObj: date,
-          dbDate: dateItem.date, // Store the original database date (YYYY-MM-DD)
+          dbDate: dbDateStr, // Store normalized database date (YYYY-MM-DD)
           maxAppointments: dateItem.max_appointments
         };
       });
       
-      // Format time slots for display
-      const formattedTimeSlots = timeSlotsData.map((slot) => {
+      setDates(formattedDates);
+
+      // Auto-select first date if available (set both display and db date)
+      if (formattedDates.length > 0 && !selectedDate) {
+        setSelectedDate(formattedDates[0].fullDate);
+        setSelectedDbDate(formattedDates[0].dbDate);
+      }
+      
+    } catch (err) {
+      console.error('Error fetching available data:', err);
+      setError('Failed to load available dates and times. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch time slots for a specific YYYY-MM-DD date
+  const fetchTimeSlotsForDate = async (dbDate) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      if (!dbDate) {
+        setTimeSlots([]);
+        return;
+      }
+
+  const url = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
+  console.debug('[StepThree] fetching time slots from', url);
+  const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error('Failed to fetch time slots for date');
+      }
+      const data = await res.json();
+  console.debug('[StepThree] fetched', Array.isArray(data) ? data.length : 'non-array', 'time slots', data);
+
+      const formattedTimeSlots = data.map((slot) => {
         const startTime = formatTime12Hour(slot.start_time);
         const endTime = formatTime12Hour(slot.end_time);
         return {
@@ -60,18 +104,12 @@ const StepThree = ({ onSelectionChange }) => {
           displayTime: `${startTime} - ${endTime}`
         };
       });
-      
-      setDates(formattedDates);
+
       setTimeSlots(formattedTimeSlots);
-      
-      // Auto-select first date if available
-      if (formattedDates.length > 0 && !selectedDate) {
-        setSelectedDate(formattedDates[0].fullDate);
-      }
-      
     } catch (err) {
-      console.error('Error fetching available data:', err);
-      setError('Failed to load available dates and times. Please try again.');
+      console.error('Error fetching time slots for date:', err);
+      setError('Failed to load time slots for the selected date.');
+      setTimeSlots([]);
     } finally {
       setLoading(false);
     }
@@ -93,35 +131,35 @@ const StepThree = ({ onSelectionChange }) => {
 
   useEffect(() => {
     if (onSelectionChange) {
-      // Convert the selected date to YYYY-MM-DD format for the database
-      let formattedDate = "";
+      // Use selectedDbDate (YYYY-MM-DD) and selectedTime to inform parent
+      const formattedDate = selectedDbDate || "";
       let formattedTime = "";
-      
-      if (selectedDate) {
-        // Find the date object from our dates array
-        const dateItem = dates.find(d => d.fullDate === selectedDate);
-        if (dateItem) {
-          formattedDate = dateItem.dbDate; // Use the database format
-        }
-      }
-      
+
       if (selectedTime) {
-        // Find the time slot object from our timeSlots array
         const timeSlot = timeSlots.find(t => t.displayTime === selectedTime);
-        if (timeSlot) {
-          formattedTime = timeSlot.startTime; // Use the database format (24-hour)
-        }
+        if (timeSlot) formattedTime = timeSlot.startTime;
       }
-      
+
       onSelectionChange({
-        professional: null, // Not used in this step
+        professional: null,
         date: formattedDate,
         time: formattedTime,
-        displayDate: selectedDate, // Keep the display format for UI
+        displayDate: selectedDate,
         displayTime: selectedTime
       });
     }
   }, [selectedDate, selectedTime, onSelectionChange, dates, timeSlots]);
+
+  // when selectedDbDate changes, refetch time slots for that date
+  useEffect(() => {
+    if (selectedDbDate) {
+      fetchTimeSlotsForDate(selectedDbDate);
+      // reset any previously selected time
+      setSelectedTime("");
+    } else {
+      setTimeSlots([]);
+    }
+  }, [selectedDbDate]);
 
   const scroll = (direction, ref) => {
     if (ref.current) {
@@ -198,7 +236,10 @@ const StepThree = ({ onSelectionChange }) => {
                 {dates.map((dateItem) => (
                   <div
                     key={dateItem.id}
-                    onClick={() => setSelectedDate(dateItem.fullDate)}
+                    onClick={() => {
+                      setSelectedDate(dateItem.fullDate);
+                      setSelectedDbDate(dateItem.dbDate);
+                    }}
                     className={`min-w-[140px] p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center ${
                       selectedDate === dateItem.fullDate
                         ? "border-blue-500 bg-blue-50 shadow-md"

@@ -137,15 +137,6 @@ const NewUserSidebar: React.FC<NewUserSidebarProps> = ({ isCollapsed, setIsColla
             })}
           </ul>
         </nav>
-
-        {/* Footer/Bottom Section */}
-        {!isCollapsed && (
-          <div className="p-3 border-t border-gray-200">
-            <div className="text-xs text-gray-500 text-center">
-              © 2025 AppointPro
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
