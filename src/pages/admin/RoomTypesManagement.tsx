@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Edit, Trash2, Search, Save, X } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from "@/hooks/use-toast";
 import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from "@/pages/admin/NewAdminLayout";
@@ -58,6 +59,11 @@ export default function RoomTypesManagement() {
     is_active: true,
     sort_order: 0,
   });
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFormChange = useCallback((field: keyof RoomForm, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -156,6 +162,50 @@ export default function RoomTypesManagement() {
 
     try {
       setSubmitting(true);
+
+      // Build payload from form; if file selected, upload to Cloudinary first
+      let payload: any = { ...form, sort_order: form.sort_order || 0 };
+
+      if (selectedFile) {
+        try {
+          setUploading(true);
+          const uploadedUrl = await (async (file: File) => {
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+            const folder = import.meta.env.VITE_CLOUDINARY_FOLDER_MODE;
+
+            if (!cloudName || !uploadPreset) {
+              throw new Error('Cloudinary config missing');
+            }
+
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            if (folder) fd.append('folder', folder);
+
+            const res = await fetch(url, { method: 'POST', body: fd });
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(`Upload failed: ${text}`);
+            }
+            const json = await res.json();
+            return json.secure_url || json.url;
+          })(selectedFile);
+
+          payload = { ...payload, image_url: uploadedUrl };
+          setForm((prev) => ({ ...prev, image_url: uploadedUrl }));
+        } catch (err: any) {
+          console.error('Cloudinary upload error', err);
+          setUploadError(err?.message || 'Upload failed');
+          setUploading(false);
+          setSubmitting(false);
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+
       const url = editingRoom
         ? buildApiUrl(`/api/admin/room-types/${editingRoom.id}`)
         : buildApiUrl("/api/admin/room-types");
@@ -169,10 +219,7 @@ export default function RoomTypesManagement() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...form,
-          sort_order: form.sort_order || 0,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -213,6 +260,7 @@ export default function RoomTypesManagement() {
       is_active: roomType.is_active,
       sort_order: roomType.sort_order,
     });
+    setSelectedFile(null);
     setShowForm(true);
   };
 
@@ -258,6 +306,8 @@ export default function RoomTypesManagement() {
     });
     setEditingRoom(null);
     setShowForm(false);
+  setSelectedFile(null);
+  setUploadError(null);
   };
 
   const filteredRooms = rooms.filter(
@@ -367,16 +417,40 @@ export default function RoomTypesManagement() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Image URL
-                    </label>
-                    <Input
-                      value={form.image_url}
-                      onChange={(e) =>
-                        handleFormChange("image_url", e.target.value)
-                      }
-                      placeholder="https://example.com/image.jpg"
-                    />
+                    <label className="block text-sm font-medium mb-1">Image</label>
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        {form.image_url ? (
+                          <AvatarImage src={form.image_url} alt={form.name || 'room image'} />
+                        ) : (
+                          <AvatarFallback>{form.name ? form.name.charAt(0) : 'R'}</AvatarFallback>
+                        )}
+                      </Avatar>
+
+                      <div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files && e.target.files[0];
+                            setSelectedFile(f || null);
+                            if (f) {
+                              const preview = URL.createObjectURL(f);
+                              setForm((prev) => ({ ...prev, image_url: preview }));
+                            }
+                          }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button type="button" onClick={() => fileInputRef.current?.click()}>
+                            Choose
+                          </Button>
+                          {uploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                        </div>
+                        {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -474,24 +548,27 @@ export default function RoomTypesManagement() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            {room.image_url && (
-                              <img
-                                src={room.image_url}
-                                alt={room.name}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            )}
-                            <div>
-                              <h3 className="font-semibold text-lg">
-                                {room.name}
-                              </h3>
-                              <p className="text-sm text-gray-600">
-                                Property Type: {room.property_type_name}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Slug: {room.slug}
-                              </p>
-                            </div>
+                              <div className="flex items-center gap-3">
+                                {room.image_url ? (
+                                  <img
+                                    src={room.image_url}
+                                    alt={room.name}
+                                    className="w-14 h-14 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-14 h-14 bg-gray-100 rounded flex items-center justify-center text-gray-500">
+                                    {room.name ? room.name.charAt(0) : 'R'}
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="font-semibold text-lg text-gray-900">{room.name}</h3>
+                                  <p className="text-sm text-gray-600">{room.description ? room.description : <span className="text-gray-400">No description</span>}</p>
+                                  <div className="mt-1 text-sm text-gray-500">
+                                    <span className="mr-3">Type: <span className="font-medium text-gray-700">{room.property_type_name}</span></span>
+                                    <span>Slug: <span className="font-mono text-sm text-gray-500">{room.slug}</span></span>
+                                  </div>
+                                </div>
+                              </div>
                           </div>
 
                           {room.description && (

@@ -13,7 +13,6 @@ interface ServiceCategory {
   id: number;
   name: string;
   slug: string;
-  image_url: string | null;
   description: string | null;
   is_active: boolean;
   sort_order: number;
@@ -24,7 +23,6 @@ interface ServiceCategory {
 interface CategoryForm {
   name: string;
   slug: string;
-  image_url: string;
   description: string;
   is_active: boolean;
   sort_order: number;
@@ -40,7 +38,6 @@ const ServiceCategoriesManagement: React.FC = () => {
   const [form, setForm] = useState<CategoryForm>({
     name: '',
     slug: '',
-    image_url: '',
     description: '',
     is_active: true,
     sort_order: 0
@@ -71,10 +68,6 @@ const ServiceCategoriesManagement: React.FC = () => {
 
   const handleSlugChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     handleFormChange('slug', e.target.value);
-  }, [handleFormChange]);
-
-  const handleImageUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFormChange('image_url', e.target.value);
   }, [handleFormChange]);
 
 
@@ -205,10 +198,9 @@ const ServiceCategoriesManagement: React.FC = () => {
     setForm({
       name: category.name,
       slug: category.slug,
-      image_url: category.image_url || '',
-      description: category.description || '',
-      is_active: category.is_active,
-      sort_order: category.sort_order
+  description: category.description || '',
+  is_active: category.is_active,
+  sort_order: category.sort_order
     });
     setIsEditDialogOpen(true);
   };
@@ -217,7 +209,6 @@ const ServiceCategoriesManagement: React.FC = () => {
     setForm({
       name: '',
       slug: '',
-      image_url: '',
       description: '',
       is_active: true,
       sort_order: 0
@@ -309,16 +300,7 @@ const ServiceCategoriesManagement: React.FC = () => {
                       <tr key={category.id} className="border-b last:border-b-0">
                         <td className="py-4">
                           <div className="flex items-center gap-3">
-                            {category.image_url && (
-                              <img
-                                src={category.image_url}
-                                alt={category.name}
-                                className="w-10 h-10 rounded-md object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            )}
+                            {/* image removed - categories are text-only now */}
                             <div>
                               <p className="font-medium text-gray-900">{category.name}</p>
                               {category.description && (
@@ -402,14 +384,7 @@ const ServiceCategoriesManagement: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Image URL</label>
-                    <Input
-                      value={form.image_url}
-                      onChange={handleImageUrlChange}
-                      placeholder="/path/to/image.webp"
-                    />
-                  </div>
+                  {/* Image removed - categories only require text fields */}
                 </div>
 
                 <div>
@@ -494,14 +469,7 @@ const ServiceCategoriesManagement: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Image URL</label>
-                    <Input
-                      value={form.image_url}
-                      onChange={handleImageUrlChange}
-                      placeholder="/path/to/image.webp"
-                    />
-                  </div>
+                  {/* Image removed - categories only require text fields */}
                 </div>
 
                 <div>

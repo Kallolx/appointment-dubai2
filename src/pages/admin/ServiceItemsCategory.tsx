@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from '@/pages/admin/NewAdminLayout';
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface ServiceItemsCategory {
   id: number;
@@ -184,19 +185,23 @@ const ServiceItemsCategory = () => {
   });
 
   const CategoryForm = ({ category, onSubmit, onCancel }: { category?: ServiceItemsCategory | null; onSubmit: (data: any) => void; onCancel: () => void }) => {
-    const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
       name: category?.name || '',
       slug: category?.slug || '',
       description: category?.description || '',
       selectedCategoryId: '',
       parent_service_item_id: category?.parent_service_item_id || null,
-      image_url: category?.image_url || '',
       hero_image_url: category?.hero_image_url || '',
-      icon_url: category?.icon_url || '',
       sort_order: category?.sort_order || 0,
       is_active: category?.is_active !== false,
       selectedPropertyTypes: [] as number[]
     });
+
+  const [selectedFiles, setSelectedFiles] = useState<{ hero?: File | null }>({});
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const heroInputRef = useRef<HTMLInputElement | null>(null);
+  // icon removed
 
     // Fetch existing property types for this category when editing
     const { data: existingPropertyTypes = [] } = useQuery({
@@ -239,16 +244,53 @@ const ServiceItemsCategory = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      const submitData = {
-        ...formData,
-        selectedCategoryId: undefined // Remove this from the submitted data, but keep selectedPropertyTypes
-      };
-      
+      const submitData: any = { ...formData };
+      // remove UI-only field
+      delete submitData.selectedCategoryId;
+
+      // Upload any selected files to Cloudinary and set the returned URLs
       try {
+        setUploadError(null);
+  if (selectedFiles.hero) {
+          const uploadFile = async (file: File) => {
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+            const folder = import.meta.env.VITE_CLOUDINARY_FOLDER_MODE;
+
+            if (!cloudName || !uploadPreset) {
+              throw new Error('Cloudinary config missing');
+            }
+
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            if (folder) fd.append('folder', folder);
+
+            const res = await fetch(url, { method: 'POST', body: fd });
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(`Upload failed: ${text}`);
+            }
+            const json = await res.json();
+            return json.secure_url || json.url;
+          };
+
+          setUploading(true);
+          if (selectedFiles.hero) {
+            const uploaded = await uploadFile(selectedFiles.hero);
+            submitData.hero_image_url = uploaded;
+          }
+          // icon removed
+          setUploading(false);
+        }
+
         // Pass the full data including selectedPropertyTypes to the parent
         await onSubmit(submitData);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error submitting form:', error);
+        setUploading(false);
+        setUploadError(error?.message || 'Failed to upload images');
       }
     };
 
@@ -306,21 +348,36 @@ const ServiceItemsCategory = () => {
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
-        <Input
-          placeholder="Image URL"
-          value={formData.image_url}
-          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-        />
-        <Input
-          placeholder="Hero Image URL"
-          value={formData.hero_image_url}
-          onChange={(e) => setFormData({ ...formData, hero_image_url: e.target.value })}
-        />
-        <Input
-          placeholder="Icon URL"
-          value={formData.icon_url}
-          onChange={(e) => setFormData({ ...formData, icon_url: e.target.value })}
-        />
+
+        {/* Compact image/upload controls: small circular previews and minimal height */}
+        <div className="flex items-center gap-6 py-2">
+          <div className="flex flex-col items-center">
+            <label className="text-sm mb-1">Hero</label>
+            <div className="flex items-center gap-2">
+              <Avatar className="w-12 h-12">
+                {formData.hero_image_url ? (
+                  <AvatarImage src={formData.hero_image_url} alt={formData.name || 'hero'} />
+                ) : (
+                  <AvatarFallback>H</AvatarFallback>
+                )}
+              </Avatar>
+              <input
+                ref={heroInputRef}
+                className="hidden"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files && e.target.files[0];
+                  setSelectedFiles(prev => ({ ...prev, hero: f || null }));
+                  if (f) setFormData(prev => ({ ...prev, hero_image_url: URL.createObjectURL(f) }));
+                }}
+              />
+              <Button type="button" size="sm" variant="outline" onClick={() => heroInputRef.current?.click()}>Choose</Button>
+            </div>
+          </div>
+        </div>
+        {uploading && <p className="text-xs text-gray-500">Uploading images...</p>}
+        {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
         <Input
           type="number"
           placeholder="Sort Order"
@@ -431,27 +488,39 @@ const ServiceItemsCategory = () => {
       </div>
 
       <div className="grid gap-4">
-        {Array.isArray(categories) && categories.length > 0 ? (
+          {Array.isArray(categories) && categories.length > 0 ? (
           categories.map((category: ServiceItemsCategory) => (
-            <div key={category.id} className="border rounded-lg p-4 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                {category.icon_url && (
-                  <img src={category.icon_url} alt={category.name} className="w-16 h-16 object-cover rounded" />
-                )}
-                <div>
-                  <h3 className="font-semibold">{category.name}</h3>
-                  <p className="text-sm text-gray-600">{category.slug}</p>
-                  {category.parent_service_item_name && (
-                    <p className="text-xs text-blue-600">Parent Service Item: {category.parent_service_item_name}</p>
-                  )}
-                  {category.parent_category_name && (
-                    <p className="text-xs text-green-600">Category: {category.parent_category_name}</p>
-                  )}
-                  <p className="text-xs text-gray-500">{category.description}</p>
-                  <p className="text-xs text-gray-400">Sort: {category.sort_order} | Active: {category.is_active ? 'Yes' : 'No'}</p>
+            <div key={category.id} className="border rounded-lg p-4 flex items-center gap-4">
+              {/* Hero image */}
+              {category.hero_image_url ? (
+                <img src={category.hero_image_url} alt={category.name} className="w-40 h-24 object-cover rounded-md flex-shrink-0" />
+              ) : (
+                <div className="w-40 h-24 bg-gray-50 border rounded-md flex items-center justify-center text-gray-300">No Hero</div>
+              )}
+
+              <div className="flex-1 flex items-start gap-4">
+                {/* Icon + main content */}
+                <div className="flex flex-col items-start">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{category.name}</h3>
+                      <p className="text-sm text-gray-600 font-mono">{category.slug}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2">
+                    <p className="text-base text-gray-700 max-w-3xl">{category.description}</p>
+                    <div className="mt-2 text-sm text-gray-500">
+                      {category.parent_service_item_name && (<span className="mr-3 text-blue-600">Parent Item: {category.parent_service_item_name}</span>)}
+                      {category.parent_category_name && (<span className="mr-3 text-green-600">Category: {category.parent_category_name}</span>)}
+                      <span>Sort: {category.sort_order}</span>
+                      <span className="ml-3">Active: <strong className={category.is_active ? 'text-green-600' : 'text-red-600'}>{category.is_active ? 'Yes' : 'No'}</strong></span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+
+              <div className="flex gap-2 ml-auto">
                 <Dialog open={editingCategory?.id === category.id} onOpenChange={(open) => !open && setEditingCategory(null)}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm" onClick={() => setEditingCategory(category)}>

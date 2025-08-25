@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { buildApiUrl } from "@/config/api";
@@ -116,9 +117,54 @@ const ServiceItems = () => {
       is_active: item?.is_active !== false
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const uploadToCloudinary = async (file: File) => {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+      const folder = import.meta.env.VITE_CLOUDINARY_FOLDER_MODE;
+
+      if (!cloudName || !uploadPreset) {
+        throw new Error('Cloudinary config missing');
+      }
+
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', uploadPreset);
+      if (folder) fd.append('folder', folder);
+
+      const res = await fetch(url, { method: 'POST', body: fd });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Upload failed: ${text}`);
+      }
+      const json = await res.json();
+      return json.secure_url || json.url;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      onSubmit(formData);
+      setUploadError(null);
+      try {
+        let dataToSend = { ...formData };
+
+        if (selectedFile) {
+          setUploading(true);
+          const uploadedUrl = await uploadToCloudinary(selectedFile);
+          dataToSend = { ...dataToSend, image_url: uploadedUrl };
+          setFormData((prev) => ({ ...prev, image_url: uploadedUrl }));
+        }
+
+        onSubmit(dataToSend);
+      } catch (err: any) {
+        console.error('Cloudinary upload error', err);
+        setUploadError(err?.message || 'Upload failed');
+      } finally {
+        setUploading(false);
+      }
     };
 
     return (
@@ -155,11 +201,36 @@ const ServiceItems = () => {
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
-        <Input
-          placeholder="Image URL"
-          value={formData.image_url}
-          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-        />
+        <div className="flex items-center gap-4">
+          <div>
+            <label className="text-sm block mb-2">Image</label>
+            <Avatar>
+              {formData.image_url ? (
+                <AvatarImage src={formData.image_url} alt={formData.name || 'service image'} />
+              ) : (
+                <AvatarFallback>{formData.name ? formData.name.charAt(0) : 'S'}</AvatarFallback>
+              )}
+            </Avatar>
+          </div>
+          <div>
+            <label className="text-sm">Upload image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files && e.target.files[0];
+                setSelectedFile(f || null);
+                if (f) {
+                  // show a local preview immediately
+                  const preview = URL.createObjectURL(f);
+                  setFormData((prev) => ({ ...prev, image_url: preview }));
+                }
+              }}
+            />
+            {uploading && <p className="text-xs text-gray-500">Uploading image...</p>}
+            {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+          </div>
+        </div>
         <Input
           type="number"
           placeholder="Sort Order"

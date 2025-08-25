@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { buildApiUrl } from '@/config/api';
 import NewAdminLayout from '@/pages/admin/NewAdminLayout';
@@ -48,6 +49,9 @@ const PropertyTypesManagement: React.FC = () => {
     is_active: true,
     sort_order: 0
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Stable form handlers using useCallback
@@ -131,9 +135,56 @@ const PropertyTypesManagement: React.FC = () => {
     e.preventDefault();
     
     try {
+      setUploadError(null);
       const token = localStorage.getItem('token');
       const isEditing = selectedProperty !== null;
       
+      // If a file was selected, upload it to Cloudinary first and set form.image_url
+      // Build payload from form; if a file is selected upload it and replace image_url in the payload
+      let payload: any = { ...form };
+
+      if (selectedFile) {
+        try {
+          setUploading(true);
+          const uploadedUrl = await (async (file: File) => {
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+            const folder = import.meta.env.VITE_CLOUDINARY_FOLDER_MODE;
+
+            if (!cloudName || !uploadPreset) {
+              throw new Error('Cloudinary config missing');
+            }
+
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            if (folder) fd.append('folder', folder);
+
+            const res = await fetch(url, { method: 'POST', body: fd });
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(`Upload failed: ${text}`);
+            }
+            const json = await res.json();
+            return json.secure_url || json.url;
+          })(selectedFile);
+
+          // Use uploaded URL in the payload immediately (don't rely on setState being synchronous)
+          payload = { ...payload, image_url: uploadedUrl };
+
+          // update form for immediate UI feedback
+          setForm((prev) => ({ ...prev, image_url: uploadedUrl }));
+        } catch (err: any) {
+          console.error('Cloudinary upload error', err);
+          setUploadError(err?.message || 'Upload failed');
+          setUploading(false);
+          return; // abort submit
+        } finally {
+          setUploading(false);
+        }
+      }
+
       const url = isEditing 
         ? buildApiUrl(`/api/admin/property-types/${selectedProperty.id}`)
         : buildApiUrl('/api/admin/property-types');
@@ -144,7 +195,7 @@ const PropertyTypesManagement: React.FC = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -229,6 +280,8 @@ const PropertyTypesManagement: React.FC = () => {
       sort_order: 0
     });
     setSelectedProperty(null);
+  setSelectedFile(null);
+  setUploadError(null);
   };
 
   const filteredProperties = properties.filter(property =>
@@ -409,13 +462,34 @@ const PropertyTypesManagement: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Image URL</label>
-                  <Input
-                    value={form.image_url}
-                    onChange={handleImageUrlChange}
-                    placeholder="/path/to/image.png"
-                  />
+                <div className="flex items-start gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Image</label>
+                    <Avatar>
+                      {form.image_url ? (
+                        <AvatarImage src={form.image_url} alt={form.name || 'property image'} />
+                      ) : (
+                        <AvatarFallback>{form.name ? form.name.charAt(0) : 'P'}</AvatarFallback>
+                      )}
+                    </Avatar>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-2">Upload Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files && e.target.files[0];
+                        setSelectedFile(f || null);
+                        if (f) {
+                          const preview = URL.createObjectURL(f);
+                          setForm((prev) => ({ ...prev, image_url: preview }));
+                        }
+                      }}
+                    />
+                    {uploading && <p className="text-xs text-gray-500">Uploading image...</p>}
+                    {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+                  </div>
                 </div>
 
                 <div>
@@ -511,13 +585,34 @@ const PropertyTypesManagement: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Image URL</label>
-                  <Input
-                    value={form.image_url}
-                    onChange={handleImageUrlChange}
-                    placeholder="/path/to/image.png"
-                  />
+                <div className="flex items-start gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Image</label>
+                    <Avatar>
+                      {form.image_url ? (
+                        <AvatarImage src={form.image_url} alt={form.name || 'property image'} />
+                      ) : (
+                        <AvatarFallback>{form.name ? form.name.charAt(0) : 'P'}</AvatarFallback>
+                      )}
+                    </Avatar>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-2">Upload Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files && e.target.files[0];
+                        setSelectedFile(f || null);
+                        if (f) {
+                          const preview = URL.createObjectURL(f);
+                          setForm((prev) => ({ ...prev, image_url: preview }));
+                        }
+                      }}
+                    />
+                    {uploading && <p className="text-xs text-gray-500">Uploading image...</p>}
+                    {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+                  </div>
                 </div>
 
                 <div>

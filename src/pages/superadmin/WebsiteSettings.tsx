@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SuperAdminLayout from "@/pages/superadmin/SuperAdminLayout";
 import {
   Card,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Save, RotateCcw } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface WebsiteSettings {
   siteName: string;
@@ -52,6 +53,10 @@ const WebsiteSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<WebsiteSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem("websiteSettings");
@@ -77,10 +82,53 @@ const WebsiteSettingsPage: React.FC = () => {
     setSaveMessage("");
 
     try {
+      // If a local file was selected, upload to Cloudinary first and replace logoPath
+      if (selectedFile) {
+        try {
+          setUploading(true);
+          const uploadedUrl = await (async (file: File) => {
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+            const folder = import.meta.env.VITE_CLOUDINARY_FOLDER_MODE;
+
+            if (!cloudName || !uploadPreset) {
+              throw new Error('Cloudinary config missing');
+            }
+
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            if (folder) fd.append('folder', folder);
+
+            const res = await fetch(url, { method: 'POST', body: fd });
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(`Upload failed: ${text}`);
+            }
+            const json = await res.json();
+            return json.secure_url || json.url;
+          })(selectedFile);
+
+          setSettings((prev) => ({ ...prev, logoPath: uploadedUrl }));
+        } catch (err: any) {
+          console.error('Cloudinary upload error', err);
+          setUploadError(err?.message || 'Upload failed');
+          setUploading(false);
+          setIsLoading(false);
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+
       localStorage.setItem("websiteSettings", JSON.stringify(settings));
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 400));
       setSaveMessage("Settings saved successfully!");
       setTimeout(() => setSaveMessage(""), 3000);
+      // clear selected file after successful save
+      setSelectedFile(null);
+      setUploadError(null);
     } catch (error) {
       setSaveMessage("Error saving settings. Please try again.");
       console.error("Save error:", error);
@@ -127,48 +175,54 @@ const WebsiteSettingsPage: React.FC = () => {
               />
             </div>
 
-            {/* Logo Selection */}
+            {/* Logo Uploader */}
             <div className="space-y-2">
               <Label htmlFor="logo">Website Logo</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Select
-                    value={settings.logoPath}
-                    onValueChange={(value) =>
-                      handleInputChange("logoPath", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a logo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableLogos.map((logo) => (
-                        <SelectItem key={logo.path} value={logo.path}>
-                          {logo.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* Custom Logo URL placed inside logo section */}
-                  <div className="mt-3 space-y-2">
-                    <Label htmlFor="customLogo">Custom Logo URL</Label>
-                    <Input
-                      id="customLogo"
-                      value={settings.logoPath}
-                      onChange={(e) =>
-                        handleInputChange("logoPath", e.target.value)
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                {/* Uploader column */}
+                <div className="flex flex-col items-start">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files && e.target.files[0];
+                      setSelectedFile(f || null);
+                      if (f) {
+                        const preview = URL.createObjectURL(f);
+                        setSettings((prev) => ({ ...prev, logoPath: preview }));
                       }
-                      placeholder="/path/to/your/logo.svg"
-                    />
+                    }}
+                  />
+
+                  <div className="flex items-center gap-2">
+                    <Button type="button" onClick={() => fileInputRef.current?.click()}>
+                      Choose Image
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setSettings(defaultSettings);
+                      }}
+                    >
+                      Reset
+                    </Button>
                   </div>
+
+                  <p className="text-xs text-muted-foreground mt-2">Recommended: SVG or PNG. Max 2MB.</p>
+                  {uploading && <p className="text-sm text-gray-500 mt-1">Uploading...</p>}
+                  {uploadError && <p className="text-sm text-red-500 mt-1">{uploadError}</p>}
                 </div>
 
+                {/* Preview column */}
                 <div className="flex items-center justify-center p-4 border rounded-md bg-muted">
                   <img
                     src={settings.logoPath}
                     alt="Logo Preview"
-                    className="max-h-16 object-contain"
+                    className="max-h-20 object-contain"
                     onError={(e) => {
                       e.currentTarget.src = "/jl-logo.svg";
                     }}
