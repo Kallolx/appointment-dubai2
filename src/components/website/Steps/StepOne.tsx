@@ -45,7 +45,7 @@ const StepOne = ({
       
       console.log('StepOne received params:', { category, serviceSlug });
       
-      // If we have a specific service item (serviceSlug), filter by that service item
+      // If we have a specific service item (serviceSlug), filter by that service item only
       if (serviceSlug) {
         url += `?parentServiceItemSlug=${encodeURIComponent(serviceSlug)}`;
         console.log('Filtering by serviceSlug:', serviceSlug);
@@ -53,10 +53,8 @@ const StepOne = ({
         // Legacy: filter by category if no specific service item
         url += `?parentCategorySlug=${encodeURIComponent(category)}`;
         console.log('Filtering by category:', category);
-      }
-      
-      // Add a parameter to get ALL categories without any filtering
-      if (!serviceSlug && !category) {
+      } else {
+        // Only fetch all categories when no specific filtering is needed
         url += '?limit=100&active=true';
         console.log('Fetching ALL active categories');
       }
@@ -81,17 +79,6 @@ const StepOne = ({
         });
       });
 
-      // If we're not getting all categories and we have filtering, try to get all active categories
-      if (data.length < 5 && (serviceSlug || category)) {
-        console.log('Not all categories returned, trying to fetch all active categories...');
-        const allCategoriesResponse = await fetch(buildApiUrl('/api/service-items-category?limit=100&active=true'));
-        if (allCategoriesResponse.ok) {
-          const allCategories = await allCategoriesResponse.json();
-          console.log('All active categories:', allCategories);
-          return allCategories;
-        }
-      }
-
       return data;
     },
   });
@@ -100,45 +87,9 @@ const StepOne = ({
       window.scrollTo(0, 0);
     }, []);
 
-  // Fetch specific service item data when serviceSlug is provided
-  const {
-    data: serviceItem = null,
-    isLoading: serviceItemLoading,
-    error: serviceItemError,
-  } = useQuery({
-    queryKey: ["service-item", serviceSlug],
-    queryFn: async () => {
-      if (!serviceSlug) return null;
-      const response = await fetch(buildApiUrl(`/api/service-item/${serviceSlug}`));
-      if (!response.ok) {
-        throw new Error('Failed to fetch service item from database');
-      }
-      const data = await response.json();
-      console.log('Service item fetched from database:', data);
-      return data;
-    },
-    enabled: !!serviceSlug,
-  });
 
-  // Fetch filtered pricing when serviceSlug is provided
-  const {
-    data: filteredPricing = [],
-    isLoading: filteredPricingLoading,
-    error: filteredPricingError,
-  } = useQuery({
-    queryKey: ["service-pricing-filtered", serviceSlug],
-    queryFn: async () => {
-      if (!serviceSlug) return [];
-      const response = await fetch(buildApiUrl(`/api/service-pricing-filtered/${serviceSlug}`));
-      if (!response.ok) {
-        throw new Error('Failed to fetch filtered pricing from database');
-      }
-      const data = await response.json();
-      console.log('Filtered pricing fetched from database:', data);
-      return data;
-    },
-    enabled: !!serviceSlug,
-  });
+
+
 
   // Legacy services data for search functionality
   const {
@@ -162,28 +113,24 @@ const StepOne = ({
 
   // Set initial selected category when categories load
   useEffect(() => {
-    if (serviceItem && categories.length > 0) {
-      // If we have a specific service item and its categories, select the first one
-      setSelected(categories[0].slug);
-    } else if (serviceItem && serviceItem.category && categories.length === 0) {
-      // If we have a service item but no sub-categories, use the service item's category
-      setSelected(serviceItem.category.slug);
-    } else if (categories.length > 0 && !selected) {
-      // Otherwise, select the first category
+    if (categories.length > 0 && !selected) {
+      // Always select the first available category
       setSelected(categories[0].slug);
     }
-  }, [categories, selected, serviceItem]);
+  }, [categories, selected]);
 
   // Determine which categories to show
-  const displayCategories = serviceItem ? 
-    (categories.length > 0 ? categories : (serviceItem.category ? [serviceItem.category] : [])) 
-    : categories;
+  // When serviceSlug is provided, show only categories for that service item
+  // When category is provided, show only categories for that category
+  // Otherwise, show all categories
+  const displayCategories = categories;
 
   // Debug logging for display categories
   console.log('Display categories debug:', {
     totalCategories: categories.length,
     displayCategoriesCount: displayCategories.length,
-    serviceItem: !!serviceItem,
+    serviceSlug,
+    category,
     categoriesList: categories.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug, is_active: cat.is_active })),
     displayCategoriesList: displayCategories.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug, is_active: cat.is_active }))
   });
@@ -500,22 +447,18 @@ const StepOne = ({
     </div>
   );
 
-  if (categoriesLoading || (serviceSlug && (serviceItemLoading || filteredPricingLoading))) {
+  if (categoriesLoading) {
     return <div className="px-4 py-6">Loading services from database...</div>;
   }
   
-  if (categoriesError || serviceItemError || filteredPricingError) {
+  if (categoriesError) {
     console.error('Database fetch errors:', { 
-      categoriesError, 
-      serviceItemError, 
-      filteredPricingError 
+      categoriesError
     });
     return (
       <div className="px-4 py-6">
         <div className="text-red-600 font-semibold">Error loading services from database:</div>
         {categoriesError && <div className="text-sm text-red-500">Service Items Categories: {categoriesError.message}</div>}
-        {serviceItemError && <div className="text-sm text-red-500">Service item: {serviceItemError.message}</div>}
-        {filteredPricingError && <div className="text-sm text-red-500">Filtered pricing: {filteredPricingError.message}</div>}
         <div className="text-sm text-gray-600 mt-2">Please check console for detailed logs.</div>
       </div>
     );
@@ -524,15 +467,12 @@ const StepOne = ({
   console.log('Final data loaded:', { 
     serviceItemsCategories: categories?.length,
     serviceItemsCategoriesList: categories,
-    serviceItem,
-    serviceItemCategory: serviceItem?.category,
-    filteredPricing: filteredPricing?.length,
     serviceSlug,
+    category,
     displayCategories: displayCategories?.length,
     displayCategoriesList: displayCategories,
-    isFilteredByServiceItem: !!serviceSlug && categories.length > 0,
-    expectedCategories: 5, // We expect 5 categories based on admin
-    missingCategories: 5 - (categories?.length || 0)
+    isFilteredByServiceItem: !!serviceSlug,
+    isFilteredByCategory: !!category
   });
 
   // Additional debugging: Check if any categories are inactive
