@@ -114,6 +114,7 @@ const ServiceItemsCategory = () => {
   // Add category
   const addMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('Sending POST request with data:', data);
       const response = await fetch(buildApiUrl('/api/admin/service-items-category'), {
         method: 'POST',
         headers: {
@@ -122,12 +123,24 @@ const ServiceItemsCategory = () => {
         },
         body: JSON.stringify(data),
       });
-      return response.json();
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Server error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Server response:', result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items-category"] });
       setIsAddModalOpen(false);
     },
+    onError: (error) => {
+      console.error('Mutation error:', error);
+    }
   });
 
   // Update category
@@ -251,7 +264,7 @@ const ServiceItemsCategory = () => {
       // Upload any selected files to Cloudinary and set the returned URLs
       try {
         setUploadError(null);
-  if (selectedFiles.hero) {
+        if (selectedFiles.hero) {
           const uploadFile = async (file: File) => {
             const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
             const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -281,9 +294,14 @@ const ServiceItemsCategory = () => {
             const uploaded = await uploadFile(selectedFiles.hero);
             submitData.hero_image_url = uploaded;
           }
-          // icon removed
           setUploading(false);
         }
+
+        // Add missing required fields that the backend might expect
+        submitData.image_url = submitData.hero_image_url || ''; // Use hero_image_url as image_url if not set
+        submitData.icon_url = submitData.hero_image_url || ''; // Use hero_image_url as icon_url if not set
+        
+        console.log('Submitting data:', submitData); // Debug log to see what's being sent
 
         // Pass the full data including selectedPropertyTypes to the parent
         await onSubmit(submitData);

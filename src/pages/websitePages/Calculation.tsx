@@ -16,6 +16,7 @@ interface SelectedDateTime {
   professional: { name: string } | string | null;
   date: string | null;
   time: string | null;
+  extra_price?: number;
 }
 
 interface CalculationProps {
@@ -55,6 +56,9 @@ const Calculation: React.FC<CalculationProps> = ({
     (sum, item) => sum + getServicePrice(item) * (item.count ?? 1),
     0
   );
+
+  const extraPrice = Number(selectedDateTime.extra_price) || 0;
+  const finalTotal = totalPrice + extraPrice;
 
   return (
     <>
@@ -122,7 +126,7 @@ const Calculation: React.FC<CalculationProps> = ({
           <h2 className="font-bold text-sm pb-3">Payment Summary</h2>
           <div className="flex justify-between">
             <p className="w-1/2">Total</p>
-            <p className="w-1/2">AED {totalPrice.toFixed(2)}</p>
+            <p className="w-1/2">AED {finalTotal.toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -172,6 +176,16 @@ const Calculation: React.FC<CalculationProps> = ({
             ) : (
               <p className="text-gray-500">No items added yet.</p>
             )}
+
+            {/* Extra Price Display */}
+            {extraPrice > 0 && (
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Time Slot Fee</span>
+                  <span className="text-sm font-medium text-orange-600">+{extraPrice.toFixed(2)} AED</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -183,7 +197,7 @@ const Calculation: React.FC<CalculationProps> = ({
           >
             <div className="font-semibold flex flex-col leading-none">
               <span className="text-gray-500 text-xs">Total</span>
-              <span className="text-base">AED {totalPrice.toFixed(2)}</span>
+              <span className="text-base">AED {finalTotal.toFixed(2)}</span>
             </div>
             {showDrawer ? (
               <ChevronDown className="w-5 h-5" />

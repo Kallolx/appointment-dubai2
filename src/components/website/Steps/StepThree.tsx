@@ -99,9 +99,10 @@ const StepThree = ({ onSelectionChange }) => {
         const endTime = formatTime12Hour(slot.end_time);
         return {
           id: slot.id,
-          startTime: slot.start_time,
-          endTime: slot.end_time,
-          displayTime: `${startTime} - ${endTime}`
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          displayTime: `${startTime} - ${endTime}`,
+          extra_price: slot.extra_price || 0
         };
       });
 
@@ -130,25 +131,15 @@ const StepThree = ({ onSelectionChange }) => {
   }, []);
 
   useEffect(() => {
-    if (onSelectionChange) {
-      // Use selectedDbDate (YYYY-MM-DD) and selectedTime to inform parent
-      const formattedDate = selectedDbDate || "";
-      let formattedTime = "";
-
-      if (selectedTime) {
-        const timeSlot = timeSlots.find(t => t.displayTime === selectedTime);
-        if (timeSlot) formattedTime = timeSlot.startTime;
-      }
-
+    if (onSelectionChange && selectedDate && selectedTime) {
+      const selectedTimeSlot = timeSlots.find(slot => slot.displayTime === selectedTime);
       onSelectionChange({
-        professional: null,
-        date: formattedDate,
-        time: formattedTime,
-        displayDate: selectedDate,
-        displayTime: selectedTime
+        date: selectedDate,
+        time: selectedTime,
+        extra_price: selectedTimeSlot?.extra_price || 0
       });
     }
-  }, [selectedDate, selectedTime, onSelectionChange, dates, timeSlots]);
+  }, [selectedDate, selectedTime, timeSlots]); // Removed onSelectionChange from dependencies
 
   // when selectedDbDate changes, refetch time slots for that date
   useEffect(() => {
@@ -175,7 +166,7 @@ const StepThree = ({ onSelectionChange }) => {
       <div className="px-4 md:px-0">
         <div className="max-w-4xl">
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="ml-3 text-gray-600">Loading available dates and times...</span>
           </div>
         </div>
@@ -242,17 +233,17 @@ const StepThree = ({ onSelectionChange }) => {
                     }}
                     className={`min-w-[140px] p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center ${
                       selectedDate === dateItem.fullDate
-                        ? "border-blue-500 bg-blue-50 shadow-md"
+                        ? "border-primary bg-red-50 shadow-md"
                         : "border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm"
                     }`}
                   >
                     <div className={`font-medium mb-1 ${
-                      selectedDate === dateItem.fullDate ? "text-blue-700" : "text-gray-900"
+                      selectedDate === dateItem.fullDate ? "text-primary" : "text-gray-900"
                     }`}>
                       {dateItem.dayName}
                     </div>
                     <div className={`text-sm ${
-                      selectedDate === dateItem.fullDate ? "text-blue-600" : "text-gray-600"
+                      selectedDate === dateItem.fullDate ? "text-primary" : "text-gray-600"
                     }`}>
                       {dateItem.month} {dateItem.date}
                     </div>
@@ -288,14 +279,21 @@ const StepThree = ({ onSelectionChange }) => {
                   <div
                     key={timeSlot.id}
                     onClick={() => setSelectedTime(timeSlot.displayTime)}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center ${
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center relative ${
                       selectedTime === timeSlot.displayTime
-                        ? "border-blue-500 bg-blue-50 shadow-md"
+                        ? "border-primary bg-red-50 shadow-md"
                         : "border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm"
                     }`}
                   >
+                    {/* Extra Price Badge */}
+                    {timeSlot.extra_price > 0 && (
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        +{timeSlot.extra_price} AED
+                      </div>
+                    )}
+                    
                     <div className={`font-medium ${
-                      selectedTime === timeSlot.displayTime ? "text-blue-700" : "text-gray-900"
+                      selectedTime === timeSlot.displayTime ? "text-primary" : "text-gray-900"
                     }`}>
                       {timeSlot.displayTime}
                     </div>

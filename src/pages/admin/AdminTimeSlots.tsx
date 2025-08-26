@@ -10,6 +10,7 @@ interface TimeSlotData {
   start_time: string;
   end_time: string;
   is_available: boolean;
+  extra_price?: number; // Extra price in AED
   created_at: string;
   date?: string; // ISO date (YYYY-MM-DD) - optional if backend provides it
 }
@@ -26,10 +27,19 @@ const AdminTimeSlots: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAddingSlot, setIsAddingSlot] = useState(false);
+  const [isEditingSlot, setIsEditingSlot] = useState(false);
+  const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
   const [newSlot, setNewSlot] = useState({
     start_time: '',
     end_time: '',
-    is_available: true
+    is_available: true,
+    extra_price: 0
+  });
+  const [editSlot, setEditSlot] = useState({
+    start_time: '',
+    end_time: '',
+    is_available: true,
+    extra_price: 0
   });
   const [availableDates, setAvailableDates] = useState<AvailableDateOption[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
@@ -122,13 +132,60 @@ const AdminTimeSlots: React.FC = () => {
       }
 
       // Reset form and refresh slots
-      setNewSlot({ start_time: '', end_time: '', is_available: true });
+      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0 });
       setIsAddingSlot(false);
-  fetchTimeSlots();
+      fetchTimeSlots();
     } catch (err) {
       console.error('Error adding time slot:', err);
       alert(err instanceof Error ? err.message : 'Failed to add time slot');
     }
+  };
+
+  const editTimeSlot = (slot: TimeSlotData) => {
+    setEditingSlotId(slot.id);
+    setEditSlot({
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      is_available: slot.is_available,
+      extra_price: slot.extra_price || 0
+    });
+    setIsEditingSlot(true);
+    setIsAddingSlot(false);
+  };
+
+  const updateTimeSlot = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!editingSlotId) return;
+
+      const response = await fetch(buildApiUrl(`/api/admin/available-time-slots/${editingSlotId}`), {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editSlot)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update time slot');
+      }
+
+      // Reset edit form and refresh slots
+      setEditingSlotId(null);
+      setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0 });
+      setIsEditingSlot(false);
+      fetchTimeSlots();
+    } catch (err) {
+      console.error('Error updating time slot:', err);
+      alert('Failed to update time slot');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingSlotId(null);
+    setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0 });
+    setIsEditingSlot(false);
   };
 
   const updateSlotAvailability = async (slotId: number, isAvailable: boolean) => {
@@ -328,6 +385,23 @@ const AdminTimeSlots: React.FC = () => {
                   </select>
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Extra Price (AED)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newSlot.extra_price}
+                    onChange={(e) => setNewSlot({ ...newSlot, extra_price: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Additional charge for this time slot (optional)</p>
+                </div>
+              </div>
               <div className="mt-4 flex gap-2">
                 <Button onClick={addTimeSlot} disabled={!validateTimeSlot()}>
                   <Check className="w-4 h-4 mr-2" />
@@ -340,6 +414,92 @@ const AdminTimeSlots: React.FC = () => {
             </CardContent>
           )}
         </Card>
+
+        {/* Edit Time Slot Section */}
+        {isEditingSlot && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Edit Time Slot
+                </span>
+                <Button
+                  onClick={cancelEdit}
+                  variant="outline"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel Edit
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editSlot.start_time}
+                    onChange={(e) => setEditSlot({ ...editSlot, start_time: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editSlot.end_time}
+                    onChange={(e) => setEditSlot({ ...editSlot, end_time: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Available
+                  </label>
+                  <select
+                    value={editSlot.is_available.toString()}
+                    onChange={(e) => setEditSlot({ ...editSlot, is_available: e.target.value === 'true' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Extra Price (AED)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editSlot.extra_price}
+                    onChange={(e) => setEditSlot({ ...editSlot, extra_price: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Additional charge for this time slot (optional)</p>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button onClick={updateTimeSlot} disabled={!validateTimeSlot()}>
+                  <Check className="w-4 h-4 mr-2" />
+                  Update Time Slot
+                </Button>
+                {!validateTimeSlot() && editSlot.start_time && editSlot.end_time && (
+                  <p className="text-sm text-red-500 self-center">End time must be after start time</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Time Slots List */}
         <Card>
@@ -404,6 +564,14 @@ const AdminTimeSlots: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => editTimeSlot(slot)}
+                            className="p-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => deleteTimeSlot(slot.id)}
                             className="p-2 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                           >
@@ -421,6 +589,14 @@ const AdminTimeSlots: React.FC = () => {
                             {slot.is_available ? 'Available' : 'Disabled'}
                           </span>
                         </div>
+                        {slot.extra_price && slot.extra_price > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Extra Price:</span>
+                            <span className="font-medium text-orange-600">
+                              +{slot.extra_price} AED
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Added:</span>
                           <span className="text-gray-600">

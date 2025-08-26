@@ -33,9 +33,6 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="md:text-2xl text-xl font-semibold">{heading}</h2>
         <div className="flex items-center space-x-2">
-          <Link to={`/single-category/${heading}`} className="text-[#00c3ff]">
-            See All
-          </Link>
           <button
             onClick={() => scroll("left")}
             className="rounded-full border border-gray-300 hover:bg-gray-300 bg-white 

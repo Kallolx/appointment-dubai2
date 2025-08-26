@@ -24,6 +24,7 @@ interface SelectedDateTime {
   professional: string | null;
   date: string | null;
   time: string | null;
+  extra_price?: number;
 }
 
 interface SelectedAddress {
@@ -56,7 +57,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     return total + (item.service.price * item.count);
   }, 0);
   const discount = 0; // You can implement discount logic here
-  const totalToPay = subtotal - discount;
+  const extraPrice = Number(selectedDateTime.extra_price) || 0;
+  const totalToPay = subtotal + extraPrice - discount;
   const monthlyInstallment = (totalToPay / 4).toFixed(2);
 
   const navigate = useNavigate();
@@ -256,6 +258,11 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                     <div className="text-sm text-gray-600">
                       {selectedDateTime.time}
                     </div>
+                    {selectedDateTime.extra_price && selectedDateTime.extra_price > 0 && (
+                      <div className="text-sm text-orange-600 font-medium">
+                        +{selectedDateTime.extra_price} AED (Time Slot Fee)
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-sm text-gray-400 mt-1">
@@ -282,21 +289,28 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                       <span className="text-sm">AED {subtotal.toFixed(2)}</span>
                     </div>
                     
+                    {selectedDateTime.extra_price && Number(selectedDateTime.extra_price) > 0 && (
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-600">Time Slot Fee</span>
+                        <span className="text-sm text-orange-600">+{Number(selectedDateTime.extra_price).toFixed(2)} AED</span>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-600">Sub Total</span>
-                      <span className="text-sm">AED {subtotal.toFixed(2)}</span>
+                      <span className="text-sm">AED {(subtotal + (Number(selectedDateTime.extra_price) || 0)).toFixed(2)}</span>
                     </div>
                     
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-sm text-gray-600">VAT (5%)</span>
-                      <span className="text-sm">AED {(subtotal * 0.05).toFixed(2)}</span>
+                      <span className="text-sm">AED {((subtotal + (Number(selectedDateTime.extra_price) || 0)) * 0.05).toFixed(2)}</span>
                     </div>
                   </>
                 )}
                 
                 <div className="flex justify-between items-center font-semibold text-lg border-t pt-3">
                   <span>Total to pay</span>
-                  <span>AED {(subtotal + (subtotal * 0.05)).toFixed(2)}</span>
+                  <span>AED {((subtotal + (Number(selectedDateTime.extra_price) || 0)) + ((subtotal + (Number(selectedDateTime.extra_price) || 0)) * 0.05)).toFixed(2)}</span>
                 </div>
               </div>
 

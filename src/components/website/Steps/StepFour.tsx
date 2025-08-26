@@ -14,8 +14,11 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) =>
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const vat = subtotal * 0.05;
-  const total = subtotal + vat;
+  // Calculate fees and totals
+  const extraPrice = Number(selectedDateTime?.extra_price) || 0;
+  const codFee = selectedPayment === "cod" ? 10 : 0;
+  const vat = (subtotal + extraPrice + codFee) * 0.05;
+  const total = subtotal + extraPrice + codFee + vat;
 
   const handleBookNow = async () => {
     if (!selectedPayment) {
@@ -65,6 +68,9 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) =>
         appointment_time: selectedDateTime.time,
         location: selectedAddress,
         price: total,
+        extra_price: extraPrice,
+        cod_fee: codFee,
+        payment_method: selectedPayment === 'card' ? 'Credit/Debit Card' : 'Cash on Delivery',
         notes: `Payment Method: ${selectedPayment === 'card' ? 'Credit/Debit Card' : 'Cash on Delivery'}. Items: ${cartItems.map(item => `${item.service.name} (x${item.count})`).join(', ')}`
       };
 
@@ -226,10 +232,26 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) =>
             <span className="text-gray-600">Service Charges</span>
             <span className="font-medium">AED {subtotal.toFixed(2)}</span>
           </div>
+          
+          {extraPrice > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Time Slot Fee</span>
+              <span className="font-medium text-orange-600">+{extraPrice.toFixed(2)} AED</span>
+            </div>
+          )}
+          
+          {codFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Cash on Delivery Fee</span>
+              <span className="font-medium text-orange-600">+{codFee.toFixed(2)} AED</span>
+            </div>
+          )}
+          
           <div className="flex justify-between">
             <span className="text-gray-600">VAT (5%)</span>
             <span className="font-medium">AED {vat.toFixed(2)}</span>
           </div>
+          
           <div className="border-t pt-3">
             <div className="flex justify-between">
               <span className="text-lg font-semibold">Total to Pay</span>
@@ -268,12 +290,17 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) =>
                   >
                     {method.icon}
                   </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">{method.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {method.description}
-                    </p>
-                  </div>
+                                      <div>
+                      <h3 className="font-medium text-gray-900">{method.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {method.description}
+                      </p>
+                      {method.id === 'cod' && (
+                        <p className="text-xs text-orange-600 font-medium mt-1">
+                          +10.00 AED fee
+                        </p>
+                      )}
+                    </div>
                 </div>
                 <div
                   className={`w-5 h-5 rounded-full border-2 ${
@@ -297,10 +324,10 @@ const StepFour = ({ cartItems, selectedDateTime, subtotal, selectedAddress }) =>
         <button
           onClick={handleBookNow}
           disabled={!selectedPayment || isLoading}
-          className={`w-full py-4 px-8 rounded-lg font-semibold text-white text-lg transition-all flex items-center justify-center gap-3 ${
+          className={`w-full py-4 px-4 rounded-sm font-semibold text-white text-lg transition-all flex items-center justify-center gap-3 ${
             !selectedPayment || isLoading
               ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl"
+              : "bg-[#ed6329] hover:bg-green-700 shadow-lg hover:shadow-xl"
           }`}
         >
           {isLoading ? (

@@ -29,8 +29,8 @@ const Home = () => {
       .catch(() => setServiceItems([]));
   }, []);
 
-  // Build sections for the first 4 categories (or fewer)
-  const sections = categories.slice(0, 4).map((cat) => {
+  // Build sections for all categories
+  const sections = categories.map((cat) => {
     const services = serviceItems
       .filter((si) => si.category_id === cat.id)
       .map((si) => ({ 
@@ -44,24 +44,16 @@ const Home = () => {
 
   return (
     <>
-      <MobileNavbar />
       <div>
         <div className="px-5 md:px-0">
           <ServiceCategories />
           {sections.map((s) => (
             <ServiceSection key={s.heading} heading={s.heading} services={s.services} />
           ))}
-
-          <div className="max-w-7xl mx-auto">
-            <button className="bg-[#00c3ff] text-white text-xl py-4 px-6 rounded-lg font-semibold focus:outline-none w-full">
-              SHOW MORE
-            </button>
-          </div>
           <TopReasons />
           <ReviewSlider />
         </div>
         <PromiseSection />
-        <AppDownloadSection />
       </div>
     </>
   );

@@ -55,6 +55,12 @@ const StepOne = ({
         console.log('Filtering by category:', category);
       }
       
+      // Add a parameter to get ALL categories without any filtering
+      if (!serviceSlug && !category) {
+        url += '?limit=100&active=true';
+        console.log('Fetching ALL active categories');
+      }
+      
       console.log('Fetching from URL:', url);
       
       const response = await fetch(url);
@@ -70,9 +76,22 @@ const StepOne = ({
           name: cat.name,
           slug: cat.slug,
           parent_category_name: cat.parent_category_name,
-          parent_category_slug: cat.parent_category_slug
+          parent_category_slug: cat.parent_category_slug,
+          is_active: cat.is_active
         });
       });
+
+      // If we're not getting all categories and we have filtering, try to get all active categories
+      if (data.length < 5 && (serviceSlug || category)) {
+        console.log('Not all categories returned, trying to fetch all active categories...');
+        const allCategoriesResponse = await fetch(buildApiUrl('/api/service-items-category?limit=100&active=true'));
+        if (allCategoriesResponse.ok) {
+          const allCategories = await allCategoriesResponse.json();
+          console.log('All active categories:', allCategories);
+          return allCategories;
+        }
+      }
+
       return data;
     },
   });
@@ -160,6 +179,15 @@ const StepOne = ({
     (categories.length > 0 ? categories : (serviceItem.category ? [serviceItem.category] : [])) 
     : categories;
 
+  // Debug logging for display categories
+  console.log('Display categories debug:', {
+    totalCategories: categories.length,
+    displayCategoriesCount: displayCategories.length,
+    serviceItem: !!serviceItem,
+    categoriesList: categories.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug, is_active: cat.is_active })),
+    displayCategoriesList: displayCategories.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug, is_active: cat.is_active }))
+  });
+
   // Group services by category with search filtering (for legacy search)
   const servicesByCategory = displayCategories.reduce((acc, cat) => {
     if (cat && cat.slug) {
@@ -183,51 +211,89 @@ const StepOne = ({
     if (searchOpen || displayCategories.length === 0) return; // skip while searching
 
     const handleScroll = () => {
-      if (!scrollContainerRef.current) return;
-
-      const scrollTop = scrollContainerRef.current.scrollTop;
-      const containerOffsetTop = scrollContainerRef.current.offsetTop;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
 
       let currentCat = selected;
+      let minDistance = Infinity;
 
       for (const cat of displayCategories) {
         const section = sectionRefs.current[cat.slug];
         if (section) {
-          const offsetTop = section.offsetTop - containerOffsetTop;
-          const offsetHeight = section.offsetHeight;
-          if (
-            scrollTop >= offsetTop - 50 &&
-            scrollTop < offsetTop + offsetHeight - 50
-          ) {
+          const sectionTop = section.offsetTop;
+          const sectionHeight = section.offsetHeight;
+          const sectionCenter = sectionTop + sectionHeight / 2;
+          const distance = Math.abs(scrollTop + windowHeight / 2 - sectionCenter);
+
+          if (distance < minDistance) {
+            minDistance = distance;
             currentCat = cat.slug;
-            break;
           }
         }
       }
-      if (currentCat !== selected) setSelected(currentCat);
+      
+      // Only update if the detected category is significantly different
+      // This prevents the scroll detection from overriding manual clicks
+      if (currentCat !== selected && minDistance < 100) {
+        console.log('Scroll detection updating selected from', selected, 'to', currentCat, 'distance:', minDistance);
+        setSelected(currentCat);
+        // Also scroll the category tab into view
+        scrollCategoryIntoView(currentCat);
+      }
     };
 
-    const scrollContainer = scrollContainerRef.current;
-    scrollContainer?.addEventListener("scroll", handleScroll, {
+    window.addEventListener("scroll", handleScroll, {
       passive: true,
     });
 
     return () => {
-      scrollContainer?.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [displayCategories, selected, searchOpen]);
 
   // Scroll to section when category clicked
   const scrollToCategory = (catSlug) => {
-    if (!sectionRefs.current[catSlug]) return;
-
-    sectionRefs.current[catSlug].scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
-
+    console.log('scrollToCategory called with:', catSlug);
+    console.log('Current selected before update:', selected);
+    
+    // Update selected state immediately
     setSelected(catSlug);
+    
+    // Add a small delay to prevent scroll detection from overriding
+    setTimeout(() => {
+      // Then scroll to the section
+      if (!sectionRefs.current[catSlug]) {
+        console.log('Section ref not found for:', catSlug);
+        return;
+      }
+
+      // Scroll to the section with offset to account for sticky header
+      const section = sectionRefs.current[catSlug];
+      const headerHeight = 120; // Approximate height of sticky header
+      const sectionTop = section.offsetTop - headerHeight;
+      
+      // Use window.scrollTo for page scrolling
+      window.scrollTo({
+        top: sectionTop,
+        behavior: "smooth",
+      });
+    }, 50);
+    
+    console.log('Selected state updated to:', catSlug);
+  };
+
+  // Scroll category tab into view
+  const scrollCategoryIntoView = (catSlug) => {
+    if (!categoryRef.current) return;
+    
+    const categoryButton = categoryRef.current.querySelector(`[data-category="${catSlug}"]`);
+    if (categoryButton) {
+      categoryButton.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
   };
 
   // Scroll categories container by fixed amount with arrows
@@ -274,23 +340,22 @@ const StepOne = ({
           <p className="text-gray-500 text-xs md:text-sm mb-2">
             {property.description}
           </p>
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-xs md:text-sm text-gray-500">
-                Starting from
-              </span>
-              <span className="text-base md:text-lg font-semibold">
-                AED {property.base_price || property.price}
-              </span>
-            </div>
-            <Button
-              variant="outline"
-              className="flex text-primary items-center gap-1 px-3 py-1 md:px-4 md:py-2 text-xs md:text-base"
+                     <div className="flex justify-between items-center">
+             <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+               <span className="text-xs md:text-sm text-gray-500 font-normal">
+                 Starting from
+               </span>
+               <span className="text-sm md:text-lg font-semibold">
+                 AED {property.base_price || property.price}
+               </span>
+             </div>
+            <button
+              className="flex text-primary items-center gap-1 p-2 text-xs border border-primary"
               onClick={handleOptionsClick}
             >
               Options
               <ChevronRight className="w-4 h-4" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -332,18 +397,22 @@ const StepOne = ({
       enabled: !!category.slug,
     });
 
-    return (
-      <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
-        {/* Hero Banner */}
-        <div className="relative mb-8 rounded-sm overflow-hidden h-[200px]">
-          <img
-            src={category.hero_image_url || "/steps/s1.png"}
-            alt={`${category.name} Cleaning`}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 items-center bg-black bg-opacity-20 flex">
-          </div>
-        </div>
+         return (
+       <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
+         {/* Hero Banner */}
+         <div className="relative mb-8 rounded-sm overflow-hidden h-[200px]">
+           <img
+             src={category.hero_image_url || "/steps/s1.png"}
+             alt={`${category.name} Cleaning`}
+             className="w-full h-full object-cover"
+           />
+           {/* Darker overlay with category name */}
+           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+             <h2 className="text-white text-2xl md:text-3xl font-bold text-center px-4">
+               {category.name}
+             </h2>
+           </div>
+         </div>
 
         {/* Property Type Cards */}
         <div className="mb-8 space-y-4">
@@ -461,8 +530,18 @@ const StepOne = ({
     serviceSlug,
     displayCategories: displayCategories?.length,
     displayCategoriesList: displayCategories,
-    isFilteredByServiceItem: !!serviceSlug && categories.length > 0
+    isFilteredByServiceItem: !!serviceSlug && categories.length > 0,
+    expectedCategories: 5, // We expect 5 categories based on admin
+    missingCategories: 5 - (categories?.length || 0)
   });
+
+  // Additional debugging: Check if any categories are inactive
+  if (categories && categories.length > 0) {
+    const inactiveCategories = categories.filter(cat => !cat.is_active);
+    if (inactiveCategories.length > 0) {
+      console.log('Inactive categories found:', inactiveCategories.map(cat => cat.name));
+    }
+  }
 
   const handleModalAddService = (service) => {
     handleAddItemsClick(service);
@@ -498,40 +577,49 @@ const StepOne = ({
             {/* Left Arrow */}
             <button
               onClick={() => scrollCategories("left")}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 hover:bg-gray-100"
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-1 hover:bg-gray-50 shadow-sm"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
 
             {/* Categories Container */}
             <div
               ref={categoryRef}
-              className="flex gap-3 overflow-x-auto scrollbar-hide mx-6 max-w-[calc(100vw-100px)] md:max-w-[600px]"
+              className="flex gap-3 overflow-x-auto scrollbar-hide mx-6"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              {displayCategories.map((cat) => (
-                <button
-                  key={cat.slug}
-                  onClick={() => scrollToCategory(cat.slug)}
-                  className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all ${
-                    selected === cat.slug
-                      ? "bg-gray-50 border border-black"
-                      : "bg-gray-50 border border-gray-300"
-                  }`}
-                >
-                  <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
-                    {cat.name}
-                  </span>
-                </button>
-              ))}
+                             {displayCategories.map((cat) => {
+                 const isSelected = selected === cat.slug;
+                 console.log(`Rendering category ${cat.name} (${cat.slug}): selected=${isSelected}, current selected=${selected}`);
+                 
+                 return (
+                   <button
+                     key={cat.slug}
+                     data-category={cat.slug}
+                     onClick={() => {
+                       console.log(`Category button clicked: ${cat.name} (${cat.slug})`);
+                       scrollToCategory(cat.slug);
+                     }}
+                                           className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all duration-200 ${
+                        isSelected
+                          ? "bg-gray-100 border-2 border-gray-400 text-gray-800 shadow-sm"
+                          : "bg-gray-50 border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400"
+                      }`}
+                   >
+                     <span className="text-sm font-medium capitalize whitespace-nowrap">
+                       {cat.name}
+                     </span>
+                   </button>
+                 );
+               })}
             </div>
 
             {/* Right Arrow */}
             <button
               onClick={() => scrollCategories("right")}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 hover:bg-gray-100"
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-1 hover:bg-gray-50 shadow-sm"
             >
-              <ChevronRight className="w-6 h-6 text-gray-600" />
+              <ChevronRight className="w-5 h-5 text-gray-600" />
             </button>
           </div>
         </div>
@@ -584,3 +672,4 @@ const StepOne = ({
 };
 
 export default StepOne;
+

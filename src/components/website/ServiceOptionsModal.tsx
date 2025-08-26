@@ -36,7 +36,7 @@ interface ServicePricing {
   property_type_name: string;
   room_type_name: string;
   room_type_slug: string;
-  room_icon_url: string | null;
+  room_image: string | null;  // Changed from room_icon_url to match backend response
   room_description: string | null;
 }
 
@@ -154,7 +154,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         description: pricing.room_description || '',
         price: pricing.price,
         discount_price: pricing.discount_price,
-        image: getImagePath(propertyType, pricing.room_type_slug, pricing.room_icon_url),
+        image: getImagePath(propertyType, pricing.room_type_slug, pricing.room_image),
         room_type_id: pricing.room_type_id,
         room_type_slug: pricing.room_type_slug
       };
@@ -287,11 +287,11 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                   onClick={() => { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); } }}
                 >
-                  <div className="w-16 h-16 flex-shrink-0">
+                  <div className="w-24 h-24 flex-shrink-0">
                     <img
                       src={option.image}
                       alt={option.name}
-                      className="w-full h-full object-cover rounded-md"
+                      className="w-full h-full object-cover rounded-sm"
                       loading="lazy"
                     />
                   </div>

@@ -20,13 +20,6 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  // Address fields
-  const [recipientName, setRecipientName] = useState("");
-  const [buildingInfo, setBuildingInfo] = useState("");
-  const [streetInfo, setStreetInfo] = useState("");
-  const [locality, setLocality] = useState("");
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
   const navigate = useNavigate();
@@ -243,13 +236,6 @@ export default function Login() {
     <>
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">AppointPro</h1>
-          <p className="text-muted-foreground">Professional Appointment Management</p>
-        </div>
 
         <Card className="shadow-lg border-border/40">
           <CardHeader className="text-center">
@@ -296,13 +282,13 @@ export default function Login() {
                 </div>
                 <Button 
                   type="button" 
-                  className="w-full" 
+                  className="w-full bg-primary text-primary-foreground" 
                   disabled={isLoading} 
                   onClick={handleCheckPhone}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 rounded-full animate-spin" />
                       Checking...
                     </div>
                   ) : (
@@ -351,7 +337,7 @@ export default function Login() {
                 </div>
                 <Button 
                   type="button" 
-                  className="w-full" 
+                  className="w-full bg-primary text-primary-foreground" 
                   disabled={isLoading} 
                   onClick={handleLogin}
                 >
@@ -475,7 +461,7 @@ export default function Login() {
                 
                 <Button 
                   type="button" 
-                  className="w-full" 
+                  className="w-full bg-primary text-primary-foreground" 
                   disabled={isLoading} 
                   onClick={handleSignup}
                 >
