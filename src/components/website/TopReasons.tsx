@@ -2,7 +2,7 @@ import React from "react";
 
 const TopReasons: React.FC = () => {
   return (
-    <section className="bg-gray-50 py-20">
+    <section className="bg-gray-100 py-10">
       <div className="max-w-7xl mx-auto px-4">
         {/* Why ServiceMarket Section */}
         <div className="mb-16">
@@ -15,13 +15,11 @@ const TopReasons: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:grid md:grid-cols-3 gap-6 flex md:flex-row overflow-x-auto md:overflow-visible space-x-4 md:space-x-0 pb-4 md:pb-0">
             {/* Card 1: Everything your home needs */}
-            <div className="bg-white flex flex-col items-start rounded-xl shadow-sm px-6 py-9 text-left transition hover:shadow-md">
+            <div className="bg-white flex flex-col items-start rounded-xl px-4 py-6 md:px-6 md:py-9 text-left transition hover:shadow-md w-64 sm:w-72 md:w-auto flex-shrink-0">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                <svg className="w-12 h-12 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
+                <img src="/icons/home.svg" alt="home" />
               </div>
               <h3 className="font-bold text-lg mb-3 text-gray-800">
                 Everything your home needs
@@ -32,11 +30,9 @@ const TopReasons: React.FC = () => {
             </div>
 
             {/* Card 2: The best professionals for your job */}
-            <div className="bg-white flex flex-col items-start rounded-xl shadow-sm px-6 py-9 text-left transition hover:shadow-md">
+            <div className="bg-white flex flex-col items-start rounded-xl px-4 py-6 md:px-6 md:py-9 text-left transition hover:shadow-md w-64 sm:w-72 md:w-auto flex-shrink-0">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                <svg className="w-12 h-12 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <img src="/icons/doc.svg" alt="home" />
               </div>
               <h3 className="font-bold text-lg mb-3 text-gray-800">
                 The best professionals for your job
@@ -47,11 +43,9 @@ const TopReasons: React.FC = () => {
             </div>
 
             {/* Card 3: Great customer service */}
-            <div className="bg-white flex flex-col items-start rounded-xl shadow-sm px-6 py-9 text-left transition hover:shadow-md">
+            <div className="bg-white flex flex-col items-start rounded-xl px-4 py-6 md:px-6 md:py-9 text-left transition hover:shadow-md w-64 sm:w-72 md:w-auto flex-shrink-0">
               <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                <svg className="w-12 h-12 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+                <img src="/icons/headphone.svg" alt="home" />
               </div>
               <h3 className="font-bold text-lg mb-3 text-gray-800">
                 Great customer service
@@ -74,18 +68,13 @@ const TopReasons: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:grid md:grid-cols-3 gap-6 flex md:flex-row overflow-x-auto md:overflow-visible space-x-4 md:space-x-0 pb-4 md:pb-0">
             {/* Card 1: Tell us what you need */}
-            <div className="bg-white flex flex-col items-center rounded-xl shadow-sm px-6 py-9 text-center transition hover:shadow-md border border-blue-100">
+            <div className="bg-white flex flex-col items-center rounded-xl shadow-sm px-4 py-6 md:px-6 md:py-9 text-center transition hover:shadow-md w-64 sm:w-72 md:w-auto flex-shrink-0">
               <div className="w-16 h-16 mb-4 flex items-center justify-center relative">
-                <div className="w-16 h-16 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
                   <div className="relative">
-                    <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">1</span>
-                    </div>
+                    <img src="/icons/1.svg" alt="home" />
                   </div>
                 </div>
               </div>
@@ -98,16 +87,11 @@ const TopReasons: React.FC = () => {
             </div>
 
             {/* Card 2: We will find the right professional */}
-            <div className="bg-white flex flex-col items-center rounded-xl shadow-sm px-6 py-9 text-center transition hover:shadow-md border border-blue-100">
+            <div className="bg-white flex flex-col items-center rounded-xl shadow-sm px-4 py-6 md:px-6 md:py-9 text-center transition hover:shadow-md border border-blue-100 w-64 sm:w-72 md:w-auto flex-shrink-0">
               <div className="w-16 h-16 mb-4 flex items-center justify-center relative">
-                <div className="w-16 h-16 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
                   <div className="relative">
-                    <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">2</span>
-                    </div>
+                    <img src="/icons/2.svg" alt="home" />
                   </div>
                 </div>
               </div>
@@ -120,16 +104,11 @@ const TopReasons: React.FC = () => {
             </div>
 
             {/* Card 3: Sit back and relax */}
-            <div className="bg-white flex flex-col items-center rounded-xl shadow-sm px-6 py-9 text-center transition hover:shadow-md border border-blue-100">
+            <div className="bg-white flex flex-col items-center rounded-xl shadow-sm px-4 py-6 md:px-6 md:py-9 text-center transition hover:shadow-md border border-blue-100 w-64 sm:w-72 md:w-auto flex-shrink-0">
               <div className="w-16 h-16 mb-4 flex items-center justify-center relative">
-                <div className="w-16 h-16 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
                   <div className="relative">
-                    <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">3</span>
-                    </div>
+                    <img src="/icons/3.svg" alt="home" />
                   </div>
                 </div>
               </div>

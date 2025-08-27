@@ -4,6 +4,8 @@ import StepOne from "@/components/website/Steps/StepOne";
 import StepThree from "@/components/website/Steps/StepThree";
 import StepTwo from "@/components/website/Steps/StepTwo";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
+import LoginModal from '@/components/website/LoginModal';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Calculation from "./Calculation";
@@ -51,6 +53,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     time: null,
   });
   const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const auth = useAuth();
 
   const cartItemsArray = Object.values(cartItems).filter(item => item.count > 0);
   const subtotal = cartItemsArray.reduce((total, item) => {
@@ -106,6 +110,12 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
   const hasItems = Object.keys(cartItems).length > 0;
 
   const nextStep = () => {
+    // If user is not authenticated, open login modal and don't advance
+    if (!auth.isAuthenticated && step === 1) {
+      setLoginModalOpen(true);
+      return;
+    }
+
     setStep((prev) => Math.min(prev + 1, 4));
     // Scroll to top when moving to next step
     window.scrollTo(0, 0);
@@ -342,10 +352,10 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
               <button
                 onClick={nextStep}
                 disabled={!hasItems}
-                className={`w-full py-4 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${
+                className={`w-3/4 mx-auto py-4 rounded-sm font-semibold text-white transition-all flex items-center justify-center gap-2 ${
                   !hasItems
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-primary hover:bg-yellow-500"
+                    : "bg-primary"
                 }`}
               >
                 <span>NEXT</span>
@@ -369,6 +379,9 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
       </div>
 
       {/* Modal */}
+      {loginModalOpen && (
+        <LoginModal setLoginModalOpen={setLoginModalOpen} />
+      )}
     </div>
   );
 };

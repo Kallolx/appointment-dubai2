@@ -102,29 +102,15 @@ const ReviewSlider: React.FC = () => {
         {/* Bottom Section with Google Reviews and App Download */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Google Reviews Summary */}
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <div className="flex flex-col items-center mb-4">
-              <div className="text-2xl font-bold text-blue-500 mb-2">Google</div>
-              <div className="flex items-center gap-2">
-                <div className="text-gray-600">Reviews</div>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 text-orange-500 fill-orange-500"
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          <div className="bg-gray-100 rounded-xl shadow-sm p-8 text-center">
+            <img src="/icons/google.svg" alt="Google Reviews" className="mx-auto mb-2" />
+            <h3 className="text-sm font-normal text-gray-800 mb-2">
               What do customers say about ServiceMarket?
             </h3>
             
             <div className="flex items-center justify-center gap-2 mb-4">
-              <Star className="w-8 h-8 text-orange-500 fill-orange-500" />
-              <span className="text-2xl font-bold text-gray-800">4.7/5.0</span>
+              <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
+              <span className="text-xl font-normal text-gray-800">4.7/5.0</span>
             </div>
             
             <p className="text-gray-600">
@@ -162,7 +148,7 @@ const ReviewSlider: React.FC = () => {
 
         {/* Read all customer reviews button */}
         <div className="text-center mt-12">
-          <button className="border-2 border-primary text-primary text-md bg-white px-8 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+          <button className="border border-[#01788e] text-[#01788e] text-md bg-white px-8 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors">
             Read all customer reviews
           </button>
         </div>

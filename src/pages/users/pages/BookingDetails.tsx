@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin, CreditCard, X, Phone } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Navbar } from "@/components/website/Navbar";
+import  Navbar from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 
 interface OrderData {

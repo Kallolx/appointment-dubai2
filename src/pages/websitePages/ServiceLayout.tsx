@@ -1,5 +1,5 @@
 import Footer from "@/components/website/Footer";
-import { Navbar } from "@/components/website/Navbar";
+import Navbar from "@/components/website/Navbar";
 import { useParams } from "react-router-dom";
 import CheckoutService from "./CheckoutService";
 

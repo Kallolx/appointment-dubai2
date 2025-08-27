@@ -13,14 +13,14 @@ import { buildApiUrl } from "@/config/api";
 
 // No fallback data - force database usage only
 
-const StepOne = ({ 
-  handleAddItemsClick, 
-  handleRemoveItemClick, 
-  cartItems, 
-  category, 
-  serviceSlug 
+const StepOne = ({
+  handleAddItemsClick,
+  handleRemoveItemClick,
+  cartItems,
+  category,
+  serviceSlug,
 }) => {
-  console.log('StepOne props received:', { category, serviceSlug });
+  console.log("StepOne props received:", { category, serviceSlug });
   const [selected, setSelected] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -41,33 +41,35 @@ const StepOne = ({
   } = useQuery({
     queryKey: ["service-items-category", category, serviceSlug],
     queryFn: async () => {
-      let url = buildApiUrl('/api/service-items-category');
-      
-      console.log('StepOne received params:', { category, serviceSlug });
-      
+      let url = buildApiUrl("/api/service-items-category");
+
+      console.log("StepOne received params:", { category, serviceSlug });
+
       // If we have a specific service item (serviceSlug), filter by that service item only
       if (serviceSlug) {
         url += `?parentServiceItemSlug=${encodeURIComponent(serviceSlug)}`;
-        console.log('Filtering by serviceSlug:', serviceSlug);
+        console.log("Filtering by serviceSlug:", serviceSlug);
       } else if (category) {
         // Legacy: filter by category if no specific service item
         url += `?parentCategorySlug=${encodeURIComponent(category)}`;
-        console.log('Filtering by category:', category);
+        console.log("Filtering by category:", category);
       } else {
         // Only fetch all categories when no specific filtering is needed
-        url += '?limit=100&active=true';
-        console.log('Fetching ALL active categories');
+        url += "?limit=100&active=true";
+        console.log("Fetching ALL active categories");
       }
-      
-      console.log('Fetching from URL:', url);
-      
+
+      console.log("Fetching from URL:", url);
+
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch service items categories from database');
+        throw new Error(
+          "Failed to fetch service items categories from database"
+        );
       }
       const data = await response.json();
-      console.log('Service items categories fetched from database:', data);
-      console.log('Number of categories found:', data.length);
+      console.log("Service items categories fetched from database:", data);
+      console.log("Number of categories found:", data.length);
       data.forEach((cat, index) => {
         console.log(`Category ${index}:`, {
           id: cat.id,
@@ -75,7 +77,7 @@ const StepOne = ({
           slug: cat.slug,
           parent_category_name: cat.parent_category_name,
           parent_category_slug: cat.parent_category_slug,
-          is_active: cat.is_active
+          is_active: cat.is_active,
         });
       });
 
@@ -83,13 +85,9 @@ const StepOne = ({
     },
   });
 
-    useEffect(() => {
-      window.scrollTo(0, 0);
-    }, []);
-
-
-
-
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Legacy services data for search functionality
   const {
@@ -126,13 +124,23 @@ const StepOne = ({
   const displayCategories = categories;
 
   // Debug logging for display categories
-  console.log('Display categories debug:', {
+  console.log("Display categories debug:", {
     totalCategories: categories.length,
     displayCategoriesCount: displayCategories.length,
     serviceSlug,
     category,
-    categoriesList: categories.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug, is_active: cat.is_active })),
-    displayCategoriesList: displayCategories.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug, is_active: cat.is_active }))
+    categoriesList: categories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      is_active: cat.is_active,
+    })),
+    displayCategoriesList: displayCategories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      is_active: cat.is_active,
+    })),
   });
 
   // Group services by category with search filtering (for legacy search)
@@ -158,7 +166,8 @@ const StepOne = ({
     if (searchOpen || displayCategories.length === 0) return; // skip while searching
 
     const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
 
       let currentCat = selected;
@@ -170,7 +179,9 @@ const StepOne = ({
           const sectionTop = section.offsetTop;
           const sectionHeight = section.offsetHeight;
           const sectionCenter = sectionTop + sectionHeight / 2;
-          const distance = Math.abs(scrollTop + windowHeight / 2 - sectionCenter);
+          const distance = Math.abs(
+            scrollTop + windowHeight / 2 - sectionCenter
+          );
 
           if (distance < minDistance) {
             minDistance = distance;
@@ -178,11 +189,18 @@ const StepOne = ({
           }
         }
       }
-      
+
       // Only update if the detected category is significantly different
       // This prevents the scroll detection from overriding manual clicks
       if (currentCat !== selected && minDistance < 100) {
-        console.log('Scroll detection updating selected from', selected, 'to', currentCat, 'distance:', minDistance);
+        console.log(
+          "Scroll detection updating selected from",
+          selected,
+          "to",
+          currentCat,
+          "distance:",
+          minDistance
+        );
         setSelected(currentCat);
         // Also scroll the category tab into view
         scrollCategoryIntoView(currentCat);
@@ -200,17 +218,17 @@ const StepOne = ({
 
   // Scroll to section when category clicked
   const scrollToCategory = (catSlug) => {
-    console.log('scrollToCategory called with:', catSlug);
-    console.log('Current selected before update:', selected);
-    
+    console.log("scrollToCategory called with:", catSlug);
+    console.log("Current selected before update:", selected);
+
     // Update selected state immediately
     setSelected(catSlug);
-    
+
     // Add a small delay to prevent scroll detection from overriding
     setTimeout(() => {
       // Then scroll to the section
       if (!sectionRefs.current[catSlug]) {
-        console.log('Section ref not found for:', catSlug);
+        console.log("Section ref not found for:", catSlug);
         return;
       }
 
@@ -218,22 +236,24 @@ const StepOne = ({
       const section = sectionRefs.current[catSlug];
       const headerHeight = 120; // Approximate height of sticky header
       const sectionTop = section.offsetTop - headerHeight;
-      
+
       // Use window.scrollTo for page scrolling
       window.scrollTo({
         top: sectionTop,
         behavior: "smooth",
       });
     }, 50);
-    
-    console.log('Selected state updated to:', catSlug);
+
+    console.log("Selected state updated to:", catSlug);
   };
 
   // Scroll category tab into view
   const scrollCategoryIntoView = (catSlug) => {
     if (!categoryRef.current) return;
-    
-    const categoryButton = categoryRef.current.querySelector(`[data-category="${catSlug}"]`);
+
+    const categoryButton = categoryRef.current.querySelector(
+      `[data-category="${catSlug}"]`
+    );
     if (categoryButton) {
       categoryButton.scrollIntoView({
         behavior: "smooth",
@@ -261,10 +281,10 @@ const StepOne = ({
   // Component for rendering property type cards
   const PropertyTypeCard = ({ property, currentCategory }) => {
     const handleOptionsClick = () => {
-      console.log('PropertyTypeCard - handleOptionsClick called with:', {
+      console.log("PropertyTypeCard - handleOptionsClick called with:", {
         propertyName: property.name,
         currentCategory: currentCategory,
-        property: property
+        property: property,
       });
       setSelectedPropertyType(property.name);
       setModalCategory(currentCategory);
@@ -287,15 +307,15 @@ const StepOne = ({
           <p className="text-gray-500 text-xs md:text-sm mb-2">
             {property.description}
           </p>
-                     <div className="flex justify-between items-center">
-             <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-               <span className="text-xs md:text-sm text-gray-500 font-normal">
-                 Starting from
-               </span>
-               <span className="text-sm md:text-lg font-semibold">
-                 AED {property.base_price || property.price}
-               </span>
-             </div>
+          <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+              <span className="text-xs md:text-sm text-gray-500 font-normal">
+                Starting from
+              </span>
+              <span className="text-sm md:text-lg font-semibold">
+                AED {property.base_price || property.price}
+              </span>
+            </div>
             <button
               className="flex text-primary items-center gap-1 p-2 text-xs border border-primary"
               onClick={handleOptionsClick}
@@ -320,23 +340,34 @@ const StepOne = ({
     } = useQuery({
       queryKey: ["service-category-property-types", category.slug],
       queryFn: async () => {
-        const response = await fetch(buildApiUrl(`/api/service-items-category-property-types/${encodeURIComponent(category.slug)}`));
+        const response = await fetch(
+          buildApiUrl(
+            `/api/service-items-category-property-types/${encodeURIComponent(
+              category.slug
+            )}`
+          )
+        );
         if (!response.ok) {
           if (response.status === 404) {
-            console.log('No property types configured for category:', category.slug);
+            console.log(
+              "No property types configured for category:",
+              category.slug
+            );
             return [];
           }
-          throw new Error('Failed to fetch property types for service category');
+          throw new Error(
+            "Failed to fetch property types for service category"
+          );
         }
         const data = await response.json();
-        console.log('Property types for category:', category.slug, data);
+        console.log("Property types for category:", category.slug, data);
         data.forEach((prop, index) => {
           console.log(`Property type ${index} for category ${category.slug}:`, {
             id: prop.id,
             name: prop.name,
             slug: prop.slug,
             image_url: prop.image_url,
-            description: prop.description
+            description: prop.description,
           });
         });
         return data;
@@ -344,22 +375,22 @@ const StepOne = ({
       enabled: !!category.slug,
     });
 
-         return (
-       <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
-         {/* Hero Banner */}
-         <div className="relative mb-8 rounded-sm overflow-hidden h-[200px]">
-           <img
-             src={category.hero_image_url || "/steps/s1.png"}
-             alt={`${category.name} Cleaning`}
-             className="w-full h-full object-cover"
-           />
-           {/* Darker overlay with category name */}
-           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-             <h2 className="text-white text-2xl md:text-3xl font-bold text-center px-4">
-               {category.name}
-             </h2>
-           </div>
-         </div>
+    return (
+      <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
+        {/* Hero Banner */}
+        <div className="relative mb-8 rounded-sm overflow-hidden h-[200px]">
+          <img
+            src={category.hero_image_url || "/steps/s1.png"}
+            alt={`${category.name} Cleaning`}
+            className="w-full h-full object-cover"
+          />
+          {/* Darker overlay with category name */}
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <h2 className="text-white text-2xl md:text-3xl font-bold text-center px-4">
+              {category.name}
+            </h2>
+          </div>
+        </div>
 
         {/* Property Type Cards */}
         <div className="mb-8 space-y-4">
@@ -450,21 +481,29 @@ const StepOne = ({
   if (categoriesLoading) {
     return <div className="px-4 py-6">Loading services from database...</div>;
   }
-  
+
   if (categoriesError) {
-    console.error('Database fetch errors:', { 
-      categoriesError
+    console.error("Database fetch errors:", {
+      categoriesError,
     });
     return (
       <div className="px-4 py-6">
-        <div className="text-red-600 font-semibold">Error loading services from database:</div>
-        {categoriesError && <div className="text-sm text-red-500">Service Items Categories: {categoriesError.message}</div>}
-        <div className="text-sm text-gray-600 mt-2">Please check console for detailed logs.</div>
+        <div className="text-red-600 font-semibold">
+          Error loading services from database:
+        </div>
+        {categoriesError && (
+          <div className="text-sm text-red-500">
+            Service Items Categories: {categoriesError.message}
+          </div>
+        )}
+        <div className="text-sm text-gray-600 mt-2">
+          Please check console for detailed logs.
+        </div>
       </div>
     );
   }
 
-  console.log('Final data loaded:', { 
+  console.log("Final data loaded:", {
     serviceItemsCategories: categories?.length,
     serviceItemsCategoriesList: categories,
     serviceSlug,
@@ -472,14 +511,17 @@ const StepOne = ({
     displayCategories: displayCategories?.length,
     displayCategoriesList: displayCategories,
     isFilteredByServiceItem: !!serviceSlug,
-    isFilteredByCategory: !!category
+    isFilteredByCategory: !!category,
   });
 
   // Additional debugging: Check if any categories are inactive
   if (categories && categories.length > 0) {
-    const inactiveCategories = categories.filter(cat => !cat.is_active);
+    const inactiveCategories = categories.filter((cat) => !cat.is_active);
     if (inactiveCategories.length > 0) {
-      console.log('Inactive categories found:', inactiveCategories.map(cat => cat.name));
+      console.log(
+        "Inactive categories found:",
+        inactiveCategories.map((cat) => cat.name)
+      );
     }
   }
 
@@ -517,7 +559,7 @@ const StepOne = ({
             {/* Left Arrow */}
             <button
               onClick={() => scrollCategories("left")}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-1 hover:bg-gray-50 shadow-sm"
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
@@ -528,36 +570,40 @@ const StepOne = ({
               className="flex gap-3 overflow-x-auto scrollbar-hide mx-6"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-                             {displayCategories.map((cat) => {
-                 const isSelected = selected === cat.slug;
-                 console.log(`Rendering category ${cat.name} (${cat.slug}): selected=${isSelected}, current selected=${selected}`);
-                 
-                 return (
-                   <button
-                     key={cat.slug}
-                     data-category={cat.slug}
-                     onClick={() => {
-                       console.log(`Category button clicked: ${cat.name} (${cat.slug})`);
-                       scrollToCategory(cat.slug);
-                     }}
-                                           className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all duration-200 ${
-                        isSelected
-                          ? "bg-gray-100 border-2 border-gray-400 text-gray-800 shadow-sm"
-                          : "bg-gray-50 border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400"
-                      }`}
-                   >
-                     <span className="text-sm font-medium capitalize whitespace-nowrap">
-                       {cat.name}
-                     </span>
-                   </button>
-                 );
-               })}
+              {displayCategories.map((cat) => {
+                const isSelected = selected === cat.slug;
+                console.log(
+                  `Rendering category ${cat.name} (${cat.slug}): selected=${isSelected}, current selected=${selected}`
+                );
+
+                return (
+                  <button
+                    key={cat.slug}
+                    data-category={cat.slug}
+                    onClick={() => {
+                      console.log(
+                        `Category button clicked: ${cat.name} (${cat.slug})`
+                      );
+                      scrollToCategory(cat.slug);
+                    }}
+                    className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all duration-200 ${
+                      isSelected
+                        ? "bg-orange-50 border-2 border-orange-400 text-orange-500 shadow-sm"
+                        : "bg-white border border-purple-800 text-gray-600"
+                    }`}
+                  >
+                    <span className="text-sm font-medium capitalize whitespace-nowrap">
+                      {cat.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Right Arrow */}
             <button
               onClick={() => scrollCategories("right")}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-1 hover:bg-gray-50 shadow-sm"
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1"
             >
               <ChevronRight className="w-5 h-5 text-gray-600" />
             </button>
@@ -612,4 +658,3 @@ const StepOne = ({
 };
 
 export default StepOne;
-

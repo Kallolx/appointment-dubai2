@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Check, ChevronDown, ChevronUp, Loader2, Gift, Phone, Mail, CreditCard } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Navbar } from "@/components/website/Navbar";
+import  Navbar from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 
 interface OrderData {

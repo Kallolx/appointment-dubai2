@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import StepTwo from "../../../components/website/Steps/StepTwo";
 import StepThree from "../../../components/website/Steps/StepThree";
 import StepFour from "../../../components/website/Steps/StepFour";
-import { Navbar } from "@/components/website/Navbar";
+import  Navbar from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 
 interface OrderData {

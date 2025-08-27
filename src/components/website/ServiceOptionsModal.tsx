@@ -243,7 +243,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   return (
   <>
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 mb-4">
+      <div className="bg-white rounded-sm max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 mb-4">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-center p-4">
           <h2 className="text-xl font-semibold text-gray-900 text-center flex-1">
@@ -332,7 +332,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                           onClick={(e) => { e.stopPropagation(); handleAddService(option); }}
                           variant="outline"
                           size="sm"
-                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          className="text-blue-800 border-blue-800 rounded-none hover:bg-blue-50"
                         >
                           ADD +
                         </Button>
@@ -367,7 +367,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         <div className="sticky bottom-0 p-4 bg-white">
           <Button
             onClick={handleContinue}
-            className="w-full bg-primary text-white py-3"
+            className="w-full bg-primary rounded-none text-white py-3"
             style={{ transition: 'none', transform: 'none' }}
           >
             CONTINUE
@@ -379,7 +379,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
     {/* Detail modal for a single price/option */}
     {detailModalOpen && detailOption && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-        <div className="bg-white rounded-lg max-w-sm w-full p-6">
+        <div className="bg-white rounded-sm max-w-sm w-full p-6">
           <div className="flex items-start justify-between mb-4">
             <h3 className="text-lg font-semibold">{detailOption.name}</h3>
             <button onClick={() => setDetailModalOpen(false)} className="text-gray-500">✕</button>

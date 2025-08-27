@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { buildApiUrl } from "@/config/api";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 
 const StepThree = ({ onSelectionChange }) => {
   const dateScrollRef = useRef<HTMLDivElement>(null);
@@ -210,9 +210,9 @@ const StepThree = ({ onSelectionChange }) => {
               {/* Left Arrow */}
               <button
                 onClick={() => scroll("left", dateScrollRef)}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 rounded-full p-2 shadow-md border"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2"
               >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
+                <ChevronLeft className="w-8 h-8 text-gray-600" />
               </button>
 
               {/* Date Cards */}
@@ -231,19 +231,19 @@ const StepThree = ({ onSelectionChange }) => {
                       setSelectedDate(dateItem.fullDate);
                       setSelectedDbDate(dateItem.dbDate);
                     }}
-                    className={`min-w-[140px] p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center ${
+                    className={`p-2 rounded-sm w-[80px] cursor-pointer transition-all duration-200 text-center ${
                       selectedDate === dateItem.fullDate
-                        ? "border-primary bg-red-50 shadow-md"
-                        : "border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm"
+                        ? "bg-[#b2d7de]"
+                        : "border-gray-300 border bg-white hover:border-gray-400"
                     }`}
                   >
                     <div className={`font-medium mb-1 ${
-                      selectedDate === dateItem.fullDate ? "text-primary" : "text-gray-900"
+                      selectedDate === dateItem.fullDate ? "text-gray-800" : "text-gray-900"
                     }`}>
-                      {dateItem.dayName}
+                      {dateItem.dayName.slice(0, 3)}
                     </div>
                     <div className={`text-sm ${
-                      selectedDate === dateItem.fullDate ? "text-primary" : "text-gray-600"
+                      selectedDate === dateItem.fullDate ? "text-gray-800" : "text-gray-600"
                     }`}>
                       {dateItem.month} {dateItem.date}
                     </div>
@@ -254,9 +254,9 @@ const StepThree = ({ onSelectionChange }) => {
               {/* Right Arrow */}
               <button
                 onClick={() => scroll("right", dateScrollRef)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 rounded-full p-2 shadow-md border"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2"
               >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
+                <ChevronRight className="w-8 h-8 text-gray-600" />
               </button>
             </div>
           )}
@@ -279,10 +279,10 @@ const StepThree = ({ onSelectionChange }) => {
                   <div
                     key={timeSlot.id}
                     onClick={() => setSelectedTime(timeSlot.displayTime)}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center relative ${
+                    className={`p-4 rounded-sm cursor-pointer transition-all duration-200 text-center relative ${
                       selectedTime === timeSlot.displayTime
-                        ? "border-primary bg-red-50 shadow-md"
-                        : "border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm"
+                        ? "bg-[#b2d7de] border border-[#b2d7de]"
+                        : "bg-white border border-gray-300"
                     }`}
                   >
                     {/* Extra Price Badge */}
@@ -293,7 +293,7 @@ const StepThree = ({ onSelectionChange }) => {
                     )}
                     
                     <div className={`font-medium ${
-                      selectedTime === timeSlot.displayTime ? "text-primary" : "text-gray-900"
+                      selectedTime === timeSlot.displayTime ? "text-gray-800" : "text-gray-900"
                     }`}>
                       {timeSlot.displayTime}
                     </div>
@@ -316,6 +316,16 @@ const StepThree = ({ onSelectionChange }) => {
             </p>
           </section>
         )}
+
+        {/* Cancellation info box (bottom of step 3) */}
+        <div className="mt-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-start gap-3">
+            <Info className="w-5 h-5 text-gray-600 mt-0.5" />
+            <div className="text-sm text-gray-700">
+              Free cancellation up to 6 hours before your booking start time. <a href="/cancellation-policy" className="text-blue-600 underline">View cancellation policy</a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

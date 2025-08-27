@@ -1,6 +1,6 @@
-import { ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowLeft, Smartphone, X } from "lucide-react";
 import { buildApiUrl } from "@/config/api";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -66,6 +66,61 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
     }
   };
 
+  // Refs and handlers for 6-box OTP input
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+
+  const handleDigitChange = (index: number, val: string) => {
+    const digit = val.replace(/\D/g, '').slice(-1);
+    const arr = otp.split('');
+    while (arr.length < 6) arr.push('');
+    arr[index] = digit || '';
+    const newOtp = arr.join('').slice(0, 6);
+    setOtp(newOtp);
+    if (digit && inputsRef.current[index + 1]) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = e.key;
+    if (key === 'Backspace') {
+      if ((otp[index] || '') === '') {
+        if (inputsRef.current[index - 1]) {
+          inputsRef.current[index - 1]?.focus();
+        }
+      } else {
+        const arr = otp.split('');
+        while (arr.length < 6) arr.push('');
+        arr[index] = '';
+        setOtp(arr.join('').slice(0, 6));
+      }
+    } else if (key === 'ArrowLeft') {
+      if (inputsRef.current[index - 1]) inputsRef.current[index - 1]?.focus();
+    } else if (key === 'ArrowRight') {
+      if (inputsRef.current[index + 1]) inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const arr = paste.split('');
+    while (arr.length < 6) arr.push('');
+    const newOtp = arr.join('').slice(0, 6);
+    setOtp(newOtp);
+    // focus the next empty input
+    const nextIndex = paste.length >= 6 ? 5 : paste.length;
+    setTimeout(() => {
+      inputsRef.current[nextIndex]?.focus();
+    }, 0);
+  };
+
+  useEffect(() => {
+    if (step === 'otp') {
+      setTimeout(() => inputsRef.current[0]?.focus(), 50);
+    }
+  }, [step]);
+
   const getFullPhoneNumber = () => {
     const dialCode = countries.find((c) => c.name === selectedCountry)?.dial_code || "+971";
     return `${dialCode}${phoneNumber}`;
@@ -75,9 +130,8 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
     // Validate phone number before proceeding
     if (!validatePhoneNumber(phoneNumber)) {
       toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid phone number with at least 8 digits",
-        variant: "destructive"
+        title: "Please enter a valid mobile number.",
+        variant: "destructive",
       });
       return;
     }
@@ -211,216 +265,166 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
   };
   return (
     <div className="fixed inset-0 flex justify-center items-center z-[100]">
-      {/* Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-[100]">
-        <div className="bg-white p-4 rounded-lg shadow-lg max-w-md w-full relative z-[110]" style={{ position: 'relative', zIndex: 110 }}>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold text-lg">
-              {step === "phone" ? "Login or Sign Up" : "Enter Verification Code"}
-            </h2>
+      <div className="fixed inset-0 bg-black bg-opacity-40" onClick={() => setLoginModalOpen(false)} />
+
+          <div className="bg-white rounded-sm shadow-lg max-w-md w-full mx-4 z-[110]">
+        <div className="p-5">
+            <div className="flex items-start justify-between mb-2">
+            <div>
+              <h2 className="font-bold text-lg text-gray-800">Log in or sign up</h2>
+              <p className="text-sm text-gray-500">Please enter your mobile number to proceed.</p>
+            </div>
             <button
               onClick={() => setLoginModalOpen(false)}
-              className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              aria-label="Close modal"
+              className="p-2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600"
             >
-              &times;
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <hr className="border-gray-300 mb-6" />
+          <div className="mt-4">
+            {step === 'phone' ? (
+              <>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+                <div className="w-full">
+                  <div className="flex items-center bg-gray-50 rounded-md px-3 py-2">
+                    <button
+                      onClick={toggleCountryDrawer}
+                      className="flex items-center gap-2 pr-3 mr-3 border-r border-transparent"
+                      type="button"
+                    >
+                      <img
+                        src={`https://flagcdn.com/w40/${countries.find((c) => c.name === selectedCountry)?.code || 'ae'}.png`}
+                        className="w-6 h-6 rounded-full"
+                        alt="flag"
+                      />
+                      <span className="text-sm text-gray-700">{countries.find((c) => c.name === selectedCountry)?.dial_code}</span>
+                      <ChevronDown className="w-4 h-4 text-gray-400 ml-1" />
+                    </button>
 
-          {step === "phone" ? (
-            // Phone Number Step
-            <>
-              <p className="text-gray-400 mb-3">Your Phone Number</p>
-              <div className="flex items-center mb-4 gap-3">
-                {/* Country Selector */}
-                <div
-                  className="relative flex items-center gap-2 cursor-pointer"
-                  onClick={toggleCountryDrawer}
-                >
-                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
-                    <img
-                      src={`https://flagcdn.com/w40/${
-                        countries.find((c) => c.name === selectedCountry)?.code ||
-                        "ae"
-                      }.png`}
-                      className="w-6 h-6 object-cover rounded-full"
+                    <input
+                      type="tel"
+                      className="flex-1 bg-transparent border-0 outline-none text-sm placeholder-gray-400"
+                      placeholder="Phone Number"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      maxLength={15}
+                      autoFocus
                     />
-                    <p className="ml-1 text-sm">
-                      {countries.find((c) => c.name === selectedCountry)?.dial_code}
-                    </p>
-                  </div>
-                  {isCountryDrawerOpen ? (
-                    <ChevronUp className="w-5 h-5 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-500" />
-                  )}
-                  
-                  {/* Country Drawer */}
-                  {isCountryDrawerOpen && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-end md:items-center z-50">
-                      <div
-                        className="bg-white w-full md:w-[400px] h-screen rounded-t-2xl md:rounded-lg overflow-auto p-4 animate-slideUp"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex justify-between items-center mb-4">
-                          <h2 className="text-lg font-bold">Select Country</h2>
-                          <button
-                            onClick={toggleCountryDrawer}
-                            className="text-gray-500 hover:text-gray-700 text-2xl"
-                          >
-                            &times;
-                          </button>
-                        </div>
 
-                        {/* Search Input */}
-                        <div className="mb-4">
-                          <input
-                            type="text"
-                            placeholder="Search Country..."
-                            value={countrySearch}
-                            onChange={(e) => setCountrySearch(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                          />
-                        </div>
-
-                        <ul className="space-y-2">
-                          {countries
-                            .filter((country) =>
-                              country.name
-                                .toLowerCase()
-                                .includes(countrySearch.toLowerCase())
-                            )
-                            .map((country) => (
-                              <li
-                                key={country.code}
-                                className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                                  selectedCountry === country.name
-                                    ? "bg-blue-50 text-blue-600"
-                                    : "hover:bg-gray-100"
-                                }`}
-                                onClick={() => selectCountry(country)}
-                              >
-                                <img
-                                  src={`https://flagcdn.com/w40/${country.code}.png`}
-                                  className="w-6 h-6 mr-3 rounded-full"
-                                />
-                                {country.name}({country.dial_code})
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
+                    <div className="ml-3 text-gray-400">
+                      <Smartphone className="w-5 h-5" />
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Phone Input */}
-                <input
-                  type="tel"
-                  className="rounded w-full p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-300"
-                  placeholder="50 123 45 67"
-                  value={phoneNumber}
-                  onChange={handlePhoneChange}
-                  style={{ position: 'relative', zIndex: 40 }}
-                  maxLength={15}
-                  autoFocus
-                />
-              </div>
-
-              <hr className="border-gray-300 mb-3" />
-
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={handleSendOtp}
-                  disabled={!validatePhoneNumber(phoneNumber) || isLoading}
-                  className={`px-6 py-2 rounded-full w-full text-white font-medium ${
-                    !validatePhoneNumber(phoneNumber) || isLoading 
-                      ? 'bg-yellow-300 opacity-70 cursor-not-allowed' 
-                      : 'bg-yellow-500 hover:bg-yellow-600 cursor-pointer'
-                  }`}
-                  style={{ position: 'relative', zIndex: 50 }}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Sending...
-                    </div>
-                  ) : (
-                    "Send Code"
-                  )}
-                </button>
-              </div>
-            </>
-          ) : (
-            // OTP Verification Step
-            <>
-              <div className="flex items-center gap-2 mb-4">
-                <button
-                  onClick={handleBackToPhone}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <p className="text-gray-400">Enter the 6-digit code sent to</p>
-              </div>
-              
-              <p className="text-gray-600 font-medium mb-4">{getFullPhoneNumber()}</p>
-
-              {/* OTP Input */}
-              <div className="mb-6">
-                <input
-                  type="text"
-                  className="w-full p-4 text-center text-2xl font-bold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300 tracking-widest"
-                  placeholder="000000"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  maxLength={6}
-                  autoFocus
-                />
-              </div>
-
-              {/* Resend OTP */}
-              <div className="text-center mb-4">
-                {resendTimer > 0 ? (
-                  <p className="text-gray-500 text-sm">
-                    Resend code in {resendTimer}s
-                  </p>
-                ) : (
+                <div className="mt-6">
                   <button
-                    onClick={handleResendOtp}
-                    className="text-yellow-600 hover:text-yellow-700 text-sm font-medium underline"
+                    onClick={handleSendOtp}
+                    type="button"
+                    className={`w-full py-3 rounded-md text-white font-semibold ${isLoading ? 'bg-orange-400' : 'bg-orange-500 hover:bg-orange-600'}`}
                   >
-                    Resend Code
+                    {isLoading ? 'SENDING...' : 'CONTINUE'}
                   </button>
-                )}
-              </div>
+                </div>
+              </>
+            ) : (
+              // OTP Step UI
+              <>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
+                <div className="w-full">
+                  <div className="flex items-center justify-center bg-gray-50 rounded-md px-3 py-4 space-x-2">
+                    {[0,1,2,3,4,5].map((i) => (
+                      <input
+                        key={i}
+                        ref={(el) => (inputsRef.current[i] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        className="w-10 h-12 text-center text-lg font-medium bg-white border rounded focus:outline-none"
+                        value={(otp[i] || '')}
+                        onChange={(e) => handleDigitChange(i, e.target.value)}
+                        onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                        onPaste={handlePaste}
+                        maxLength={1}
+                        aria-label={`Digit ${i+1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-              <hr className="border-gray-300 mb-3" />
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <button
+                    onClick={handleBackToPhone}
+                    type="button"
+                    className="text-gray-600 hover:underline flex items-center gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back
+                  </button>
 
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={handleVerifyOtp}
-                  disabled={otp.length !== 6 || isLoading}
-                  className={`px-6 py-2 rounded-full w-full text-white font-medium ${
-                    otp.length !== 6 || isLoading 
-                      ? 'bg-yellow-300 opacity-70 cursor-not-allowed' 
-                      : 'bg-yellow-500 hover:bg-yellow-600 cursor-pointer'
-                  }`}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Verifying...
-                    </div>
-                  ) : (
-                    "Verify & Continue"
-                  )}
-                </button>
-              </div>
-            </>
-          )}
+                  <div className="text-right">
+                    {resendTimer > 0 ? (
+                      <div className="text-gray-500">Resend in {resendTimer}s</div>
+                    ) : (
+                      <button onClick={handleResendOtp} className="text-orange-500 font-medium">Resend</button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <button
+                    onClick={handleVerifyOtp}
+                    type="button"
+                    className={`w-full py-3 rounded-md text-white font-semibold ${isLoading ? 'bg-orange-400' : 'bg-orange-500 hover:bg-orange-600'}`}
+                  >
+                    {isLoading ? 'VERIFYING...' : 'VERIFY'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Country Drawer */}
+      {isCountryDrawerOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-[120]" onClick={() => setIsCountryDrawerOpen(false)}>
+          <div className="bg-white w-full max-w-md mt-20 rounded-md shadow-lg p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Select Country</h3>
+              <button
+                onClick={() => setIsCountryDrawerOpen(false)}
+                aria-label="Close country selector"
+                className="p-2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Search"
+              value={countrySearch}
+              onChange={(e) => setCountrySearch(e.target.value)}
+              className="w-full p-2 border rounded mb-3"
+            />
+
+            <div className="max-h-72 overflow-auto">
+              <ul>
+                {countries
+                  .filter((country) => country.name.toLowerCase().includes(countrySearch.toLowerCase()))
+                  .map((country) => (
+                    <li key={country.code} className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${selectedCountry === country.name ? 'bg-gray-50' : ''}`} onClick={() => selectCountry(country)}>
+                      <img src={`https://flagcdn.com/w40/${country.code}.png`} className="w-6 h-6 rounded-full" alt="flag" />
+                      <div className="flex-1 text-sm text-gray-700">{country.name}</div>
+                      <div className="text-sm text-gray-500">{country.dial_code}</div>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
