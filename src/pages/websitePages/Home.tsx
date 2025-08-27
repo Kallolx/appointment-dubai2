@@ -45,14 +45,12 @@ const Home = () => {
   return (
     <>
       <div>
-        <div className="px-5 md:px-0">
           <ServiceCategories />
           {sections.map((s) => (
             <ServiceSection key={s.heading} heading={s.heading} services={s.services} />
           ))}
           <TopReasons />
           <ReviewSlider />
-        </div>
         <PromiseSection />
       </div>
     </>

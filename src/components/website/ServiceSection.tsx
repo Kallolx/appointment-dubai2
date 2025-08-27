@@ -28,7 +28,7 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
   };
 
   return (
-    <div className="relative md:mb-14 mb-6 max-w-7xl mx-auto">
+    <div className="relative md:mb-14 p-6 mb-6 max-w-7xl mx-auto">
       {/* Section Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="md:text-2xl text-xl font-semibold">{heading}</h2>

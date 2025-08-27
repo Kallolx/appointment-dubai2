@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import React from "react";
-import { Facebook, Instagram, Twitter, Linkedin, Globe, MessageCircle } from "lucide-react";
+
 
 const BottomFooter: React.FC = () => {
   return (
-    <footer className="bg-[#054351] text-white">
+    <footer className="bg-[#054351] p-4 text-white">
       {/* BOTTOM SECTION - Resources, About us, Get in touch, Social Media and Legal Links */}
       <div className="pt-6 mb-6 max-w-7xl mx-auto px-4 md:px-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -73,7 +73,7 @@ const BottomFooter: React.FC = () => {
       </div>
 
       {/* Bottom Section with Social Media, Terms, and Copyright */}
-      <div className="md:-mx-16 px-4 md:px-16 py-8">
+      <div className="px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Social Media Icons - Centered and Bigger */}
           <div className="flex justify-center mb-6">
