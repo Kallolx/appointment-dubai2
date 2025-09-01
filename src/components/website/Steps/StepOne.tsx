@@ -33,6 +33,46 @@ const StepOne = ({
   const sectionRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
+  // Fetch service item details for hero section
+  const {
+    data: serviceItem = null,
+    isLoading: serviceItemLoading,
+    error: serviceItemError,
+  } = useQuery({
+    queryKey: ["service-item", serviceSlug],
+    queryFn: async () => {
+      if (!serviceSlug) return null;
+      
+      // Use the working endpoint that returns all service items
+      const url = buildApiUrl("/api/service-items/");
+      console.log("Fetching all service items from:", url);
+      console.log("ServiceSlug received:", serviceSlug);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch service items");
+      }
+      
+      const allItems = await response.json();
+      console.log("All service items fetched:", allItems);
+      
+      // Find the specific service item by slug
+      const foundItem = allItems.find(item => 
+        item.slug === serviceSlug || 
+        item.slug.toLowerCase() === serviceSlug.toLowerCase()
+      );
+      
+      if (foundItem) {
+        console.log("Found service item by slug:", foundItem);
+        return foundItem;
+      }
+      
+      console.log("Service item not found for slug:", serviceSlug);
+      return null;
+    },
+    enabled: !!serviceSlug,
+  });
+
   // Fetch service items categories from API (these will be shown in the tabs)
   const {
     data: categories = [],
@@ -109,13 +149,13 @@ const StepOne = ({
     },
   });
 
-  // Set initial selected category when categories load
-  useEffect(() => {
-    if (categories.length > 0 && !selected) {
-      // Always select the first available category
-      setSelected(categories[0].slug);
-    }
-  }, [categories, selected]);
+  // No initial selection - let user choose
+  // useEffect(() => {
+  //   if (categories.length > 0 && !selected) {
+  //     // Always select the first available category
+  //     setSelected(categories[0].slug);
+  //   }
+  // }, [categories, selected]);
 
   // Determine which categories to show
   // When serviceSlug is provided, show only categories for that service item
@@ -378,7 +418,7 @@ const StepOne = ({
     return (
       <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
         {/* Hero Banner */}
-        <div className="relative mb-8 rounded-sm overflow-hidden h-[200px]">
+        <div className="relative mb-8 rounded-sm overflow-hidden h-[170px]">
           <img
             src={category.hero_image_url || "/steps/s1.png"}
             alt={`${category.name} Cleaning`}
@@ -535,6 +575,51 @@ const StepOne = ({
 
   return (
     <div className="px-4 md:px-0">
+      {/* Hero Section - Service Name and Image (Above the slider) */}
+      {serviceSlug && (
+        <div className="px-4 md:px-0 mb-6">
+          {serviceItemLoading ? (
+            <div className="h-[200px] md:h-[250px] bg-gray-200 rounded-sm flex items-center justify-center">
+              <div className="text-gray-500">Loading service details...</div>
+            </div>
+          ) : serviceItem ? (
+            <div>
+              {/* Hero Image */}
+              <div className="relative rounded-sm overflow-hidden h-[200px] md:h-[250px] mb-4">
+                <img
+                  src={serviceItem.image_url || "/steps/s1.png"}
+                  alt={`${serviceItem.name} service`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Service Name below the image */}
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 text-center px-4">
+                {serviceItem.name}
+              </h1>
+            </div>
+          ) : (
+            <div>
+              {/* Hero Image */}
+              <div className="relative rounded-sm overflow-hidden h-[200px] md:h-[250px] mb-4">
+                <img
+                  src="/steps/s1.png"
+                  alt={`${serviceSlug} service`}
+                  className="w-full h-full object-cover"
+                />
+                {/* Debug info */}
+                <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 text-white text-xs p-2 rounded">
+                  Debug: serviceSlug="{serviceSlug}" | serviceItem: {serviceItem ? 'Found' : 'Not found'}
+                </div>
+              </div>
+              {/* Service Name below the image */}
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 text-center px-4 capitalize">
+                {serviceSlug.replace(/-/g, ' ')}
+              </h1>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sticky Search Bar + Tabs */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 mb-4">
         {/* Search Bar */}
@@ -556,18 +641,18 @@ const StepOne = ({
         {/* Categories Section */}
         <div className="p-2 pt-0 bg-white">
           <div className="relative">
-            {/* Left Arrow */}
+            {/* Left Arrow - Hidden on mobile */}
             <button
               onClick={() => scrollCategories("left")}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1"
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
 
-            {/* Categories Container */}
+            {/* Categories Container - Full width on mobile, with margins on desktop */}
             <div
               ref={categoryRef}
-              className="flex gap-3 overflow-x-auto scrollbar-hide mx-6"
+              className="flex gap-3 overflow-x-auto scrollbar-hide mx-0 md:mx-6 w-full md:w-auto"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               {displayCategories.map((cat) => {
@@ -589,9 +674,17 @@ const StepOne = ({
                     className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all duration-200 ${
                       isSelected
                         ? "bg-orange-50 border-2 border-orange-400 text-orange-500 shadow-sm"
-                        : "bg-white border border-purple-800 text-gray-600"
+                        : "bg-white border border-[#01788e] text-gray-600"
                     }`}
                   >
+                    {/* Circular Icon */}
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                      <img
+                        src="/icons/pest.webp"
+                        alt={`${cat.name} icon`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <span className="text-sm font-medium capitalize whitespace-nowrap">
                       {cat.name}
                     </span>
@@ -600,10 +693,10 @@ const StepOne = ({
               })}
             </div>
 
-            {/* Right Arrow */}
+            {/* Right Arrow - Hidden on mobile */}
             <button
               onClick={() => scrollCategories("right")}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1"
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
             >
               <ChevronRight className="w-5 h-5 text-gray-600" />
             </button>
@@ -652,6 +745,12 @@ const StepOne = ({
         category={modalCategory} // FIXED: Use modalCategory instead of selected
         onAddService={handleModalAddService}
         onRemoveService={handleModalRemoveService}
+        // NEW: Add context for complete selection information
+        context={{
+          selectedCategory: modalCategory,
+          selectedPropertyType: selectedPropertyType,
+          selectedServiceItem: serviceSlug || "Service", // Use serviceSlug if available
+        }}
       />
     </div>
   );

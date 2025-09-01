@@ -28,10 +28,10 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
   };
 
   return (
-    <div className="relative md:mb-14 p-6 mb-6 max-w-7xl mx-auto">
+    <div className="relative md:mb-14 p-4 mb-6 max-w-7xl mx-auto">
       {/* Section Header */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="md:text-2xl text-xl font-semibold">{heading}</h2>
+        <h2 className="md:text-2xl text-gray-600 text-xl font-bold">{heading}</h2>
       </div>
 
       {/* Scrollable Service Cards */}
@@ -42,7 +42,7 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
           scrollbarWidth: "none", // Firefox
           msOverflowStyle: "none", // IE & Edge
         }}
-        className="flex overflow-x-auto space-x-3 sm:space-x-4 pb-2 scroll-smooth no-scrollbar px-2 sm:px-0"
+        className="flex overflow-x-auto space-x-3 sm:space-x-4 scroll-smooth no-scrollbar sm:px-0"
       >
         {services.map((service, index) => {
           // Determine the correct link based on whether it's a service item or category
@@ -54,21 +54,21 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
           return (
             <div
               key={index}
-              className="min-w-[120px] sm:min-w-[160px] md:min-w-[240px] hover:cursor-pointer rounded-md flex flex-col"
+              className="min-w-[140px] sm:min-w-[160px] md:min-w-[240px] hover:cursor-pointer rounded-sm flex flex-col"
             >
               <Link to={linkTo} className="relative block">
                 {/* Image */}
                 <img
                   src={service.image}
                   alt={service.title}
-                  className="w-full h-28 sm:h-36 md:h-48 object-cover rounded-md"
+                  className="w-full h-20 md:h-40 object-cover rounded-sm"
                 />
 
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-black rounded-md opacity-20 hover:opacity-0 transition-opacity "></div>
               </Link>
               {/* Title */}
-              <p className="font-bold pt-2 text-left text-xs sm:text-sm md:text-lg truncate">{service.title}</p>
+              <p className="font-semibold pt-2 text-lefttext-md md:text-lg max-w-[120px] sm:max-w-[140px] md:max-w-[200px]">{service.title}</p>
             </div>
           );
         })}

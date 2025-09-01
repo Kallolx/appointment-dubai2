@@ -6,11 +6,15 @@ interface Service {
   icon: string;
 }
 
-const ServiceCategories: React.FC = () => {
+interface ServiceCategoriesProps {
+  updateCity?: (city: string) => void;
+}
+
+const ServiceCategories: React.FC<ServiceCategoriesProps> = ({ updateCity }) => {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <ServiceHero />
+      <ServiceHero updateCity={updateCity} />
     </div>
   );
 };

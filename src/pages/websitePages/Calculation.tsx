@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, Info, X } from "lucide-react";
 import React, { useState } from "react";
 
 interface ServiceItem {
@@ -26,6 +26,9 @@ interface CalculationProps {
   hasItems?: boolean;
   handleAddItemsClick?: (item: ServiceItem) => void;
   handleRemoveItemClick?: (id: string) => void;
+  selectedPayment?: string; // Add payment method prop
+  handleBookNow?: () => void; // Add order creation function
+  currentStep?: number; // Add current step number
 }
 
 const Calculation: React.FC<CalculationProps> = ({
@@ -35,6 +38,9 @@ const Calculation: React.FC<CalculationProps> = ({
   hasItems = false,
   handleAddItemsClick,
   handleRemoveItemClick,
+  selectedPayment,
+  handleBookNow,
+  currentStep,
 }) => {
   const { professional, date, time } = selectedDateTime || {};
   const [showDrawer, setShowDrawer] = useState(false);
@@ -43,11 +49,11 @@ const Calculation: React.FC<CalculationProps> = ({
   const getServicePrice = (item: ServiceItem): number => {
     // Try discount price first, then regular price, then fallback to 0
     const price = Number(
-      item.discount_price ?? 
-      item.discountPrice ?? 
-      item.price ?? 
-      item.currentPrice ?? 
-      0
+      item.discount_price ??
+        item.discountPrice ??
+        item.price ??
+        item.currentPrice ??
+        0
     );
     return isNaN(price) ? 0 : price;
   };
@@ -58,6 +64,7 @@ const Calculation: React.FC<CalculationProps> = ({
   );
 
   const extraPrice = Number(selectedDateTime.extra_price) || 0;
+  const codFee = selectedPayment === "cod" ? 5 : 0; // AED 5 for Cash on Delivery
   const finalTotal = totalPrice + extraPrice;
 
   return (
@@ -140,82 +147,160 @@ const Calculation: React.FC<CalculationProps> = ({
           }`}
           style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.1)" }}
         >
-          <div className="p-4">
-            <h2 className="font-bold text-sm pb-3">Booking Details</h2>
+          {/* Draggable Handle */}
+          <div className="flex justify-center pt-2 pb-1">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+
+          {/* Close Button */}
+          <div className="absolute top-2 right-3">
+            <button
+              onClick={() => setShowDrawer(false)}
+              className="p-1.5 hover:bg-gray-100 rounded-full"
+            >
+              <X className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
+
+          <div className="px-4 pt-6 pb-8">
+            <h2 className="font-bold text-base pb-3 text-gray-900">Summary</h2>
 
             {Object.values(cartItems).length > 0 ? (
-              Object.values(cartItems).map((item, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center mb-3"
-                >
-                  <div className="flex flex-col w-3/4">
-                    <p className="font-semibold text-gray-800">{item.title || item.name}</p>
-                    <p className="text-gray-500 text-sm">
+              <>
+                {/* Main Items */}
+                {Object.values(cartItems).map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center mb-2"
+                  >
+                    <span className="text-gray-800 text-sm">
+                      {item.title || item.name} x {item.count}
+                    </span>
+                    <span className="font-semibold text-gray-800 text-sm">
                       AED {getServicePrice(item).toFixed(2)}
-                    </p>
+                    </span>
                   </div>
+                ))}
 
-                  <div className="flex items-center gap-3 w-1/4 justify-end text-gray-700 font-semibold">
-                    <button
-                      onClick={() => handleRemoveItemClick?.(item.id)}
-                      className="border border-gray-400 rounded-full w-6 h-6 flex items-center justify-center text-xl select-none"
-                    >
-                      −
-                    </button>
-                    <span>{item.count}</span>
-                    <button
-                      onClick={() => handleAddItemsClick?.(item)}
-                      className="border border-gray-400 rounded-full w-6 h-6 flex items-center justify-center text-xl select-none"
-                    >
-                      +
-                    </button>
+                {/* Separator */}
+                <div className="border-t border-gray-200 my-2"></div>
+
+                {/* Service Charges */}
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-gray-600 text-sm">Service Charges</span>
+                  <span className="text-gray-800 text-sm">
+                    AED {finalTotal.toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Discount (if any) */}
+                {extraPrice > 0 && (
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-gray-600 text-sm">Time Slot Fee</span>
+                    <span className="text-orange-600 text-sm">
+                      + AED {extraPrice.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* COD Fee (if applicable) */}
+                {codFee > 0 && (
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-gray-600 text-sm">Cash on Delivery Fee</span>
+                    <span className="text-orange-600 text-sm">
+                      + AED {codFee.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Sub Total */}
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-gray-600 text-sm">Sub Total</span>
+                  <span className="font-semibold text-gray-800 text-sm">
+                    AED {(finalTotal + extraPrice + codFee).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* VAT */}
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-gray-600 text-sm">VAT (5%)</span>
+                  <span className="text-gray-800 text-sm">
+                    AED {((finalTotal + extraPrice + codFee) * 0.05).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Total to Pay */}
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-semibold text-gray-900">Total to Pay</span>
+                    <span className="text-base font-bold text-gray-800">
+                      AED {(finalTotal + extraPrice + codFee + (finalTotal + extraPrice + codFee) * 0.05).toFixed(2)}
+                    </span>
                   </div>
                 </div>
-              ))
+              </>
             ) : (
-              <p className="text-gray-500">No items added yet.</p>
-            )}
-
-            {/* Extra Price Display */}
-            {extraPrice > 0 && (
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Time Slot Fee</span>
-                  <span className="text-sm font-medium text-orange-600">+{extraPrice.toFixed(2)} AED</span>
-                </div>
-              </div>
+              <p className="text-gray-500 text-center py-8">
+                No items added yet.
+              </p>
             )}
           </div>
         </div>
 
+        {/* Tabby Installment Info - Behind Summary Section */}
+        <div className="fixed bottom-[65px] left-0 right-0 bg-white px-6 py-5 border-t border-gray-200 z-[59]">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-700 font-medium text-sm">
+              AED{" "}
+              {(
+                (finalTotal + extraPrice + codFee + (finalTotal + extraPrice + codFee) * 0.05) /
+                4
+              ).toFixed(2)}
+              /month{" "}
+              <span className="text-gray-500 font-normal">
+                for 4 months with
+              </span>
+            </span>
+            <span className="flex items-center gap-1">
+              <img src="/icons/tabby.svg" alt="Tabby" className="h-5" />
+              <Info className="w-4 h-4 text-gray-600" />
+            </span>
+          </div>
+        </div>
+
         {/* Bottom Total Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-md flex items-center justify-between z-[70]">
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-white px-4 py-3 flex items-center justify-between z-[70]"
+          style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.1)" }}
+        >
           <div
             onClick={() => setShowDrawer(!showDrawer)}
-            className="cursor-pointer flex items-center gap-2"
+            className="cursor-pointer flex items-center gap-1"
           >
             <div className="font-semibold flex flex-col leading-none">
-              <span className="text-gray-500 text-xs">Total</span>
-              <span className="text-base">AED {finalTotal.toFixed(2)}</span>
+              <span className="text-gray-500 text-sm">Total</span>
+              <span className="text-xl text-gray-600 font-bold ">
+                AED {(finalTotal + extraPrice + codFee + (finalTotal + extraPrice + codFee) * 0.05).toFixed(2)}
+              </span>
             </div>
             {showDrawer ? (
-              <ChevronDown className="w-5 h-5" />
+              <ChevronDown className="w-5 h-5 mt-4" />
             ) : (
-              <ChevronUp className="w-5 h-5" />
+              <ChevronUp className="w-5 h-5 mt-4" />
             )}
           </div>
 
           <button
-            onClick={nextStep}
-            disabled={!hasItems}
-            className={`ml-4 px-5 py-2 rounded-full text-white text-sm font-semibold ${
-              hasItems
-                ? "bg-yellow-400 hover:bg-yellow-500"
-                : "bg-yellow-400 opacity-50 cursor-not-allowed"
+            onClick={currentStep === 4 ? handleBookNow : nextStep}
+            disabled={!hasItems || (currentStep === 4 && !selectedPayment)}
+            className={`ml-4 px-12 py-2 flex items-center justify-center gap-2 text-white text-lg font-semibold ${
+              hasItems && (currentStep !== 4 || selectedPayment)
+                ? "bg-primary hover:bg-orange-600"
+                : "bg-primary opacity-50 cursor-not-allowed"
             }`}
           >
-            Next
+            NEXT
+            <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>

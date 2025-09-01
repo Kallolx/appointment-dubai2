@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoginModal from '@/components/website/LoginModal';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { buildApiUrl } from "@/config/api";
 import Calculation from "./Calculation";
 
 interface Service {
@@ -53,6 +54,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     time: null,
   });
   const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<string>("");
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const auth = useAuth();
 
@@ -151,6 +153,102 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     }
   };
 
+  const handleBookNow = async () => {
+    if (!selectedPayment) {
+      console.log("Please select a payment method");
+      return;
+    }
+
+    if (!auth.isAuthenticated) {
+      console.log("Please log in to book an appointment");
+      navigate("/login");
+      return;
+    }
+
+    if (!selectedDateTime.date || !selectedDateTime.time) {
+      console.log("Please select date and time for your appointment");
+      return;
+    }
+
+    if (!selectedAddress) {
+      console.log("Please select a service address");
+      return;
+    }
+
+    try {
+      // Calculate total including COD fee and VAT
+      const codFee = selectedPayment === "cod" ? 5 : 0;
+      const extraPrice = Number(selectedDateTime.extra_price) || 0;
+      const total = subtotal + extraPrice + codFee + (subtotal + extraPrice + codFee) * 0.05;
+
+      // Extract room type and property type from cart items
+      const firstItem = cartItemsArray[0];
+      const roomType = firstItem?.service?.roomType || firstItem?.service?.context?.selectedRoomType || 'Studio';
+      const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
+      const quantity = firstItem?.count || 1;
+
+      // Prepare appointment data
+      const appointmentData = {
+        service: cartItemsArray
+          .map((item) => `${item.service.name} (x${item.count})`)
+          .join(", "),
+        appointment_date: selectedDateTime.date,
+        appointment_time: selectedDateTime.time,
+        location: selectedAddress,
+        price: total,
+        extra_price: extraPrice,
+        cod_fee: codFee,
+        room_type: roomType,
+        property_type: propertyType,
+        quantity: quantity,
+        service_category: firstItem?.service?.category || category || 'general',
+        payment_method:
+          selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery",
+        notes: `Payment Method: ${
+          selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery"
+        }. Items: ${cartItemsArray
+          .map((item) => `${item.service.name} (x${item.count})`)
+          .join(", ")}`,
+      };
+
+      // Debug: Log the appointment data being sent
+      console.log('CheckoutService - Appointment data being sent:', appointmentData);
+      console.log('CheckoutService - First item details:', firstItem);
+      console.log('CheckoutService - Category:', category);
+
+      // Make API call to create appointment
+      const response = await fetch(buildApiUrl("/api/user/appointments"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify(appointmentData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Navigate to order confirmation page with order data
+        navigate("/order-confirmation", {
+          state: {
+            orderData: {
+              ...data.appointment,
+              ...appointmentData,
+              status: data.appointment?.status || 'pending', // Ensure status is always present
+            },
+          },
+        });
+        console.log("Booking Confirmed! Your appointment has been successfully booked.");
+      } else {
+        throw new Error(data.message || "Failed to create appointment");
+      }
+    } catch (error) {
+      console.error("Error creating appointment:", error);
+      console.log("Failed to create appointment. Please try again.");
+    }
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -181,6 +279,9 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
             selectedDateTime={selectedDateTime}
             subtotal={subtotal}
             selectedAddress={selectedAddress}
+            selectedPayment={selectedPayment}
+            setSelectedPayment={setSelectedPayment}
+            category={category}
           />
         );
       default:
@@ -190,27 +291,27 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen">
-      {/* Step Progress Header - Hidden on Mobile */}
-      <div className="py-4 px-4 md:px-0 hidden md:block">
+      {/* Step Progress Header */}
+      <div className="py-2 md:py-4 px-4 md:px-0">
         <div className="w-full max-w-[1100px] mx-auto">
-          <div className="flex justify-center items-center mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">
+          <div className="flex justify-center items-center mb-2 md:mb-4">
+            <h1 className="hidden md:block text-2xl font-bold text-gray-800">
               {step === 1 ? "Service Details" : step === 2 ? "Address" : step === 3 ? "Date & Time" : "Review & Confirm"}
             </h1>
           </div>
 
           {/* Horizontal Progress Steps */}
-          <div className="flex justify-center items-center gap-2">
+          <div className="flex justify-center items-center gap-1 md:gap-2">
             {[1, 2, 3, 4].map((stepNum, index) => (
               <div key={stepNum} className="flex items-center">
                 <div
                   onClick={() => goToStep(stepNum)}
-                  className={`h-2 w-32 rounded-full transition-all duration-300 cursor-pointer hover:opacity-80 ${
-                    stepNum <= step ? "bg-teal-600 w-16" : "bg-gray-300 w-12"
+                  className={`h-1.5 md:h-2 rounded-full transition-all duration-300 cursor-pointer hover:opacity-80 ${
+                    stepNum <= step ? "bg-[#01788e] w-20 md:w-28" : "bg-gray-300 w-16 md:w-20"
                   } ${stepNum <= step || stepNum === 1 ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
                   title={`Go to step ${stepNum}`}
                 ></div>
-                {index < 3 && <div className="w-2"></div>}
+                {index < 3 && <div className="w-1 md:w-2"></div>}
               </div>
             ))}
           </div>
@@ -228,8 +329,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         ) : (
           <>
             {/* Left Section for Steps 1-3 */}
-            <div className="w-full md:basis-[60%] md:max-w-[60%] min-w-0 px-4 md:px-0">
-              <div className="bg-white rounded shadow md:p-6 min-h-[600px]">{renderStep()}</div>
+            <div className="w-full md:basis-[60%] md:max-w-[60%] min-w-0">
+              <div className="md:bg-white rounded md:p-6 min-h-[600px]">{renderStep()}</div>
             </div>
 
             {/* Right Section for Steps 1-3 */}
@@ -352,7 +453,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
               <button
                 onClick={nextStep}
                 disabled={!hasItems}
-                className={`w-3/4 mx-auto py-4 rounded-sm font-semibold text-white transition-all flex items-center justify-center gap-2 ${
+                className={`w-3/4 mx-auto py-4 font-semibold text-white transition-all flex items-center justify-center gap-2 ${
                   !hasItems
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-primary"
@@ -374,6 +475,9 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
             selectedDateTime={selectedDateTime}
             nextStep={nextStep}
             hasItems={hasItems}
+            selectedPayment={selectedPayment}
+            handleBookNow={handleBookNow}
+            currentStep={step}
           />
         </div>
       </div>

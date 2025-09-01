@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 
 const cities = [
-  { name: "Dubai", value: "dubai" },
-  { name: "Abu Dhabi", value: "abu-dhabi" },
-  { name: "Sharjah", value: "sharjah" },
+  { name: "Dubai", value: "dubai", image: "/home.png", mobileImage: "/mobile.png" },
+  { name: "Abu Dhabi", value: "abu-dhabi", image: "/home2.png", mobileImage: "/mobile2.png" },
+  { name: "Sharjah", value: "sharjah", image: "/home3.png", mobileImage: "/mobile3.png" },
 ];
 
 const stats = [
@@ -115,7 +115,11 @@ const servicesList = [
   "Pet Grooming",
 ];
 
-const ServiceHero: React.FC = () => {
+interface ServiceHeroProps {
+  updateCity?: (city: string) => void;
+}
+
+const ServiceHero: React.FC<ServiceHeroProps> = ({ updateCity }) => {
   const [selectedCity, setSelectedCity] = useState("dubai");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
@@ -151,10 +155,21 @@ const ServiceHero: React.FC = () => {
 
   return (
     <div className="relative w-full mb-8">
-      {/* Background Image: simple mobile & desktop images */}
+      {/* Background Image: dynamic based on city selection */}
       <div className="relative w-full h-[400px]">
-        <img src="/mobile.png" alt="hero mobile" className="block md:hidden w-full h-full object-cover" />
-        <img src="/home.png" alt="hero desktop" className="hidden md:block w-full h-full object-cover" />
+        <img 
+          src={cities.find(city => city.value === selectedCity)?.mobileImage || "/mobile.png"} 
+          alt={`hero mobile ${cities.find(city => city.value === selectedCity)?.name || 'Dubai'}`} 
+          className="block md:hidden w-full h-full object-cover" 
+        />
+        <img 
+          src={cities.find(city => city.value === selectedCity)?.image || "/home.png"} 
+          alt={`hero desktop ${cities.find(city => city.value === selectedCity)?.name || 'Dubai'}`} 
+          className="hidden md:block w-full h-full object-cover" 
+        />
+
+        {/*Dark Overlay*/}
+        <div className="absolute inset-0 bg-black opacity-20"></div>
 
         {/* Decorative badge (top-right) */}
         <img
@@ -165,21 +180,21 @@ const ServiceHero: React.FC = () => {
         />
 
         {/* Content overlay */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 text-center text-white">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 text-center text-white mt-32 md:mt-0">
           {/* Main Title */}
-          <h1 className="text-2xl tracking-tight md:text-4xl font-bold mb-4 leading-tight">
+          <h1 className="text-2xl px-4 tracking-tight md:text-4xl font-bold mb-4 leading-tight">
             Sit back, we'll take it from here
           </h1>
 
           {/* Subtitle */}
-          <p className="text-sm md:text-lg mb-8 opacity-90">
+          <p className="text-[16px] md:text-[15px] mb-8">
             Book or get free quotes for over 25 home services from trusted
-            companies in Dubai
+            companies in {cities.find(city => city.value === selectedCity)?.name || 'Dubai'}
           </p>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="w-full max-w-xl mx-auto">
-            <div className="relative flex items-center bg-white rounded-sm py-1 md:py-2 px-2 md:px-3 shadow-lg">
+            <div className="relative flex items-center bg-white rounded-sm py-1 md:py-1.5 px-2 md:px-3 shadow-lg">
               {/* City selector on the left inside the bar */}
               <div className="relative flex items-center">
                 <button
@@ -187,7 +202,7 @@ const ServiceHero: React.FC = () => {
                   onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
                   className="flex items-center justify-center gap-1 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-50 transition-colors text-sm h-8 md:h-9 min-w-[110px]"
                 >
-                  <span className="text-sm font-bold leading-none">
+                  <span className="text-xs font-semibold leading-none">
                     {cities.find((city) => city.value === selectedCity)?.name}
                   </span>
                   <svg
@@ -202,7 +217,7 @@ const ServiceHero: React.FC = () => {
 
                 {/* City Dropdown (absolute) - anchored to this button wrapper */}
                 {isCityDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[160px] md:min-w-[220px] max-w-xs">
+                  <div className="absolute top-full -left-2 md:-left-3 mt-1 bg-white border-t border-gray-200 rounded-b-md shadow-lg z-50 min-w-[140px] md:min-w-[200px] max-w-xs">
                     {cities.map((city) => (
                       <button
                         key={city.value}
@@ -210,9 +225,13 @@ const ServiceHero: React.FC = () => {
                         onClick={() => {
                           setSelectedCity(city.value);
                           setIsCityDropdownOpen(false);
+                          // Notify parent component about city change
+                          if (updateCity) {
+                            updateCity(city.value);
+                          }
                         }}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors ${
-                          selectedCity === city.value ? "bg-blue-50 text-blue-600" : "text-gray-800"
+                        className={`w-full text-left text-sm text-[#01788e] px-4 py-2 ${
+                          selectedCity === city.value
                         }`}
                       >
                         {city.name}
@@ -223,7 +242,7 @@ const ServiceHero: React.FC = () => {
               </div>
 
               {/* Vertical divider */}
-              <div className="h-8 md:h-9 w-px bg-gray-300 mx-2 md:mx-4" />
+              <div className="h-8 md:h-9 w-px bg-gray-300" />
 
               {/* Main search input */}
               <div className="flex-1 flex items-center">
@@ -235,7 +254,7 @@ const ServiceHero: React.FC = () => {
                     setIsSuggestionsOpen(true);
                   }}
                   placeholder="Start typing to find a service"
-                  className="w-full bg-transparent placeholder:text-sm placeholder:text-gray-400 outline-none text-gray-800 px-2 py-1 md:py-1 text-sm md:text-base"
+                  className="w-full bg-transparent placeholder:text-xs placeholder:text-gray-400 outline-none text-gray-800 px-2 py-1 md:py-1 text-sm md:text-base"
                 />
               </div>
 

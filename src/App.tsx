@@ -35,6 +35,7 @@ import Terms from "./pages/websitePages/Terms";
 import OrderConfirmation from "./pages/users/pages/OrderConfirmation";
 import BookingDetails from "./pages/users/pages/BookingDetails";
 import ManageBooking from "./pages/users/pages/ManageBooking";
+import CustomerSupport from "./pages/users/pages/CustomerSupport";
 import NewAdminDashboard from "./pages/admin/NewAdminDashboard";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminAvailableDates from "./pages/admin/AdminAvailableDates";
@@ -93,6 +94,7 @@ const App = () => (
           <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
           <Route path="/booking-details/:bookingId" element={<ProtectedRoute><BookingDetails /></ProtectedRoute>} />
           <Route path="/manage-booking/:bookingId" element={<ProtectedRoute><ManageBooking /></ProtectedRoute>} />
+          <Route path="/customer-support" element={<ProtectedRoute><CustomerSupport /></ProtectedRoute>} />
           
           <Route
             path="/service/:category"

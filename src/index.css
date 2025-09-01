@@ -135,7 +135,7 @@ All colors MUST be HSL. Dark theme with #00C3FF accent.
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'DM Sans', Arial, Helvetica, sans-serif;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
   }
 }
 

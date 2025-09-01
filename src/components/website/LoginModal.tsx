@@ -264,10 +264,10 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
     setResendTimer(0);
   };
   return (
-    <div className="fixed inset-0 flex justify-center items-center z-[100]">
+    <div className="fixed inset-0 flex justify-end items-end z-[100] md:items-center md:justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-40" onClick={() => setLoginModalOpen(false)} />
 
-          <div className="bg-white rounded-sm shadow-lg max-w-md w-full mx-4 z-[110]">
+          <div className="bg-white rounded-t-lg shadow-lg w-full mx-0 z-[110] md:mx-0 md:max-w-md md:rounded-sm">
         <div className="p-5">
             <div className="flex items-start justify-between mb-2">
             <div>

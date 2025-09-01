@@ -11,6 +11,9 @@ import {
   ChevronDown,
   Info,
   PlusCircle,
+  X,
+  User,
+  ArrowRight,
 } from "lucide-react";
 import { useGoogleMapsLoader } from "@/contexts/GoogleMapsContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,10 +25,13 @@ const StepFour = ({
   selectedDateTime,
   subtotal,
   selectedAddress,
+  selectedPayment,
+  setSelectedPayment,
+  category,
 }) => {
-  const [selectedPayment, setSelectedPayment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
 
   const { user, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
@@ -130,6 +136,12 @@ const StepFour = ({
     setIsLoading(true);
 
     try {
+      // Extract room type and property type from cart items
+      const firstItem = cartItems[0];
+      const roomType = firstItem?.service?.roomType || firstItem?.service?.context?.selectedRoomType || 'Studio';
+      const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
+      const quantity = firstItem?.count || 1;
+
       // Prepare appointment data
       const appointmentData = {
         service: cartItems
@@ -141,6 +153,10 @@ const StepFour = ({
         price: total,
         extra_price: extraPrice,
         cod_fee: codFee,
+        room_type: roomType,
+        property_type: propertyType,
+        quantity: quantity,
+        service_category: firstItem?.service?.category || category || 'general',
         payment_method:
           selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery",
         notes: `Payment Method: ${
@@ -149,6 +165,11 @@ const StepFour = ({
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", ")}`,
       };
+
+      // Debug: Log the appointment data being sent
+      console.log('StepFour - Appointment data being sent:', appointmentData);
+      console.log('StepFour - First item details:', firstItem);
+      console.log('StepFour - Category:', category);
 
       // Make API call to create appointment
       const response = await fetch(buildApiUrl("/api/user/appointments"), {
@@ -194,18 +215,15 @@ const StepFour = ({
   const paymentMethods = [
     {
       id: "card",
-      name: "Pay with Add New Card",
+      name: "Add New Card",
       icon: <PlusCircle className="w-5 h-5" />,
-      description: "Secure payment with credit/debit card",
     },
     {
       id: "tabby",
       name: "Tabby",
       // use the provided inline-styled span as the icon
       icon: (
-        <span className="inline-block px-2 py-0 rounded-sm bg-gradient-to-r from-emerald-200 to-emerald-400 font-bold text-black mr-2">
-          Tabby
-        </span>
+        <img src="/icons/tabby.svg" alt="Tabby" className="h-5" />
       ),
       description: "Split payments with Tabby",
     },
@@ -213,7 +231,6 @@ const StepFour = ({
       id: "cod",
       name: "Cash on Delivery",
       icon: <Banknote className="w-5 h-5" />,
-      description: "Pay when service is completed",
     },
   ];
 
@@ -244,14 +261,17 @@ const StepFour = ({
                 <div className="flex items-center gap-3">
                   <img
                     src={imgSrc || "/placeholder.svg"}
-                    alt={item.service.name}
+                    alt={item.service.serviceItem?.name || item.service.name}
                     className="w-10 h-10 object-cover rounded-full"
                   />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium text-gray-900">
-                          {item.service.name}
+                          {/* NEW: Show enhanced context if available */}
+                          {item.service.context?.selectedServiceItem ||
+                            item.service.serviceItem?.name ||
+                            item.service.name}
                         </div>
                       </div>
                       <button
@@ -271,28 +291,23 @@ const StepFour = ({
                 </div>
 
                 {isOpen && (
-                  <div className="mt-3 border-t pt-3 text-sm text-gray-600 space-y-2">
-                    {item.service.category && (
+                  <div className="mt-3 border-t border-gray-300 pt-3 text-sm text-gray-600 space-y-2">
+                    {/* Show data in the requested format: Room type - Property type x Quantity AED Price */}
+                    <div className="flex text-gray-500 text-sm justify-between items-center">
                       <div>
-                        <strong>Category:</strong> {item.service.category}
+                        <span>
+                          {item.service.name} - {item.service.propertyType} x 1
+                        </span>
                       </div>
-                    )}
-                    {item.service.propertyType && (
                       <div>
-                        <strong>Property Type:</strong>{" "}
-                        {item.service.propertyType}
+                        <span>
+                          AED{" "}
+                          {typeof item.service.price === "number"
+                            ? item.service.price.toFixed(2)
+                            : (parseFloat(item.service.price) || 0).toFixed(2)}
+                        </span>
                       </div>
-                    )}
-                    {item.service.duration && (
-                      <div>
-                        <strong>Duration:</strong> {item.service.duration}
-                      </div>
-                    )}
-                    {item.service.materials && (
-                      <div>
-                        <strong>Materials:</strong> {item.service.materials}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -300,22 +315,22 @@ const StepFour = ({
           })}
 
           {/* stacked date/time/location */}
-          <div className="mt-4 p-6 mb-4">
+          <div className="mt-4 p-2 mb-4">
             <div className="flex items-center gap-3 mb-3">
-              <Calendar className="w-5 h-5 text-gray-600" />
-              <div className="text-md text-gray-700">
+              <Calendar className="w-4 h-4 text-gray-600" />
+              <div className="text-sm text-gray-700">
                 {selectedDateTime?.date || "Not selected"}
               </div>
             </div>
             <div className="flex items-center gap-3 mb-3">
-              <Clock className="w-5 h-5 text-gray-600" />
-              <div className="text-md text-gray-700">
+              <Clock className="w-4 h-4 text-gray-600" />
+              <div className="text-sm text-gray-700">
                 {selectedDateTime?.time || "Not selected"}
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-gray-600" />
-              <div className="text-md text-gray-700 break-words w-full">
+              <MapPin className="w-4 h-4 text-gray-600" />
+              <div className="text-sm text-gray-700 break-words w-full">
                 {selectedAddress.address}, {selectedAddress.area},{" "}
                 {selectedAddress.city}
               </div>
@@ -323,17 +338,17 @@ const StepFour = ({
           </div>
 
           {/* Map placeholder without rounded corners */}
-          <div className="mt-4 w-full overflow-hidden">
+          <div className="mt-4 overflow-hidden">
             <div
               ref={(el) => (mapContainerRef.current = el)}
-              className="w-full h-48 bg-gray-100 pointer-events-none select-none"
+              className="w-full h-36 bg-gray-100 pointer-events-none select-none"
             />
           </div>
         </div>
       </div>
 
       {/* Offers Section */}
-      <div className="mb-6 p-6">
+      <div className="p-6 pt-0">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
           Offers & Discounts
         </h2>
@@ -349,17 +364,24 @@ const StepFour = ({
 
       {/* Payment Methods */}
       <div className="mb-8 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Payment Method
+        <h2 className="text-xl flex items-center gap-2 font-semibold text-gray-900 mb-4">
+          Pay With
+          <Info className="w-4 h-4 text-gray-600" />
         </h2>
         <div className="space-y-3">
           {paymentMethods.map((method) => (
             <div
               key={method.id}
-              onClick={() => setSelectedPayment(method.id)}
+              onClick={() => {
+                if (method.id === "card") {
+                  setShowAddCardModal(true);
+                } else {
+                  setSelectedPayment(method.id);
+                }
+              }}
               className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
                 selectedPayment === method.id
-                  ? "border-blue-500 bg-blue-50"
+                  ? "border-[#01788e]"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
@@ -370,10 +392,14 @@ const StepFour = ({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-gray-900">{method.name}</h3>
-                      {method.id === 'tabby' && <Info className="w-5 h-5 text-gray-600 mt-0.5" />}
+                      <h3 className="font-medium text-gray-900">
+                        {method.name}
+                      </h3>
+                      {method.id === "tabby" && (
+                        <Info className="w-5 h-5 text-gray-600 mt-0.5" />
+                      )}
                     </div>
-                    {method.id !== 'tabby' && method.description && (
+                    {method.id !== "tabby" && method.description && (
                       <p className="text-sm text-gray-500">
                         {method.description}
                       </p>
@@ -382,19 +408,19 @@ const StepFour = ({
                 </div>
                 <div className="flex items-center gap-2">
                   {method.id === "cod" && (
-                    <div className="text-xs text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded-md">
+                    <div className="text-xs text-orange-600 font-semibold bg-orange-100 px-2 py-1 rounded-md">
                       + AED 5
                     </div>
                   )}
                   <div
-                    className={`w-5 h-5 rounded-full border-2 ${
+                    className={`w-5 h-5 rounded-full border ${
                       selectedPayment === method.id
-                        ? "border-blue-500 bg-blue-500"
-                        : "border-gray-300"
+                        ? "border-[#01788e]"
+                        : "border-[#01788e]"
                     }`}
                   >
                     {selectedPayment === method.id && (
-                      <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                      <div className="w-full h-full rounded-full bg-[#01788e] scale-50"></div>
                     )}
                   </div>
                 </div>
@@ -405,20 +431,20 @@ const StepFour = ({
       </div>
 
       {/* Payment Summary */}
-      <div className="bg-gray-50 rounded-lg p-6 mb-6">
+      <div className="bg-gray-50 rounded-lg p-6 mb-6 hidden md:block">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Payment Summary
         </h2>
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-gray-600">Service Charges</span>
-            <span className="font-medium">AED {subtotal.toFixed(2)}</span>
+            <span className="text-gray-600 text-sm">Service Charges</span>
+            <span className="font-medium text-sm">AED {subtotal.toFixed(2)}</span>
           </div>
 
           {extraPrice > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Time Slot Fee</span>
-              <span className="font-medium text-orange-600">
+              <span className="text-gray-600 text-sm">Time Slot Fee</span>
+              <span className="font-medium text-orange-600 text-sm">
                 +{extraPrice.toFixed(2)} AED
               </span>
             </div>
@@ -426,22 +452,22 @@ const StepFour = ({
 
           {codFee > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Cash on Delivery Fee</span>
-              <span className="font-medium text-orange-600">
+              <span className="text-gray-600 text-sm">Cash on Delivery Fee</span>
+              <span className="font-medium text-orange-600 text-sm">
                 +{codFee.toFixed(2)} AED
               </span>
             </div>
           )}
 
           <div className="flex justify-between">
-            <span className="text-gray-600">VAT (5%)</span>
-            <span className="font-medium">AED {vat.toFixed(2)}</span>
+            <span className="text-gray-600 text-sm">VAT (5%)</span>
+            <span className="font-medium text-sm">AED {vat.toFixed(2)}</span>
           </div>
 
           <div className="border-t pt-3">
             <div className="flex justify-between">
-              <span className="text-lg font-semibold">Total to Pay</span>
-              <span className="text-lg font-bold text-gray-600">
+              <span className="text-base font-semibold">Total to Pay</span>
+              <span className="text-base font-bold text-gray-600">
                 AED {total.toFixed(2)}
               </span>
             </div>
@@ -450,11 +476,11 @@ const StepFour = ({
       </div>
 
       {/* Book Now Button */}
-      <div className="text-center">
+      <div className="text-center hidden md:block">
         <button
           onClick={handleBookNow}
           disabled={!selectedPayment || isLoading}
-          className={`w-full py-4 px-4 rounded-sm font-semibold text-white text-lg transition-all flex items-center justify-center gap-3 ${
+          className={`w-full py-4 font-semibold text-white text-lg transition-all flex items-center justify-center gap-3 ${
             !selectedPayment || isLoading
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-[#ed6329] hover:shadow-xl"
@@ -466,10 +492,120 @@ const StepFour = ({
               Processing...
             </>
           ) : (
-            "Book Now"
+            <>
+              Book Now
+              <ArrowRight className="w-5 h-5" />
+            </>
           )}
         </button>
       </div>
+
+      {/* Add New Card Modal */}
+      {showAddCardModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50">
+          <div className="bg-white rounded-t-xl md:rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto transform transition-transform duration-300 ease-out">
+            {/* Draggable Handle - Mobile Only */}
+            <div className="flex md:hidden justify-center mb-4">
+              <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Add New Card</h2>
+              <button
+                onClick={() => setShowAddCardModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="space-y-4">
+              {/* Card Holder Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Card Holder Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter Name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#01788e] focus:border-[#01788e] pr-12"
+                  />
+                  <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Credit Card Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Credit Card Number
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter Number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#01788e] focus:border-[#01788e] pr-12"
+                  />
+                  <CreditCard className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Expiry Date and CVV */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Expiry Date
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="MM/YY"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#01788e] focus:border-[#01788e] pr-12"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    CVV
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Enter CVV"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#01788e] focus:border-[#01788e] pr-12"
+                    />
+                    <CreditCard className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Message */}
+              <div className="bg-gray-100 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-gray-700">
+                    We will reserve and then release AED 1 to confirm your card.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Book Now Button */}
+            <button
+              onClick={() => {
+                setShowAddCardModal(false);
+                // Here you can add logic to handle card addition
+              }}
+              className="w-full bg-[#ed6329] text-white py-4 font-semibold text-lg mt-6 hover:bg-orange-600 transition-colors"
+            >
+              BOOK NOW
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Success Modal */}
       {showSuccessModal && (

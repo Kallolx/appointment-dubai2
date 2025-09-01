@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
   Menu,
@@ -14,6 +15,16 @@ import LoginModal from "./LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 
 const services = [
+  {
+    category: "Moving & Storage",
+    items: [
+      "Home Moving",
+      "Office Moving",
+      "Storage Solutions",
+      "Packing Services",
+      "Furniture Moving",
+    ],
+  },
   {
     category: "Cleaning Services",
     items: [
@@ -35,6 +46,16 @@ const services = [
     ],
   },
   {
+    category: "AC Services",
+    items: [
+      "AC Installation",
+      "AC Repair",
+      "AC Maintenance",
+      "AC Cleaning",
+      "AC Parts",
+    ],
+  },
+  {
     category: "Salon at Home",
     items: [
       "Women's Salon At Home",
@@ -44,12 +65,42 @@ const services = [
     ],
   },
   {
+    category: "Pet Services",
+    items: [
+      "Pet Grooming",
+      "Pet Sitting",
+      "Pet Walking",
+      "Pet Training",
+      "Pet Health",
+    ],
+  },
+  {
+    category: "Pest Control and Gardening",
+    items: [
+      "Pest Control",
+      "Garden Maintenance",
+      "Lawn Care",
+      "Tree Services",
+      "Irrigation",
+    ],
+  },
+  {
     category: "Health at Home",
     items: [
       "Doctor on Call",
       "Nurse at Home",
       "IV Drip at Home",
       "Blood Tests at Home",
+    ],
+  },
+  {
+    category: "Nannies and Maids",
+    items: [
+      "House Cleaning",
+      "Child Care",
+      "Elder Care",
+      "Cooking Services",
+      "Laundry Services",
     ],
   },
 ];
@@ -67,123 +118,194 @@ const Navbar: React.FC = () => {
     setIsProfileOpen(false);
   };
 
-  const MobileDrawer = () => (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col lg:hidden">
-      <div className="flex items-center justify-between p-4 border-b">
-        <Link to="/" onClick={() => setMobileMenuOpen(false)}>
-          <img src="/jl-logo.svg" alt="Logo" className="h-10" />
-        </Link>
-        <button onClick={() => setMobileMenuOpen(false)}>
-          <X className="w-6 h-6" />
-        </button>
-      </div>
+  const MobileDrawer = () => {
+    const [expandedServices, setExpandedServices] = useState<{ [key: string]: boolean }>({});
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-      <div className="flex flex-col gap-4 p-4">
-        <div>
-          <button
-            onClick={() => setIsServicesOpen(!isServicesOpen)}
-            className="flex items-center justify-between w-full p-3 border rounded-lg hover:bg-gray-50"
+    const toggleService = (category: string) => {
+      setExpandedServices(prev => ({
+        ...prev,
+        [category]: !prev[category]
+      }));
+    };
+
+    return (
+      <>
+        {/* Dark overlay background */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+        
+        {/* Mobile menu drawer - 80% width */}
+        <motion.div 
+          initial={{ x: "-100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "-100%" }}
+          transition={{ 
+            type: "spring", 
+            damping: 25, 
+            stiffness: 200,
+            duration: 0.4
+          }}
+          className="fixed left-0 top-0 h-full w-4/5 bg-white z-50 lg:hidden shadow-2xl"
+        >
+          {/* Close button positioned absolutely at top-right corner */}
+          <button 
+            onClick={() => setMobileMenuOpen(false)}
+            className="absolute top-0 right-0 w-6 h-6 bg-red-500 flex items-center justify-center z-10"
           >
-            <span className="font-semibold">Our Services</span>
-            <ChevronDown
-              className={`w-5 h-5 transition-transform ${
-                isServicesOpen ? "rotate-180" : ""
-              }`}
-            />
+            <X className="w-3 h-3 text-white" />
           </button>
 
-          {isServicesOpen && (
-            <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-              {services.map((serviceGroup, index) => (
-                <div key={index} className="mb-4 last:mb-0">
-                  <h4 className="font-semibold text-gray-800 mb-2">
-                    {serviceGroup.category}
-                  </h4>
-                  <ul className="space-y-1">
-                    {serviceGroup.items.map((item, itemIndex) => (
-                      <li key={itemIndex}>
+          {/* Menu content */}
+          <div className="flex flex-col">
+            {/* Home */}
+            <div className="border-b border-gray-200">
+              <Link 
+                to="/" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+              >
+                Home
+              </Link>
+            </div>
+
+            {/* Login for unauthenticated users */}
+            {!isAuthenticated && (
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => {
+                    setLoginModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-5 py-3 text-gray-800 font-semibold hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Login
+                </button>
+              </div>
+            )}
+
+            {/* User menu for authenticated users */}
+            {isAuthenticated && (
+              <div className="border-b border-gray-200">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center justify-between w-full px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="font-semibold text-sm">{user?.fullName?.split(" ")[0] || "User"}</span>
+                  <motion.div
+                    animate={{ rotate: isUserMenuOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                </button>
+                
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-gray-50 overflow-hidden"
+                    >
+                      <Link
+                        to="/user/bookings"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
+                      >
+                        My Bookings
+                      </Link>
+                      <Link
+                        to="/user/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
+                      >
+                        My Profile
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
+                      >
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Service Categories */}
+            {services.map((service, index) => (
+              <div key={index} className="border-b border-gray-200">
+                <button
+                  onClick={() => toggleService(service.category)}
+                  className="flex items-center justify-between w-full px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="text-sm">{service.category}</span>
+                  <motion.div
+                    animate={{ rotate: expandedServices[service.category] ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                </button>
+                
+                <AnimatePresence>
+                  {expandedServices[service.category] && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-gray-50 overflow-hidden"
+                    >
+                      {service.items.map((item, itemIndex) => (
                         <Link
-                          to={`/services/${item
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")}`}
-                          className="text-sm text-gray-600 hover:text-blue-600 block py-1"
+                          key={itemIndex}
+                          to={`/services/${item.toLowerCase().replace(/\s+/g, "-")}`}
                           onClick={() => setMobileMenuOpen(false)}
+                          className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
                         >
                           {item}
-                        </Link>
-                      </li>
+                      </Link>
                     ))}
-                  </ul>
-                </div>
-              ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          )}
+          ))}
         </div>
-
-        {isAuthenticated ? (
-          <div className="flex flex-col space-y-4">
-
-            <Link
-              to="/user/bookings"
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Calendar className="w-5 h-5 text-gray-600" />
-              <span>My Orders</span>
-            </Link>
-
-            <Link
-              to="/user/profile"
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Settings className="w-5 h-5 text-gray-600" />
-              <span>Profile</span>
-            </Link>
-
-            <button
-              onClick={() => {
-                handleLogout();
-                setMobileMenuOpen(false);
-              }}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-red-600"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => {
-              setLoginModalOpen(true);
-              setMobileMenuOpen(false);
-            }}
-            className="bg-[#FFD03E] text-white py-2 rounded-full font-bold"
-          >
-            Sign Up or Login
-          </button>
-        )}
-      </div>
-    </div>
+      </motion.div>
+    </>
   );
+};
 
   return (
     <div className="shadow-lg bg-white sticky top-0 z-40">
       <div className="container mx-auto px-4 2xl:max-w-[1600px]">
         <header className="w-full py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 lg:hidden">
+          <div className="flex items-center gap-8 lg:hidden">
             <button onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 text-gray-600" />
             </button>
-
             <Link to="/">
-              <img src="/jl-logo.svg" alt="Logo" className="h-8" />
+              <img src="/logo.svg" alt="Logo" className="h-8" />
             </Link>
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
             <Link to="/">
-              <img src="/jl-logo.svg" alt="Logo" className="h-10" />
+              <img src="/logo.svg" alt="Logo" className="h-9" />
             </Link>
 
             <div className="relative">
@@ -191,7 +313,7 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsServicesOpen(!isServicesOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <span className="font-semibold text-sm text-gray-800">
+                <span className="font-semibold text-sm text-gray-600">
                   Our Services
                 </span>
                 <ChevronDown
@@ -237,7 +359,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className="hidden lg:flex items-center">
             {isAuthenticated ? (
               <div className="flex items-center">
                 <div className="relative">
@@ -301,7 +423,7 @@ const Navbar: React.FC = () => {
               <div>
                 <button
                   onClick={() => setLoginModalOpen(true)}
-                  className="px-3 py-1 hover:bg-gray-100 rounded-md text-md font-semibold"
+                  className="hidden md:block px-5 py-1 shadow-sm rounded-sm text-md font-semibold"
                 >
                   Login
                 </button>
@@ -311,7 +433,9 @@ const Navbar: React.FC = () => {
         </header>
       </div>
 
-      {mobileMenuOpen && <MobileDrawer />}
+      <AnimatePresence>
+        {mobileMenuOpen && <MobileDrawer />}
+      </AnimatePresence>
       {isLoginModalOpen && <LoginModal setLoginModalOpen={setLoginModalOpen} />}
     </div>
   );

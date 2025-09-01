@@ -13,6 +13,24 @@ interface ServiceOption {
   image: string;
   room_type_id: number;
   room_type_slug: string;
+  // Add service item data from admin panel
+  serviceItem?: {
+    id: number;
+    name: string;
+    slug: string;
+    category_id: number;
+    category_name: string;
+    description: string;
+    image_url: string;
+    sort_order: number;
+    is_active: boolean;
+  };
+  // NEW: Add context for complete selection information
+  context?: {
+    selectedCategory: string;      // "General", "Mosquitoes", etc.
+    selectedPropertyType: string;  // "Apartment", "Villa", etc.
+    selectedServiceItem: string;   // "Pest control in Dubai", etc.
+  };
 }
 
 interface ServiceOptionsModalProps {
@@ -22,6 +40,12 @@ interface ServiceOptionsModalProps {
   category: string; // "general", "cockroaches", etc.
   onAddService: (service: ServiceOption) => void;
   onRemoveService?: (service: ServiceOption) => void;
+  // NEW: Add context for complete selection information
+  context?: {
+    selectedCategory: string;      // "General", "Mosquitoes", etc.
+    selectedPropertyType: string;  // "Apartment", "Villa", etc.
+    selectedServiceItem: string;   // "Pest control in Dubai", etc.
+  };
 }
 
 interface ServicePricing {
@@ -85,7 +109,8 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   propertyType,
   category,
   onAddService,
-  onRemoveService
+  onRemoveService,
+  context
 }) => {
   const [selectedServices, setSelectedServices] = useState<Record<string, number>>({});
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -143,9 +168,38 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
     enabled: isOpen, // Only fetch when modal is open
   });
 
+  // Fetch service items data from admin panel
+  const {
+    data: serviceItems = [],
+    isLoading: serviceItemsLoading,
+  } = useQuery({
+    queryKey: ["admin-service-items"],
+    queryFn: async () => {
+      try {
+        const response = await fetch(buildApiUrl('/api/admin/service-items'));
+        if (!response.ok) {
+          throw new Error('Failed to fetch service items');
+        }
+        const data = await response.json();
+        console.log('ServiceOptionsModal - Fetched service items:', data);
+        return data;
+      } catch (error) {
+        console.warn('Error fetching service items:', error);
+        return [];
+      }
+    },
+    enabled: isOpen, // Only fetch when modal is open
+  });
+
   // Generate service options from pricing data
   const generateServiceOptions = (): ServiceOption[] => {
     return servicePricing.map((pricing) => {
+      // Find matching service item from admin panel
+      const matchingServiceItem = serviceItems.find(item => 
+        item.category_name.toLowerCase().includes(pricing.category_name.toLowerCase()) ||
+        item.category_name.toLowerCase().includes(category.toLowerCase())
+      );
+
       return {
         id: `${propertyType.toLowerCase()}-${pricing.room_type_slug}-${category.replace(/\s+/g, '')}`,
         // Use exactly the room type name from the database
@@ -156,7 +210,9 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         discount_price: pricing.discount_price,
         image: getImagePath(propertyType, pricing.room_type_slug, pricing.room_image),
         room_type_id: pricing.room_type_id,
-        room_type_slug: pricing.room_type_slug
+        room_type_slug: pricing.room_type_slug,
+        // Include the matching service item data
+        serviceItem: matchingServiceItem
       };
     });
   };
@@ -205,7 +261,14 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
       ...service,
       name: service.name,
       category: category,
-      propertyType: propertyType
+      propertyType: propertyType,
+      roomType: service.room_type_name || 'Studio',
+      // NEW: Include context if available
+      context: context ? {
+        selectedCategory: context.selectedCategory,
+        selectedPropertyType: context.selectedPropertyType,
+        selectedServiceItem: context.selectedServiceItem
+      } : undefined
     };
     
     console.log("Adding service with category info:", serviceWithCategory);
@@ -226,7 +289,14 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
           ...service,
           name: service.name,
           category: category,
-          propertyType: propertyType
+          propertyType: propertyType,
+          roomType: service.room_type_name || 'Studio',
+          // NEW: Include context if available
+          context: context ? {
+            selectedCategory: context.selectedCategory,
+            selectedPropertyType: context.selectedPropertyType,
+            selectedServiceItem: context.selectedServiceItem
+          } : undefined
         };
         console.log("Removing service with category info:", serviceWithCategory);
         onRemoveService(serviceWithCategory);
@@ -263,7 +333,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          {isLoading ? (
+          {isLoading || serviceItemsLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
               <p className="text-gray-500">Loading pricing options...</p>
