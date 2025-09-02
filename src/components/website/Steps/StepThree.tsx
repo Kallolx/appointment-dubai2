@@ -60,6 +60,13 @@ const StepThree = ({ onSelectionChange }) => {
       
       setDates(formattedDates);
 
+      // Debug: Log the formatted dates
+      console.log('StepThree - formattedDates:', formattedDates);
+      if (formattedDates.length > 0) {
+        console.log('StepThree - First date dbDate:', formattedDates[0].dbDate);
+        console.log('StepThree - First date fullDate:', formattedDates[0].fullDate);
+      }
+
       // Auto-select first date if available (set both display and db date)
       if (formattedDates.length > 0 && !selectedDate) {
         setSelectedDate(formattedDates[0].fullDate);
@@ -131,15 +138,22 @@ const StepThree = ({ onSelectionChange }) => {
   }, []);
 
   useEffect(() => {
-    if (onSelectionChange && selectedDate && selectedTime) {
+    if (onSelectionChange && selectedDate && selectedTime && selectedDbDate) {
       const selectedTimeSlot = timeSlots.find(slot => slot.displayTime === selectedTime);
+      
+      // Debug: Log the date formats being sent
+      console.log('StepThree - selectedDate (display):', selectedDate);
+      console.log('StepThree - selectedDbDate (database):', selectedDbDate);
+      console.log('StepThree - selectedTime:', selectedTime);
+      
       onSelectionChange({
-        date: selectedDate,
+        date: selectedDate, // Keep display format for UI
+        dbDate: selectedDbDate, // Send database format for backend
         time: selectedTime,
         extra_price: selectedTimeSlot?.extra_price || 0
       });
     }
-  }, [selectedDate, selectedTime, timeSlots]); // Removed onSelectionChange from dependencies
+  }, [selectedDate, selectedTime, selectedDbDate, timeSlots]); // Added selectedDbDate to dependencies
 
   // when selectedDbDate changes, refetch time slots for that date
   useEffect(() => {
@@ -193,7 +207,7 @@ const StepThree = ({ onSelectionChange }) => {
   }
 
   return (
-    <div className="px-4 md:px-0">
+    <div className="">
       <div className="max-w-4xl">
         {/* Date Selection Section */}
         <section className="mb-8">

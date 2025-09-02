@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { buildApiUrl } from "@/config/api";
 
 interface ServiceOption {
+  room_type_name: string;
   id: string;
   name: string;
   description: string;
@@ -204,6 +205,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         id: `${propertyType.toLowerCase()}-${pricing.room_type_slug}-${category.replace(/\s+/g, '')}`,
         // Use exactly the room type name from the database
         name: pricing.room_type_name,
+        room_type_name: pricing.room_type_name, // Add the required property
         // Use exact room description from DB or empty string if null
         description: pricing.room_description || '',
         price: pricing.price,
@@ -312,8 +314,8 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
 
   return (
   <>
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
-      <div className="bg-white rounded-sm max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 mb-4">
+  <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-end items-end md:items-center md:justify-center z-[60] p-0 md:p-4 overflow-y-auto">
+      <div className="bg-white rounded-t-lg md:rounded-sm max-w-md w-full max-h-[90vh] overflow-y-auto mt-0 md:mt-4 mb-0 md:mb-4 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 duration-300">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-center p-4">
           <h2 className="text-xl font-semibold text-gray-900 text-center flex-1">

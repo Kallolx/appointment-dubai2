@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "@/config/api";
 import Calculation from "./Calculation";
+import { ziinaService } from "@/services/ziinaService";
 
 interface Service {
   id: string;
@@ -26,6 +27,7 @@ interface CartItem {
 interface SelectedDateTime {
   professional: string | null;
   date: string | null;
+  dbDate?: string | null;
   time: string | null;
   extra_price?: number;
 }
@@ -153,6 +155,109 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     }
   };
 
+  const getPaymentMethodName = (paymentId: string) => {
+    switch (paymentId) {
+      case "card":
+        return "Credit/Debit Card";
+      case "ziina":
+        return "Ziina";
+      case "tabby":
+        return "Tabby";
+      case "cod":
+        return "Cash on Delivery";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const handleZiinaPayment = async (appointmentData: any) => {
+    try {
+      // First create the appointment with pending status
+      const response = await fetch(buildApiUrl("/api/user/appointments"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify({
+          ...appointmentData,
+          status: "pending_payment"
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log('CheckoutService - Ziina appointment creation response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create appointment");
+      }
+
+      // Check if appointment data exists
+      if (!data.appointment_id) {
+        console.error('CheckoutService - Missing appointment data:', data);
+        throw new Error("Appointment creation failed - missing appointment ID");
+      }
+
+      // Create Ziina payment
+      const paymentData = {
+        amount: appointmentData.price || 0,
+        currency: "AED",
+        description: `Payment for ${appointmentData.service}`,
+        order_id: `appointment_${data.appointment_id}`,
+        customer_email: auth.user?.email,
+        customer_phone: auth.user?.phone,
+        return_url: `${window.location.origin}/order-confirmation?appointment_id=${data.appointment_id}&payment_success=true`,
+        cancel_url: `${window.location.origin}/payment-cancelled?appointment_id=${data.appointment_id}`
+      };
+
+      console.log('CheckoutService - Ziina payment data:', paymentData);
+
+      const paymentResponse = await ziinaService.createPaymentViaBackend(paymentData);
+
+      console.log('CheckoutService - Ziina payment response:', paymentResponse);
+
+      if (paymentResponse.success && paymentResponse.payment_url) {
+        // Redirect to Ziina payment page
+        window.location.href = paymentResponse.payment_url;
+      } else {
+        throw new Error(paymentResponse.message || "Failed to create payment");
+      }
+    } catch (error) {
+      console.error("CheckoutService - Ziina payment error:", error);
+      throw error;
+    }
+  };
+
+  const handleRegularPayment = async (appointmentData: any) => {
+    const response = await fetch(buildApiUrl("/api/user/appointments"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.token}`,
+      },
+      body: JSON.stringify(appointmentData),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Navigate to order confirmation page with order data
+      navigate("/order-confirmation", {
+        state: {
+          orderData: {
+            ...data.appointment,
+            ...appointmentData,
+            status: data.appointment?.status || 'pending', // Ensure status is always present
+          },
+        },
+      });
+      console.log("Booking Confirmed! Your appointment has been successfully booked.");
+    } else {
+      throw new Error(data.message || "Failed to create appointment");
+    }
+  };
+
   const handleBookNow = async () => {
     if (!selectedPayment) {
       console.log("Please select a payment method");
@@ -192,7 +297,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         service: cartItemsArray
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", "),
-        appointment_date: selectedDateTime.date,
+        appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
         appointment_time: selectedDateTime.time,
         location: selectedAddress,
         price: total,
@@ -202,11 +307,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         property_type: propertyType,
         quantity: quantity,
         service_category: firstItem?.service?.category || category || 'general',
-        payment_method:
-          selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery",
-        notes: `Payment Method: ${
-          selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery"
-        }. Items: ${cartItemsArray
+        payment_method: getPaymentMethodName(selectedPayment),
+        notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${cartItemsArray
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", ")}`,
       };
@@ -215,33 +317,13 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
       console.log('CheckoutService - Appointment data being sent:', appointmentData);
       console.log('CheckoutService - First item details:', firstItem);
       console.log('CheckoutService - Category:', category);
+      console.log('CheckoutService - Selected payment method:', selectedPayment);
 
-      // Make API call to create appointment
-      const response = await fetch(buildApiUrl("/api/user/appointments"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify(appointmentData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Navigate to order confirmation page with order data
-        navigate("/order-confirmation", {
-          state: {
-            orderData: {
-              ...data.appointment,
-              ...appointmentData,
-              status: data.appointment?.status || 'pending', // Ensure status is always present
-            },
-          },
-        });
-        console.log("Booking Confirmed! Your appointment has been successfully booked.");
+      // Handle different payment methods
+      if (selectedPayment === "ziina") {
+        await handleZiinaPayment(appointmentData);
       } else {
-        throw new Error(data.message || "Failed to create appointment");
+        await handleRegularPayment(appointmentData);
       }
     } catch (error) {
       console.error("Error creating appointment:", error);
@@ -329,22 +411,31 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         ) : (
           <>
             {/* Left Section for Steps 1-3 */}
-            <div className="w-full md:basis-[60%] md:max-w-[60%] min-w-0">
-              <div className="md:bg-white rounded md:p-6 min-h-[600px]">{renderStep()}</div>
+            <div className="w-full px-4 md:max-w-[60%] min-w-0">
+              <div className="md:bg-white rounded md:p-6 min-h-[600px]">
+                {/* For Step 1, render without the white background wrapper to allow edge-to-edge hero */}
+                {step === 1 ? (
+                  renderStep()
+                ) : (
+                  <div className="md:bg-white rounded min-h-[600px]">
+                    {renderStep()}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Section for Steps 1-3 */}
             <div className="hidden md:block md:basis-[40%] md:max-w-[40%] min-w-0 py-0">
               <div className="sticky top-40 z-30">
-                <div className="bg-white rounded-lg shadow-lg p-6 mb-6 w-full max-w-md mx-auto">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white rounded-lg shadow-lg p-3 md:p-6 mb-6 w-full max-w-md mx-auto">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2 md:mb-4">
                     Summary
                   </h2>
 
                   {/* Service Details */}
                   <div className="mb-2 pb-2 border-b border-gray-300">
                     <h3 className="text-sm font-medium text-gray-700">Service Details</h3>
-                      <div className="space-y-2">
+                      <div className="space-y-1 md:space-y-2">
                         {cartItemsArray.map((item) => (
                           <div key={item.service.id} className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">
@@ -362,7 +453,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
               <div className="mb-2 pb-2 border-b border-gray-300">
                 <h3 className="text-sm font-medium text-gray-700">Date & Time</h3>
                 {selectedDateTime.date && selectedDateTime.time ? (
-                  <div className="mt-1 space-y-1">
+                  <div className="mt-1 space-y-0.5 md:space-y-1">
                     <div className="text-sm text-gray-600">
                       {selectedDateTime.date}
                     </div>
@@ -383,8 +474,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
               </div>
 
               {/* Payment Details */}
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-3">
+              <div className="mb-2 md:mb-4">
+                <div className="flex justify-between items-center mb-2 md:mb-3">
                   <h3 className="text-sm font-medium text-gray-700">Payment Details</h3>
                 </div>
                 

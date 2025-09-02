@@ -13,7 +13,9 @@ import {
   Globe,
   Database,
   Users,
-  User
+  User,
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,7 +28,11 @@ interface SuperAdminSidebarProps {
 
 const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
 
   const menuItems = [
     { icon: BarChart3, label: 'System Overview', path: '/administrator' },
@@ -34,6 +40,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setI
     { icon: Key, label: 'API Configuration', path: '/administrator/apis' },
     { icon: User, label: 'Profile Settings', path: '/administrator/profile' },
     { icon: Globe, label: 'Website Settings', path: '/administrator/website' },
+    { icon: ArrowRight, label: 'Switch to Admin', path: '/admin' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -83,6 +90,24 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setI
           </div>
         )}
 
+        {/* Collapse Toggle Button - Moved to Top */}
+        <div className="px-3 py-2 border-b border-purple-700">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="w-full flex items-center justify-center p-2 rounded-lg text-purple-100 hover:bg-purple-800 transition-colors duration-200"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <>
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                <span className="text-xs">Collapse</span>
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Navigation Menu */}
         <nav className="flex-1 p-3">
           <ul className="space-y-1">
@@ -111,20 +136,16 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setI
           </ul>
         </nav>
 
-        {/* Toggle Button */}
+        {/* Logout Button */}
         <div className="p-3 border-t border-purple-700">
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-purple-100 hover:bg-purple-800 transition-colors duration-200"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-3 p-2 rounded-lg text-red-200 hover:bg-red-800 hover:text-white transition-colors duration-200"
+            title={isCollapsed ? 'Logout' : ''}
           >
-            {isCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <>
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                <span className="text-xs">Collapse</span>
-              </>
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            {!isCollapsed && (
+              <span className="text-sm font-medium">Logout</span>
             )}
           </button>
         </div>

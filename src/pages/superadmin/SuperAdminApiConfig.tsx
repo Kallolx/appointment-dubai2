@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Map, 
   MessageSquare, 
+  CreditCard,
   Key, 
   Save, 
   TestTube, 
@@ -48,6 +49,7 @@ const SuperAdminApiConfig: React.FC = () => {
   const [twilioAccountSid, setTwilioAccountSid] = useState('');
   const [twilioAuthToken, setTwilioAuthToken] = useState('');
   const [twilioPhoneNumber, setTwilioPhoneNumber] = useState('');
+  const [ziinaApiKey, setZiinaApiKey] = useState('');
 
   useEffect(() => {
     fetchApiConfigurations();
@@ -76,6 +78,8 @@ const SuperAdminApiConfig: React.FC = () => {
           setTwilioAccountSid(config.api_key);
           setTwilioAuthToken(additionalConfig.auth_token || '');
           setTwilioPhoneNumber(additionalConfig.phone_number || '');
+        } else if (config.service_name === 'ziina') {
+          setZiinaApiKey(config.api_key);
         }
       });
 
@@ -106,6 +110,8 @@ const SuperAdminApiConfig: React.FC = () => {
           auth_token: twilioAuthToken,
           phone_number: twilioPhoneNumber
         };
+      } else if (serviceName === 'ziina') {
+        apiKey = ziinaApiKey;
       }
 
       const response = await axios.post(
@@ -228,8 +234,10 @@ const SuperAdminApiConfig: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {config.service_name === 'google_maps' ? (
                       <Map className="w-5 h-5 text-blue-600" />
-                    ) : (
+                    ) : config.service_name === 'twilio' ? (
                       <MessageSquare className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <CreditCard className="w-5 h-5 text-purple-600" />
                     )}
                     <span className="capitalize">{config.service_name.replace('_', ' ')}</span>
                   </div>
@@ -253,7 +261,7 @@ const SuperAdminApiConfig: React.FC = () => {
 
         {/* API Configuration Tabs */}
         <Tabs defaultValue="google_maps" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="google_maps" className="flex items-center gap-2">
               <Map className="w-4 h-4" />
               Google Maps
@@ -261,6 +269,10 @@ const SuperAdminApiConfig: React.FC = () => {
             <TabsTrigger value="twilio" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               Twilio
+            </TabsTrigger>
+            <TabsTrigger value="ziina" className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              Ziina
             </TabsTrigger>
           </TabsList>
 
@@ -355,6 +367,45 @@ const SuperAdminApiConfig: React.FC = () => {
                   <Button 
                     onClick={() => saveApiConfiguration('twilio')}
                     disabled={saving || !twilioAccountSid.trim() || !twilioAuthToken.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? 'Saving...' : 'Save Configuration'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Ziina Configuration */}
+          <TabsContent value="ziina">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-purple-600" />
+                  Ziina Payment Gateway Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="ziina-api-key">API Key</Label>
+                  <Input
+                    id="ziina-api-key"
+                    type="password"
+                    value={ziinaApiKey}
+                    onChange={(e) => setZiinaApiKey(e.target.value)}
+                    placeholder="Enter Ziina API Key"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used for processing payments through Ziina payment gateway
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => saveApiConfiguration('ziina')}
+                    disabled={saving || !ziinaApiKey.trim()}
                     className="flex items-center gap-2"
                   >
                     <Save className="w-4 h-4" />

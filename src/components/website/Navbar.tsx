@@ -15,94 +15,96 @@ import LoginModal from "./LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 
 const services = [
-  {
-    category: "Moving & Storage",
-    items: [
-      "Home Moving",
-      "Office Moving",
-      "Storage Solutions",
-      "Packing Services",
-      "Furniture Moving",
-    ],
-  },
-  {
-    category: "Cleaning Services",
-    items: [
-      "Home cleaning services",
-      "Deep cleaning",
-      "Carpet cleaning",
-      "Office cleaning services",
-      "Pool cleaning",
-    ],
-  },
-  {
-    category: "Maintenance & Handyman",
-    items: [
-      "Handyman",
-      "Electrician",
-      "Plumber",
-      "Painting",
-      "Furniture assembly",
-    ],
-  },
-  {
-    category: "AC Services",
-    items: [
-      "AC Installation",
-      "AC Repair",
-      "AC Maintenance",
-      "AC Cleaning",
-      "AC Parts",
-    ],
-  },
-  {
-    category: "Salon at Home",
-    items: [
-      "Women's Salon At Home",
-      "Spa at Home",
-      "Men's Salon at Home",
-      "Luxury Salon at Home",
-    ],
-  },
-  {
-    category: "Pet Services",
-    items: [
-      "Pet Grooming",
-      "Pet Sitting",
-      "Pet Walking",
-      "Pet Training",
-      "Pet Health",
-    ],
-  },
-  {
-    category: "Pest Control and Gardening",
-    items: [
-      "Pest Control",
-      "Garden Maintenance",
-      "Lawn Care",
-      "Tree Services",
-      "Irrigation",
-    ],
-  },
-  {
-    category: "Health at Home",
-    items: [
-      "Doctor on Call",
-      "Nurse at Home",
-      "IV Drip at Home",
-      "Blood Tests at Home",
-    ],
-  },
-  {
-    category: "Nannies and Maids",
-    items: [
-      "House Cleaning",
-      "Child Care",
-      "Elder Care",
-      "Cooking Services",
-      "Laundry Services",
-    ],
-  },
+  // Column 1: Moving & Storage + Cleaning Services
+  [
+    {
+      category: "Moving & Storage",
+      items: [
+        "Home Moving",
+        "Office Moving",
+        "Storage Solutions",
+        "Packing Services",
+        "Furniture Moving",
+      ],
+    },
+    {
+      category: "Cleaning Services",
+      items: [
+        "Home cleaning services",
+        "Deep cleaning",
+        "Carpet cleaning",
+        "Office cleaning services",
+        "Pool cleaning",
+      ],
+    },
+  ],
+  // Column 2: Maintenance & Handyman + AC Services
+  [
+    {
+      category: "Maintenance & Handyman",
+      items: [
+        "Handyman",
+        "Electrician",
+        "Plumber",
+        "Painting",
+        "Furniture assembly",
+      ],
+    },
+    {
+      category: "AC Services",
+      items: [
+        "AC Installation",
+        "AC Repair",
+        "AC Maintenance",
+        "AC Cleaning",
+        "AC Parts",
+      ],
+    },
+  ],
+  // Column 3: Salon at Home + Pet Services
+  [
+    {
+      category: "Salon at Home",
+      items: [
+        "Women's Salon At Home",
+        "Spa at Home",
+        "Men's Salon at Home",
+        "Luxury Salon at Home",
+      ],
+    },
+    {
+      category: "Pet Services",
+      items: [
+        "Pet Grooming",
+        "Pet Sitting",
+        "Pet Walking",
+        "Pet Training",
+        "Pet Health",
+      ],
+    },
+  ],
+  // Column 4: Health at Home + Nannies and Maids
+  [
+    {
+      category: "Health at Home",
+      items: [
+        "Doctor on Call",
+        "Nurse at Home",
+        "IV Drip at Home",
+        "Blood Tests at Home",
+      ],
+    },
+    {
+      category: "Nannies and Maids",
+      items: [
+        "House Cleaning",
+        "Child Care",
+        "Elder Care",
+        "Cooking Services",
+        "Laundry Services",
+      ],
+    },
+  ],
 ];
 
 const Navbar: React.FC = () => {
@@ -244,8 +246,8 @@ const Navbar: React.FC = () => {
               </div>
             )}
 
-            {/* Service Categories */}
-            {services.map((service, index) => (
+                        {/* Service Categories */}
+            {services.flat().map((service, index) => (
               <div key={index} className="border-b border-gray-200">
                 <button
                   onClick={() => toggleService(service.category)}
@@ -277,13 +279,13 @@ const Navbar: React.FC = () => {
                           className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
                         >
                           {item}
-                      </Link>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
         </div>
       </motion.div>
     </>
@@ -291,7 +293,7 @@ const Navbar: React.FC = () => {
 };
 
   return (
-    <div className="shadow-lg bg-white sticky top-0 z-40">
+    <div className="border-b border-[#01788e] md:border-gray-200 md:shadow-md bg-white sticky top-0 z-40">
       <div className="container mx-auto px-4 2xl:max-w-[1600px]">
         <header className="w-full py-3 flex items-center justify-between">
           <div className="flex items-center gap-8 lg:hidden">
@@ -324,35 +326,45 @@ const Navbar: React.FC = () => {
               </button>
 
               {isServicesOpen && (
-                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-4 w-96">
-                  <div className="px-4 py-2 border-b">
-                    <h3 className="font-semibold text-gray-800">
-                      Our Services
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    {services.map((serviceGroup, index) => (
-                      <div key={index}>
-                        <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                          {serviceGroup.category}
-                        </h4>
-                        <ul className="space-y-1">
-                          {serviceGroup.items.map((item, itemIndex) => (
-                            <li key={itemIndex}>
-                              <Link
-                                to={`/services/${item
-                                  .toLowerCase()
-                                  .replace(/\s+/g, "-")}`}
-                                className="text-sm text-gray-600 hover:text-primary block py-1"
-                                onClick={() => setIsServicesOpen(false)}
-                              >
-                                {item}
-                              </Link>
-                            </li>
+                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-[1000px]">
+                  {/* Close button in top-right corner */}
+                  <button
+                    onClick={() => setIsServicesOpen(false)}
+                    className="absolute top-2 right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center z-10 hover:bg-orange-600 transition-colors"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                  
+                  {/* Content with padding to avoid close button */}
+                  <div className="pt-8 px-6 pb-6 pr-12">
+                    <div className="grid grid-cols-4 gap-0">
+                      {services.map((column, columnIndex) => (
+                        <div key={columnIndex} className="px-3">
+                          {column.map((serviceGroup, groupIndex) => (
+                            <div key={groupIndex} className={groupIndex > 0 ? "mt-4" : ""}>
+                              <h4 className="font-bold text-gray-600 mb-1 text-sm">
+                                {serviceGroup.category}
+                              </h4>
+                              <ul className="space-y-0.5">
+                                {serviceGroup.items.map((item, itemIndex) => (
+                                  <li key={itemIndex}>
+                                    <Link
+                                      to={`/services/${item
+                                        .toLowerCase()
+                                        .replace(/\s+/g, "-")}`}
+                                      className="text-sm text-gray-800 hover:text-primary block py-0.5 transition-colors"
+                                      onClick={() => setIsServicesOpen(false)}
+                                    >
+                                      {item}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           ))}
-                        </ul>
-                      </div>
-                    ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

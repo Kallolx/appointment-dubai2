@@ -42,11 +42,13 @@ const StepTwo = ({
   const { token } = useAuth();
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
-  const [currentStep, setCurrentStep] = useState("map"); // "list", "map", "form"
+  const [currentStep, setCurrentStep] = useState("list"); // "list", "map", "form"
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [addressType, setAddressType] = useState("Apartment");
   const [addresses, setAddresses] = useState([]);
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [loadingSavedAddresses, setLoadingSavedAddresses] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
     nickname: "",
@@ -55,6 +57,7 @@ const StepTwo = ({
     address: "",
     apartmentNo: "",
     coordinates: null,
+    isDefault: false,
   });
 
   // Google Maps API Key from env
@@ -76,7 +79,10 @@ const StepTwo = ({
 
   // Fetch saved addresses on component mount
   const fetchSavedAddresses = async () => {
-    if (!token) return;
+    if (!token) {
+      setInitialLoadComplete(true);
+      return;
+    }
 
     try {
       setLoadingSavedAddresses(true);
@@ -88,6 +94,7 @@ const StepTwo = ({
       console.error("Error fetching saved addresses:", error);
     } finally {
       setLoadingSavedAddresses(false);
+      setInitialLoadComplete(true);
     }
   };
 
@@ -95,8 +102,17 @@ const StepTwo = ({
     fetchSavedAddresses();
   }, [token]);
 
+  // Auto-switch to map view if user has no saved addresses (only after initial load is complete)
+  useEffect(() => {
+    if (initialLoadComplete && savedAddresses.length === 0 && addresses.length === 0) {
+      setCurrentStep("map");
+    }
+  }, [initialLoadComplete, savedAddresses.length, addresses.length]);
+
   // Helper functions for address display
   const getAddressTypeIcon = (type: string) => {
+    if (!type) return <User className="h-5 w-5" />;
+    
     switch (type.toLowerCase()) {
       case "home":
         return <Home className="h-5 w-5" />;
@@ -109,6 +125,8 @@ const StepTwo = ({
   };
 
   const getAddressTypeColor = (type: string) => {
+    if (!type) return "bg-gray-100 text-gray-800 border-gray-200";
+    
     switch (type.toLowerCase()) {
       case "home":
         return "bg-green-100 text-green-800 border-green-200";
@@ -187,34 +205,72 @@ const StepTwo = ({
     }));
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveAddress = async () => {
     if (!addressForm.area || !addressForm.address) {
       alert("Please fill in all required fields.");
       return;
     }
 
-    const newAddress = {
-      id: Date.now(),
-      type: addressType,
-      city: "Dubai", // Default city since we removed city selection
-      area: addressForm.area,
-      address: addressForm.address,
-      apartmentNo: addressForm.apartmentNo,
-      coordinates: addressForm.coordinates,
-      displayName: addressType === "Other" ? addressForm.nickname : addressType,
-    };
+    try {
+      setSavingAddress(true);
 
-    setAddresses((prev) => [...prev, newAddress]);
-    setSelectedAddress(newAddress);
-    setCurrentStep("list");
-    setAddressForm({
-      nickname: "",
-      city: "",
-      area: "",
-      address: "",
-      apartmentNo: "",
-      coordinates: null,
-    });
+      // Prepare address data for database
+      const addressData = {
+        address_type: addressType,
+        address_line1: addressForm.address,
+        address_line2: addressForm.apartmentNo || "",
+        city: addressForm.city || "Dubai",
+        state: addressForm.area,
+        postal_code: "00000", // Default postal code
+        country: "UAE",
+        is_default: addressForm.isDefault,
+      };
+
+      // Save to database if user is authenticated
+      if (token) {
+        const response = await axios.post(buildApiUrl("/api/user/addresses"), addressData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Add the saved address to the saved addresses list
+        const savedAddress = response.data;
+        setSavedAddresses((prev) => [...prev, savedAddress]);
+        setSelectedAddress(savedAddress);
+      } else {
+        // For non-authenticated users, save locally
+        const newAddress = {
+          id: Date.now(),
+          type: addressType,
+          city: addressForm.city || "Dubai",
+          area: addressForm.area,
+          address: addressForm.address,
+          apartmentNo: addressForm.apartmentNo,
+          coordinates: addressForm.coordinates,
+          displayName: addressType === "Other" ? addressForm.nickname : addressType,
+        };
+
+        setAddresses((prev) => [...prev, newAddress]);
+        setSelectedAddress(newAddress);
+      }
+
+      // Reset form and go back to list
+      setCurrentStep("list");
+      setAddressForm({
+        nickname: "",
+        city: "",
+        area: "",
+        address: "",
+        apartmentNo: "",
+        coordinates: null,
+        isDefault: false,
+      });
+
+    } catch (error) {
+      console.error("Error saving address:", error);
+      alert("Failed to save address. Please try again.");
+    } finally {
+      setSavingAddress(false);
+    }
   };
 
   const renderAddressForm = () => (
@@ -397,24 +453,57 @@ const StepTwo = ({
         )}
       </div>
 
+      {/* Set as Default Checkbox */}
+      {token && (
+        <div className="flex items-center space-x-2 pt-2">
+          <input
+            type="checkbox"
+            id="isDefault"
+            checked={addressForm.isDefault}
+            onChange={(e) => handleInputChange("isDefault", e.target.checked)}
+            className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+          />
+          <label htmlFor="isDefault" className="text-sm text-gray-700">
+            Set as default address
+          </label>
+        </div>
+      )}
+
       <div className="pt-4">
         <button
           onClick={handleSaveAddress}
-          className="w-full py-3 px-4 bg-orange-500 text-white font-bold rounded-sm hover:bg-orange-600 transition-colors"
+          disabled={savingAddress}
+          className="w-full py-3 px-4 bg-orange-500 text-white font-bold rounded-sm hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          SAVE
+          {savingAddress ? "SAVING..." : "SAVE"}
         </button>
       </div>
     </div>
   );
 
+  // Show loading state while initial load is happening
+  if (!initialLoadComplete) {
+    return (
+      <div className="">
+        <div className="max-w-4xl">
+          <div className="flex justify-center items-center h-40">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading addresses...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 md:p-0">
-      <div className="max-w-2xl">
+    <div className="">
+      <div className="max-w-4xl">
         {/* Header with back button for map and form views */}
         {currentStep !== "list" && (
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900">
               {currentStep === "map"
                 ? "Where do you need the service?"
                 : "Add Address Details"}
@@ -425,11 +514,11 @@ const StepTwo = ({
         {/* Main header for list view */}
         {currentStep === "list" && (
           <>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Where do you need the Service?
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Where do you need the service?
             </h2>
-            <p className="text-gray-600 mb-6">
-              Please select your address or add a new address
+            <p className="text-sm text-gray-600 mb-6">
+              Please select your current address or add a new address.
             </p>
           </>
         )}
@@ -440,65 +529,45 @@ const StepTwo = ({
             {/* Saved Addresses from Database */}
             {savedAddresses.length > 0 && (
               <div className="space-y-3 mb-6">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">
-                  Saved Locations
-                </h3>
-                {savedAddresses.map((address) => (
+                {savedAddresses
+                  .filter(address => address.address_line1 && address.state && address.city)
+                  .map((address) => (
                   <div
                     key={`saved-${address.id}`}
                     onClick={() => setSelectedAddress(address)}
-                    className={`p-4 border rounded-sm cursor-pointer transition-colors ${
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                       selectedAddress?.id === address.id && selectedAddress?.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
+                        ? "border-teal-500 bg-teal-50"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="w-10 h-10 bg-gray-50 rounded-sm flex items-center justify-center">
-                          {getAddressTypeIcon(address.address_type)}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-5 h-5 text-gray-600">
+                          <MapPin className="w-5 h-5" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-gray-900">
                               {address.address_type}
                             </span>
-                            {address.is_default && (
-                              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs">
-                                <Star className="h-3 w-3" />
-                                Default
-                              </div>
-                            )}
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-xs text-gray-600">
                             {address.address_line1}
-                            {address.address_line2 &&
-                              address.address_line2.trim() !== "" &&
-                              address.address_line2 !== "0" &&
-                              `, ${address.address_line2}`}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {address.city}, {address.state}
-                            {address.postal_code &&
-                              address.postal_code.trim() !== "" &&
-                              address.postal_code !== "0" &&
-                              ` ${address.postal_code}`}
+                            {address.address_line2 && address.address_line2.trim() !== "" && address.address_line2 !== "0" && `, ${address.address_line2}`}
+                            , {address.state}
+                            , {address.city}
                           </p>
                         </div>
                       </div>
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 ${
-                          selectedAddress?.id === address.id &&
-                          selectedAddress?.id
-                            ? "border-blue-500 bg-blue-500"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedAddress?.id === address.id &&
-                          selectedAddress?.id && (
-                            <div className="w-full h-full rounded-full m-0.5"></div>
-                          )}
-                      </div>
+                      <input
+                        type="radio"
+                        name="address"
+                        value={address.id}
+                        checked={selectedAddress?.id === address.id && selectedAddress?.id}
+                        onChange={() => setSelectedAddress(address)}
+                        className="w-4 h-4 text-teal-500 border-gray-300 focus:ring-teal-500"
+                      />
                     </div>
                   </div>
                 ))}
@@ -508,54 +577,44 @@ const StepTwo = ({
             {/* Locally Added Addresses (from current session) */}
             {addresses.length > 0 && (
               <div className="space-y-3 mb-6">
-                {savedAddresses.length > 0 && (
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">
-                    Recently Added
-                  </h3>
-                )}
-                {addresses.map((address) => (
+                {addresses
+                  .filter(address => address.address && address.area && address.city)
+                  .map((address) => (
                   <div
                     key={`local-${address.id}`}
                     onClick={() => setSelectedAddress(address)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                       selectedAddress?.id === address.id &&
                       !selectedAddress?.user_id
-                        ? "border-primary bg-red-50"
-                        : "border-gray-300 hover:border-gray-400"
+                        ? "border-teal-500 bg-teal-50"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          {address.type === "Home" && (
-                            <Home className="w-4 h-4 text-gray-600" />
-                          )}
-                          {address.type === "Office" && (
-                            <Building className="w-4 h-4 text-gray-600" />
-                          )}
-                          {address.type === "Other" && (
-                            <User className="w-4 h-4 text-gray-600" />
-                          )}
-                          <span className="font-medium text-gray-900">
-                            {address.displayName}
-                          </span>
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-5 h-5 text-gray-600">
+                          <MapPin className="w-5 h-5" />
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {address.address}, {address.area}, {address.city}
-                          {address.apartmentNo && ` - ${address.apartmentNo}`}
-                        </p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-gray-900">
+                              {address.displayName}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {address.address}, {address.area}, {address.city}
+                            {address.apartmentNo && ` - ${address.apartmentNo}`}
+                          </p>
+                        </div>
                       </div>
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 ${
-                          selectedAddress?.id === address.id &&
-                          !selectedAddress?.user_id
-                            ? "border-primary bg-primary"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedAddress?.id === address.id &&
-                          !selectedAddress?.user_id && <div></div>}
-                      </div>
+                      <input
+                        type="radio"
+                        name="address"
+                        value={address.id}
+                        checked={selectedAddress?.id === address.id && !selectedAddress?.user_id}
+                        onChange={() => setSelectedAddress(address)}
+                        className="w-4 h-4 text-teal-500 border-gray-300 focus:ring-teal-500"
+                      />
                     </div>
                   </div>
                 ))}
@@ -569,21 +628,32 @@ const StepTwo = ({
               </div>
             )}
 
+            {/* No valid addresses message */}
+            {!loadingSavedAddresses && 
+             savedAddresses.filter(address => address.address_line1 && address.state && address.city).length === 0 && 
+             addresses.filter(address => address.address && address.area && address.city).length === 0 && (
+              <div className="p-4 text-center text-gray-500 mb-6">
+                <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No saved addresses found</p>
+                <p className="text-xs text-gray-400 mt-1">Add a new address to continue</p>
+              </div>
+            )}
+
             {/* Add New Address Button */}
             <button
               onClick={handleAddNewAddress}
-              className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-red-50 transition-colors group"
+              className="w-full p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-primary flex items-center justify-center group-hover:bg-primary transition-colors">
-                    <Plus className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                  <div className="w-5 h-5 text-gray-600">
+                    <Plus className="w-5 h-5" />
                   </div>
-                  <span className="text-gray-700 group-hover:text-primary font-medium">
-                    Add new address
+                  <span className="text-gray-700 font-medium">
+                    Add New Address
                   </span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary" />
+                <ChevronRight className="w-5 h-5 text-gray-400" />
               </div>
             </button>
           </>

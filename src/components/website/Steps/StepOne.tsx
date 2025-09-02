@@ -5,9 +5,10 @@ import {
   ChevronRight,
   Home,
   Building2,
+  Star,
+  Info,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import ServiceOptionsModal from "@/components/website/ServiceOptionsModal";
 import { buildApiUrl } from "@/config/api";
 
@@ -26,6 +27,7 @@ const StepOne = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
   const [modalCategory, setModalCategory] = useState("");
   const inputRef = useRef(null);
@@ -42,31 +44,32 @@ const StepOne = ({
     queryKey: ["service-item", serviceSlug],
     queryFn: async () => {
       if (!serviceSlug) return null;
-      
+
       // Use the working endpoint that returns all service items
       const url = buildApiUrl("/api/service-items/");
       console.log("Fetching all service items from:", url);
       console.log("ServiceSlug received:", serviceSlug);
-      
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Failed to fetch service items");
       }
-      
+
       const allItems = await response.json();
       console.log("All service items fetched:", allItems);
-      
+
       // Find the specific service item by slug
-      const foundItem = allItems.find(item => 
-        item.slug === serviceSlug || 
-        item.slug.toLowerCase() === serviceSlug.toLowerCase()
+      const foundItem = allItems.find(
+        (item) =>
+          item.slug === serviceSlug ||
+          item.slug.toLowerCase() === serviceSlug.toLowerCase()
       );
-      
+
       if (foundItem) {
         console.log("Found service item by slug:", foundItem);
         return foundItem;
       }
-      
+
       console.log("Service item not found for slug:", serviceSlug);
       return null;
     },
@@ -230,8 +233,6 @@ const StepOne = ({
         }
       }
 
-      // Only update if the detected category is significantly different
-      // This prevents the scroll detection from overriding manual clicks
       if (currentCat !== selected && minDistance < 100) {
         console.log(
           "Scroll detection updating selected from",
@@ -320,8 +321,8 @@ const StepOne = ({
 
   // Component for rendering property type cards
   const PropertyTypeCard = ({ property, currentCategory }) => {
-    const handleOptionsClick = () => {
-      console.log("PropertyTypeCard - handleOptionsClick called with:", {
+    const handleCardClick = () => {
+      console.log("PropertyTypeCard - handleCardClick called with:", {
         propertyName: property.name,
         currentCategory: currentCategory,
         property: property,
@@ -332,19 +333,22 @@ const StepOne = ({
     };
 
     return (
-      <div className="flex gap-4 items-center bg-white pb-4 border-b border-gray-300">
-        <div className="w-24 h-24 flex-shrink-0">
+      <div 
+        className="flex gap-4 items-start p-0 bg-white pb-4 border-b border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={handleCardClick}
+      >
+        <div className="w-20 h-20 flex-shrink-0">
           <img
             src={property.image_url || property.image}
             alt={`${property.name} Cleaning`}
-            className="w-full h-full object-cover rounded-sm"
+            className="w-full h-full object-cover rounded-[5px]"
           />
         </div>
         <div className="flex-grow">
-          <h3 className="text-base md:text-xl font-semibold mb-1">
+          <h3 className="text-base text-gray-600  font-medium mb-1">
             {property.name}
           </h3>
-          <p className="text-gray-500 text-xs md:text-sm mb-2">
+          <p className="text-gray-500 text-xs mb-2">
             {property.description}
           </p>
           <div className="flex justify-between items-center">
@@ -352,17 +356,14 @@ const StepOne = ({
               <span className="text-xs md:text-sm text-gray-500 font-normal">
                 Starting from
               </span>
-              <span className="text-sm md:text-lg font-semibold">
+              <span className="text-sm md:text-md text-gray-600 font-semibold">
                 AED {property.base_price || property.price}
               </span>
             </div>
-            <button
-              className="flex text-primary items-center gap-1 p-2 text-xs border border-primary"
-              onClick={handleOptionsClick}
-            >
+            <div className="flex text-[#01788e] items-center gap-1 p-2 text-xs border border-[#01788e]">
               Options
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -418,7 +419,7 @@ const StepOne = ({
     return (
       <div ref={(el) => (sectionRefs.current[category.slug] = el)}>
         {/* Hero Banner */}
-        <div className="relative mb-8 rounded-sm overflow-hidden h-[170px]">
+        <div className="relative mb-8 rounded-[5px] overflow-hidden h-[150px]">
           <img
             src={category.hero_image_url || "/steps/s1.png"}
             alt={`${category.name} Cleaning`}
@@ -574,10 +575,26 @@ const StepOne = ({
   };
 
   return (
-    <div className="px-4 md:px-0">
+    <>
       {/* Hero Section - Service Name and Image (Above the slider) */}
       {serviceSlug && (
-        <div className="px-4 md:px-0 mb-6">
+        <div className="mb-6 -mx-4 md:mx-0 relative">
+          {/* Search Bar - Hidden on Mobile */}
+          <div className="hidden md:block mb-4 px-2 pt-2 pb-2 bg-white">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search services..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setSearchOpen(true)}
+                onBlur={() => setSearchOpen(false)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
           {serviceItemLoading ? (
             <div className="h-[200px] md:h-[250px] bg-gray-200 rounded-sm flex items-center justify-center">
               <div className="text-gray-500">Loading service details...</div>
@@ -585,17 +602,45 @@ const StepOne = ({
           ) : serviceItem ? (
             <div>
               {/* Hero Image */}
-              <div className="relative rounded-sm overflow-hidden h-[200px] md:h-[250px] mb-4">
+              <div className="relative overflow-hidden h-[170px] md:h-[250px] mb-4">
                 <img
                   src={serviceItem.image_url || "/steps/s1.png"}
                   alt={`${serviceItem.name} service`}
                   className="w-full h-full object-cover"
                 />
+                {/* Mobile Header Icons - Overlay on Hero Image */}
+                <div className="md:hidden absolute top-4 left-4 right-4 flex items-center justify-between">
+                  <button className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                    <ChevronLeft className="w-5 h-5 text-black" />
+                  </button>
+                  <button className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                    <Search className="w-5 h-5 text-black" />
+                  </button>
+                </div>
               </div>
               {/* Service Name below the image */}
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 text-center px-4">
-                {serviceItem.name}
-              </h1>
+              <div className="md:px-0 px-4">
+                <div className="flex flex-row justify-between items-center px-4">
+                  <h1 className="text-md md:text-lg font-bold text-gray-600 text-left">
+                    {serviceItem.name}
+                  </h1>
+                  <button
+                    onClick={() => setIsInfoModalOpen(true)}
+                    className="flex items-center gap-2 hover:bg-gray-100 p-1 rounded transition-colors"
+                  >
+                    <Info className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                {/* Rating Section */}
+                <div className="flex items-center justify-between px-4 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-gray-600 fill-current" />
+                    <span className="text-sm text-gray-600">
+                      4.7/5 (15K bookings)
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div>
@@ -606,153 +651,230 @@ const StepOne = ({
                   alt={`${serviceSlug} service`}
                   className="w-full h-full object-cover"
                 />
+                {/* Mobile Header Icons - Overlay on Hero Image */}
+                <div className="md:hidden absolute top-4 left-4 right-4 flex items-center justify-between">
+                  <button className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <button className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                    <Search className="w-5 h-5 text-white" />
+                  </button>
+                </div>
                 {/* Debug info */}
                 <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 text-white text-xs p-2 rounded">
-                  Debug: serviceSlug="{serviceSlug}" | serviceItem: {serviceItem ? 'Found' : 'Not found'}
+                  Debug: serviceSlug="{serviceSlug}" | serviceItem:{" "}
+                  {serviceItem ? "Found" : "Not found"}
                 </div>
               </div>
               {/* Service Name below the image */}
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800 text-center px-4 capitalize">
-                {serviceSlug.replace(/-/g, ' ')}
+                {serviceSlug.replace(/-/g, " ")}
               </h1>
+              {/* Rating Section */}
+              <div className="flex items-center justify-between px-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">
+                    4.7/5 (15K bookings)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Service Info</span>
+                  <div className="w-4 h-4 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-gray-600">i</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Sticky Search Bar + Tabs */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 mb-4">
-        {/* Search Bar */}
-        <div className="mb-4 px-2 pt-2 pb-2 bg-white">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search services..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onFocus={() => setSearchOpen(true)}
-              onBlur={() => setSearchOpen(false)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-        {/* Categories Section */}
-        <div className="p-2 pt-0 bg-white">
-          <div className="relative">
-            {/* Left Arrow - Hidden on mobile */}
-            <button
-              onClick={() => scrollCategories("left")}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
+      {/* Main Content Container with Padding */}
+      <div>
+        {/* Sticky Search Bar + Tabs */}
+        <div className="sticky -mx-4 border-b border-gray-200 top-[56px] md:top-[64px] z-30 mb-4">
+          {/* Categories Section */}
+          <div className="p-2 pt-2 bg-white">
+            <div className="relative">
+              {/* Left Arrow - Hidden on mobile */}
+              <button
+                onClick={() => scrollCategories("left")}
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
 
-            {/* Categories Container - Full width on mobile, with margins on desktop */}
-            <div
-              ref={categoryRef}
-              className="flex gap-3 overflow-x-auto scrollbar-hide mx-0 md:mx-6 w-full md:w-auto"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {displayCategories.map((cat) => {
-                const isSelected = selected === cat.slug;
-                console.log(
-                  `Rendering category ${cat.name} (${cat.slug}): selected=${isSelected}, current selected=${selected}`
-                );
+              {/* Categories Container - Full width on mobile, with margins on desktop */}
+              <div
+                ref={categoryRef}
+                className="flex gap-3 overflow-x-auto scrollbar-hide mx-0 md:mx-6 w-full md:w-auto"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {displayCategories.map((cat) => {
+                  const isSelected = selected === cat.slug;
+                  console.log(
+                    `Rendering category ${cat.name} (${cat.slug}): selected=${isSelected}, current selected=${selected}`
+                  );
 
-                return (
-                  <button
-                    key={cat.slug}
-                    data-category={cat.slug}
-                    onClick={() => {
-                      console.log(
-                        `Category button clicked: ${cat.name} (${cat.slug})`
-                      );
-                      scrollToCategory(cat.slug);
-                    }}
-                    className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all duration-200 ${
-                      isSelected
-                        ? "bg-orange-50 border-2 border-orange-400 text-orange-500 shadow-sm"
-                        : "bg-white border border-[#01788e] text-gray-600"
-                    }`}
-                  >
-                    {/* Circular Icon */}
-                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                      <img
-                        src="/icons/pest.webp"
-                        alt={`${cat.name} icon`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-sm font-medium capitalize whitespace-nowrap">
-                      {cat.name}
-                    </span>
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={cat.slug}
+                      data-category={cat.slug}
+                      onClick={() => {
+                        console.log(
+                          `Category button clicked: ${cat.name} (${cat.slug})`
+                        );
+                        scrollToCategory(cat.slug);
+                      }}
+                      className={`flex items-center gap-2 min-w-fit px-4 py-2 rounded-full transition-all duration-200 ${
+                        isSelected
+                          ? "bg-orange-50 border-2 border-orange-400 text-orange-500 shadow-sm"
+                          : "bg-white border border-[#01788e] text-gray-600"
+                      }`}
+                    >
+                      {/* Circular Icon */}
+                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                        <img
+                          src="/icons/pest.webp"
+                          alt={`${cat.name} icon`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="text-sm font-medium capitalize whitespace-nowrap">
+                        {cat.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Arrow - Hidden on mobile */}
+              <button
+                onClick={() => scrollCategories("right")}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
-
-            {/* Right Arrow - Hidden on mobile */}
-            <button
-              onClick={() => scrollCategories("right")}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
           </div>
+
+          {/* End sticky wrapper */}
         </div>
 
-        {/* End sticky wrapper */}
-      </div>
+        {/* Services Content */}
+        <div
+          ref={scrollContainerRef}
+          className="flex-1"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {searchOpen && searchTerm ? (
+            <SearchResults />
+          ) : (
+            <div className="space-y-8">
+              {/* Render all category sections */}
+              {displayCategories.map((cat) => (
+                <CategorySection key={cat.slug} category={cat} />
+              ))}
 
-      {/* Services Content */}
-      <div
-        ref={scrollContainerRef}
-        className="flex-1"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {searchOpen && searchTerm ? (
-          <SearchResults />
-        ) : (
-          <div className="space-y-8">
-            {/* Render all category sections */}
-            {displayCategories.map((cat) => (
-              <CategorySection key={cat.slug} category={cat} />
-            ))}
+              {/* Special Instructions */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="font-bold text-lg mb-4 text-gray-800">
+                  Special Instructions
+                </h3>
+                <textarea
+                  value={specialInstructions}
+                  onChange={(e) => setSpecialInstructions(e.target.value)}
+                  placeholder="Any special requirements or instructions for our team..."
+                  className="w-full p-4 border border-gray-300 rounded-lg resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
-            {/* Special Instructions */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="font-bold text-lg mb-4 text-gray-800">
-                Special Instructions
-              </h3>
-              <textarea
-                value={specialInstructions}
-                onChange={(e) => setSpecialInstructions(e.target.value)}
-                placeholder="Any special requirements or instructions for our team..."
-                className="w-full p-4 border border-gray-300 rounded-lg resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+        {/* Service Options Modal */}
+        <ServiceOptionsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          propertyType={selectedPropertyType}
+          category={modalCategory} // FIXED: Use modalCategory instead of selected
+          onAddService={handleModalAddService}
+          onRemoveService={handleModalRemoveService}
+          // NEW: Add context for complete selection information
+          context={{
+            selectedCategory: modalCategory,
+            selectedPropertyType: selectedPropertyType,
+            selectedServiceItem: serviceSlug || "Service", // Use serviceSlug if available
+          }}
+        />
+
+        {/* Service Info Modal */}
+        {isInfoModalOpen && (
+          <div className="fixed inset-0 flex justify-end items-end z-[100] md:items-center md:justify-center">
+            <div
+              className="fixed inset-0 bg-black bg-opacity-30"
+              onClick={() => setIsInfoModalOpen(false)}
+            />
+
+            <div className="bg-white rounded-t-lg shadow-lg w-full mx-0 z-[110] md:mx-0 md:max-w-md md:rounded-sm">
+              <div className="p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <h2 className="font-bold text-lg text-gray-800">
+                    Our {serviceItem?.name || serviceSlug?.replace(/-/g, " ")}{" "}
+                    service includes:
+                  </h2>
+                  <button
+                    onClick={() => setIsInfoModalOpen(false)}
+                    aria-label="Close modal"
+                    className="p-2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span>
+                        High-quality, municipality-approved treatment carried
+                        out by a licensed pest control company
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span>
+                        Treatments are safe and suitable for your homes and
+                        gardens, and safe for children and pets
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span>
+                        One month guarantee with one free follow up visit is
+                        included in the service
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Service Options Modal */}
-      <ServiceOptionsModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        propertyType={selectedPropertyType}
-        category={modalCategory} // FIXED: Use modalCategory instead of selected
-        onAddService={handleModalAddService}
-        onRemoveService={handleModalRemoveService}
-        // NEW: Add context for complete selection information
-        context={{
-          selectedCategory: modalCategory,
-          selectedPropertyType: selectedPropertyType,
-          selectedServiceItem: serviceSlug || "Service", // Use serviceSlug if available
-        }}
-      />
-    </div>
+    </>
   );
 };
 

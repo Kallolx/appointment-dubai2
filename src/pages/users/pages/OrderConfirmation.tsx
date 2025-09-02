@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Check,
   ChevronDown,
@@ -30,6 +30,7 @@ interface OrderData {
 const OrderConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -42,15 +43,33 @@ const OrderConfirmation: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const order = location.state?.orderData;
+    const appointmentId = searchParams.get('appointment_id');
+    const paymentSuccess = searchParams.get('payment_success');
+    
     if (order) {
       console.log("OrderConfirmation - orderData received:", order);
       console.log("OrderConfirmation - status:", order.status);
       setOrderData(order);
+    } else if (appointmentId && paymentSuccess === 'true') {
+      // Handle direct redirect from Ziina payment success
+      console.log("OrderConfirmation - Payment success redirect for appointment:", appointmentId);
+      setOrderData({
+        id: parseInt(appointmentId),
+        status: 'confirmed',
+        payment_method: 'Ziina',
+        payment_success: true,
+        service: 'Service',
+        appointment_date: new Date().toISOString().split('T')[0],
+        appointment_time: 'Time',
+        location: 'Location',
+        price: 0,
+        created_at: new Date().toISOString()
+      } as any);
     } else {
       // Redirect back if no order data
       navigate("/user/bookings");
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, searchParams]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -339,8 +358,13 @@ const OrderConfirmation: React.FC = () => {
               <img src="/icons/check.svg" alt="check" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              You're all set!
+              {orderData.payment_success ? "Payment Successful!" : "You're all set!"}
             </h1>
+            {orderData.payment_success && (
+              <p className="text-green-600 font-medium mb-2">
+                Your Ziina payment has been processed successfully
+              </p>
+            )}
           </div>
 
           {/* Status Progress */}
@@ -395,10 +419,9 @@ const OrderConfirmation: React.FC = () => {
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             ) : (
-                              // Show loading animation when pending or undefined
-                              <div className="w-6 h-6 bg-white border-2 border-gray-300 rounded-full flex items-center justify-center flex-shrink-0 relative">
-                                {/* Animated arc for active state */}
-                                <div className="absolute inset-0 rounded-full border-2 border-[#01788e] border-t-transparent border-r-transparent border-b-transparent animate-spin"></div>
+                              // Show empty circle when pending
+                              <div className="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                               </div>
                             )}
                           </div>

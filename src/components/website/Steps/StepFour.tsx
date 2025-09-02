@@ -19,6 +19,7 @@ import { useGoogleMapsLoader } from "@/contexts/GoogleMapsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { ziinaService } from "@/services/ziinaService";
 
 const StepFour = ({
   cartItems,
@@ -51,19 +52,33 @@ const StepFour = ({
     const container = mapContainerRef.current;
     if (!container) return;
 
+    // Debug: Log the selectedAddress to understand its structure
+    console.log('StepFour - selectedAddress:', selectedAddress);
+
     // derive lat/lng from selectedAddress with several possible keys
-    const lat = Number(
-      selectedAddress?.lat ??
-        selectedAddress?.latitude ??
-        selectedAddress?.location?.lat ??
-        25.2048
-    );
-    const lng = Number(
-      selectedAddress?.lng ??
-        selectedAddress?.longitude ??
-        selectedAddress?.location?.lng ??
-        55.2708
-    );
+    let lat, lng;
+    
+    if (selectedAddress?.coordinates) {
+      // For addresses selected from map (has coordinates object)
+      lat = Number(selectedAddress.coordinates.lat);
+      lng = Number(selectedAddress.coordinates.lng);
+    } else {
+      // For saved addresses or other formats
+      lat = Number(
+        selectedAddress?.lat ??
+          selectedAddress?.latitude ??
+          selectedAddress?.location?.lat ??
+          25.2048
+      );
+      lng = Number(
+        selectedAddress?.lng ??
+          selectedAddress?.longitude ??
+          selectedAddress?.location?.lng ??
+          55.2708
+      );
+    }
+
+    console.log('StepFour - Extracted coordinates:', { lat, lng });
 
     const center = { lat: lat || 25.2048, lng: lng || 55.2708 };
 
@@ -147,7 +162,7 @@ const StepFour = ({
         service: cartItems
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", "),
-        appointment_date: selectedDateTime.date,
+        appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
         appointment_time: selectedDateTime.time,
         location: selectedAddress,
         price: total,
@@ -157,48 +172,24 @@ const StepFour = ({
         property_type: propertyType,
         quantity: quantity,
         service_category: firstItem?.service?.category || category || 'general',
-        payment_method:
-          selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery",
-        notes: `Payment Method: ${
-          selectedPayment === "card" ? "Credit/Debit Card" : "Cash on Delivery"
-        }. Items: ${cartItems
+        payment_method: getPaymentMethodName(selectedPayment),
+        notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${cartItems
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", ")}`,
       };
 
       // Debug: Log the appointment data being sent
+      console.log('StepFour - selectedDateTime object:', selectedDateTime);
+      console.log('StepFour - appointment_date being sent:', selectedDateTime.dbDate || selectedDateTime.date);
       console.log('StepFour - Appointment data being sent:', appointmentData);
       console.log('StepFour - First item details:', firstItem);
       console.log('StepFour - Category:', category);
 
-      // Make API call to create appointment
-      const response = await fetch(buildApiUrl("/api/user/appointments"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(appointmentData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Navigate to order confirmation page with order data
-        navigate("/order-confirmation", {
-          state: {
-            orderData: {
-              ...data.appointment,
-              ...appointmentData,
-            },
-          },
-        });
-        toast({
-          title: "Booking Confirmed!",
-          description: "Your appointment has been successfully booked.",
-        });
+      // Handle different payment methods
+      if (selectedPayment === "ziina") {
+        await handleZiinaPayment(appointmentData);
       } else {
-        throw new Error(data.message || "Failed to create appointment");
+        await handleRegularPayment(appointmentData);
       }
     } catch (error) {
       console.error("Error creating appointment:", error);
@@ -212,11 +203,130 @@ const StepFour = ({
     }
   };
 
+  const getPaymentMethodName = (paymentId: string) => {
+    switch (paymentId) {
+      case "card":
+        return "Credit/Debit Card";
+      case "ziina":
+        return "Ziina";
+      case "tabby":
+        return "Tabby";
+      case "cod":
+        return "Cash on Delivery";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const handleZiinaPayment = async (appointmentData: any) => {
+    try {
+      // First create the appointment with pending status
+      const response = await fetch(buildApiUrl("/api/user/appointments"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...appointmentData,
+          status: "pending_payment"
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log('Ziina payment - Appointment creation response:', data);
+      console.log('Ziina payment - Response status:', response.status);
+      console.log('Ziina payment - Full response object:', response);
+
+      if (!response.ok) {
+        console.error('Ziina payment - Appointment creation failed:', data);
+        throw new Error(data.message || "Failed to create appointment");
+      }
+
+      // Check if appointment data exists
+      if (!data.appointment_id) {
+        console.error('Ziina payment - Missing appointment data:', data);
+        console.error('Ziina payment - Response headers:', response.headers);
+        throw new Error("Appointment creation failed - missing appointment ID");
+      }
+
+      // Create Ziina payment
+      const paymentData = {
+        amount: total,
+        currency: "AED",
+        description: `Payment for ${appointmentData.service}`,
+        order_id: `appointment_${data.appointment_id}`,
+        customer_email: user?.email,
+        customer_phone: user?.phone,
+        return_url: `${window.location.origin}/order-confirmation?appointment_id=${data.appointment_id}&payment_success=true`,
+        cancel_url: `${window.location.origin}/payment-cancelled?appointment_id=${data.appointment_id}`
+      };
+
+      console.log('Ziina payment - Payment data:', paymentData);
+
+      const paymentResponse = await ziinaService.createPaymentViaBackend(paymentData);
+
+      console.log('Ziina payment - Payment response:', paymentResponse);
+
+      if (paymentResponse.success && paymentResponse.payment_url) {
+        // Redirect to Ziina payment page
+        window.location.href = paymentResponse.payment_url;
+      } else {
+        throw new Error(paymentResponse.message || "Failed to create payment");
+      }
+    } catch (error) {
+      console.error("Ziina payment error:", error);
+      throw error;
+    }
+  };
+
+  const handleRegularPayment = async (appointmentData: any) => {
+    const response = await fetch(buildApiUrl("/api/user/appointments"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(appointmentData),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Navigate to order confirmation page with order data
+      navigate("/order-confirmation", {
+        state: {
+          orderData: {
+            ...data.appointment,
+            ...appointmentData,
+          },
+        },
+      });
+      toast({
+        title: "Booking Confirmed!",
+        description: "Your appointment has been successfully booked.",
+      });
+    } else {
+      throw new Error(data.message || "Failed to create appointment");
+    }
+  };
+
   const paymentMethods = [
     {
       id: "card",
       name: "Add New Card",
       icon: <PlusCircle className="w-5 h-5" />,
+    },
+    {
+      id: "ziina",
+      name: "Ziina",
+      icon: (
+        <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-600 rounded flex items-center justify-center">
+          <span className="text-white text-xs font-bold">Z</span>
+        </div>
+      ),
+      description: "Pay with Ziina digital wallet",
     },
     {
       id: "tabby",
@@ -331,8 +441,30 @@ const StepFour = ({
             <div className="flex items-center gap-3">
               <MapPin className="w-4 h-4 text-gray-600" />
               <div className="text-sm text-gray-700 break-words w-full">
-                {selectedAddress.address}, {selectedAddress.area},{" "}
-                {selectedAddress.city}
+                {selectedAddress ? (
+                  <>
+                    {/* For saved addresses from database */}
+                    {selectedAddress.address_line1 && (
+                      <>
+                        {selectedAddress.address_line1}
+                        {selectedAddress.address_line2 && selectedAddress.address_line2.trim() !== "" && selectedAddress.address_line2 !== "0" && `, ${selectedAddress.address_line2}`}
+                        , {selectedAddress.state}
+                        , {selectedAddress.city}
+                      </>
+                    )}
+                    {/* For addresses selected from map or locally added */}
+                    {!selectedAddress.address_line1 && (
+                      <>
+                        {selectedAddress.address || "Address not available"}
+                        {selectedAddress.apartmentNo && `, ${selectedAddress.apartmentNo}`}
+                        , {selectedAddress.area || "Area not available"}
+                        , {selectedAddress.city || "City not available"}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  "Address not available"
+                )}
               </div>
             </div>
           </div>

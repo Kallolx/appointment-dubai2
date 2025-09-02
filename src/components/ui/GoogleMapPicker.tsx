@@ -56,7 +56,7 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
 
           const mapInstance = new google.maps.Map(mapRef.current, {
             center: dubaiCoords,
-            zoom: 12,
+            zoom: 16,
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: false,
@@ -257,13 +257,13 @@ const GoogleMapPicker: React.FC<GoogleMapPickerProps> = ({
 
   const handleZoomIn = () => {
     if (map) {
-      map.setZoom((map.getZoom() || 12) + 1);
+      map.setZoom((map.getZoom() || 16) + 1);
     }
   };
 
   const handleZoomOut = () => {
     if (map) {
-      map.setZoom((map.getZoom() || 12) - 1);
+      map.setZoom((map.getZoom() || 16) - 1);
     }
   };
 

@@ -47,15 +47,15 @@ const BookingDetails: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // First try to get data from location state (for immediate navigation)
-    const order = location.state?.orderData;
-    if (order) {
-      setOrderData(order);
-    }
-
-    // Always fetch fresh data from backend to ensure we have the latest
+    // Always fetch fresh data from backend first
     if (bookingId) {
       fetchBookingDetails();
+    } else {
+      // Only use location state if no bookingId (fallback)
+      const order = location.state?.orderData;
+      if (order) {
+        setOrderData(order);
+      }
     }
 
     // Show toast if redirected from ManageBooking with updates
@@ -162,31 +162,102 @@ const BookingDetails: React.FC = () => {
   };
 
   const getLocationDisplay = (location: string | object) => {
-    try {
-      const locationObj =
-        typeof location === "string" ? JSON.parse(location) : location;
-      return {
-        full: `${locationObj.address}, ${locationObj.area}, ${locationObj.city}`,
-        address: locationObj.address,
-        area: locationObj.area,
-        city: locationObj.city,
-        apartmentNo: locationObj.apartmentNo,
-      };
-    } catch (e) {
-      return {
-        full: location,
-        address: location,
-        area: "",
-        city: "",
-        apartmentNo: "",
-      };
+    // If it's a string, try to parse it as JSON first
+    if (typeof location === "string") {
+      try {
+        const parsedLocation = JSON.parse(location);
+        return formatAddressFromObject(parsedLocation);
+      } catch {
+        // If parsing fails, return the string as is
+        return location;
+      }
     }
+    
+    // If it's already an object, format it
+    if (typeof location === "object" && location !== null) {
+      return formatAddressFromObject(location);
+    }
+    
+    return "Address not available";
+  };
+
+  const formatAddressFromObject = (loc: any) => {
+    const addressParts = [];
+    
+    // For saved addresses from database (raw JSON format)
+    if (loc.address_line1) {
+      addressParts.push(loc.address_line1);
+      if (loc.address_line2) addressParts.push(loc.address_line2);
+      if (loc.state) addressParts.push(loc.state);
+      if (loc.city) addressParts.push(loc.city);
+      if (loc.postal_code && loc.postal_code !== "00000") addressParts.push(loc.postal_code);
+      if (loc.country) addressParts.push(loc.country);
+    }
+    // For addresses from map/form
+    else if (loc.address) {
+      addressParts.push(loc.address);
+      if (loc.apartmentNo) addressParts.push(loc.apartmentNo);
+      if (loc.area) addressParts.push(loc.area);
+      if (loc.city) addressParts.push(loc.city);
+    }
+    // For other object formats
+    else {
+      // Try to extract any available address fields
+      const possibleFields = ['street', 'building', 'apartment', 'area', 'district', 'city', 'state', 'country'];
+      for (const field of possibleFields) {
+        if (loc[field]) {
+          addressParts.push(loc[field]);
+        }
+      }
+    }
+    
+    return addressParts.length > 0 ? addressParts.join(', ') : "Address not available";
   };
 
   const formatPrice = (price: number | string) => {
     const numPrice = typeof price === "string" ? parseFloat(price) : price;
     return isNaN(numPrice) ? "0.00" : numPrice.toFixed(2);
   };
+
+  const getServiceCategoryImage = (category?: string) => {
+    switch (category?.toLowerCase()) {
+      case 'general_cleaning':
+        return '/general_cleaning/1.webp';
+      case 'healthcare_at_home':
+        return '/healthcare_at_home/1.webp';
+      case 'salons_and_spa':
+        return '/salons_and_spa/1.webp';
+      case 'pest_control':
+        return '/icons/pest.webp';
+      case 'maintenance':
+        return '/icons/maintanance.webp';
+      case 'deep_cleaning':
+        return '/icons/deepClean.webp';
+      default:
+        return '/general_cleaning/1.webp'; // Default fallback
+    }
+  };
+
+  const getServiceCategoryIcon = (category?: string) => {
+    switch (category?.toLowerCase()) {
+      case 'pest_control':
+        return '/icons/pest.webp';
+      case 'maintenance':
+        return '/icons/maintanance.webp';
+      case 'deep_cleaning':
+        return '/icons/deepClean.webp';
+      case 'healthcare_at_home':
+        return '/icons/health.webp';
+      case 'salons_and_spa':
+        return '/icons/spa.webp';
+      case 'general_cleaning':
+        return '/icons/cleaning.webp';
+      default:
+        return '/icons/cleaning.webp'; // Default fallback
+    }
+  };
+
+
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -242,7 +313,6 @@ const BookingDetails: React.FC = () => {
     );
   }
 
-  const locationData = getLocationDisplay(orderData.location);
   const referenceId = `20250${(orderData.id || 0)
     .toString()
     .padStart(6, "0")}MPDXB`;
@@ -278,10 +348,10 @@ const BookingDetails: React.FC = () => {
         </div>
 
         <div className="max-w-2xl mx-auto px-4">
-          {/* Hero image + same status progress as OrderConfirmation */}
+          {/* Hero image based on service category */}
           <div className="overflow-hidden rounded-lg mb-4">
             <img
-              src="/general_cleaning/1.webp"
+              src={getServiceCategoryImage(orderData.service_category)}
               alt="Booking"
               className="w-full h-36 md:h-48 object-cover"
             />
@@ -319,8 +389,14 @@ const BookingDetails: React.FC = () => {
                       {isTimelineExpanded && (
                         <div className="flex items-start gap-4 mb-6">
                           <div className="relative z-10">
-                            <div className="w-6 h-6 bg-[#01788e] rounded-full flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-white" />
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              orderData.status === 'confirmed' || orderData.status === 'completed' 
+                                ? 'bg-[#01788e]' 
+                                : 'bg-white border-2 border-gray-300'
+                            }`}>
+                              {(orderData.status === 'confirmed' || orderData.status === 'completed') && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
                             </div>
                           </div>
                           <div className="flex-1 pt-1">
@@ -328,9 +404,10 @@ const BookingDetails: React.FC = () => {
                               Booking confirmed
                             </h3>
                             <p className="text-xs text-gray-600 mt-1">
-                              A service provider has accepted your booking. Your
-                              booking will be delivered as per the booked date
-                              and time.
+                              {orderData.status === 'confirmed' || orderData.status === 'completed'
+                                ? 'A service provider has accepted your booking. Your booking will be delivered as per the booked date and time.'
+                                : 'Waiting for service provider confirmation...'
+                              }
                             </p>
                           </div>
                         </div>
@@ -339,14 +416,25 @@ const BookingDetails: React.FC = () => {
                       {isTimelineExpanded && (
                         <div className="flex items-start gap-4">
                           <div className="relative z-10">
-                            <div className="w-6 h-6 bg-white border-2 border-gray-300 rounded-full flex-shrink-0"></div>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              orderData.status === 'completed' 
+                                ? 'bg-[#01788e]' 
+                                : 'bg-white border-2 border-gray-300'
+                            }`}>
+                              {orderData.status === 'completed' && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
                           </div>
                           <div className="flex-1 pt-1">
                             <h3 className="font-semibold text-gray-900 text-base">
                               Booking delivered
                             </h3>
                             <p className="text-xs text-gray-600 mt-1">
-                              Your booking will be completed soon.
+                              {orderData.status === 'completed'
+                                ? 'Your booking has been completed successfully.'
+                                : 'Your booking will be completed soon.'
+                              }
                             </p>
                           </div>
                         </div>
@@ -389,7 +477,7 @@ const BookingDetails: React.FC = () => {
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <img
-                      src="/icons/pest.webp"
+                      src={getServiceCategoryIcon(orderData.service_category)}
                       alt="Service"
                       className="w-5 h-5 object-contain"
                     />
@@ -440,9 +528,7 @@ const BookingDetails: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <MapPin className="w-4 h-4 text-gray-600" />
                   <div className="text-sm text-gray-700 break-words w-full">
-                    {typeof locationData.full === "string"
-                      ? locationData.full
-                      : JSON.stringify(locationData.full)}
+                    {getLocationDisplay(orderData.location)}
                   </div>
                 </div>
               </div>
@@ -453,6 +539,7 @@ const BookingDetails: React.FC = () => {
                   <div className="text-center text-gray-500">
                     <MapPin className="w-8 h-8 mx-auto mb-2" />
                     <p className="text-sm">Location Map</p>
+                    <p className="text-xs text-gray-400 mt-1">Map will be displayed here</p>
                   </div>
                 </div>
               </div>
