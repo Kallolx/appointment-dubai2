@@ -122,7 +122,7 @@ export default function Login() {
         } else if (data.user.role === 'admin') {
           navigate("/admin");
         } else {
-          navigate("/user");
+          navigate("/");
         }
       } else {
         toast({
@@ -205,7 +205,7 @@ export default function Login() {
         } else if (data.user.role === 'admin') {
           navigate("/admin");
         } else {
-          navigate("/user");
+          navigate("/");
         }
       } else {
         toast({

@@ -602,7 +602,7 @@ const StepOne = ({
           ) : serviceItem ? (
             <div>
               {/* Hero Image */}
-              <div className="relative overflow-hidden h-[170px] md:h-[250px] mb-4">
+              <div className="relative overflow-hidden h-[170px] md:h-[200px] mb-4">
                 <img
                   src={serviceItem.image_url || "/steps/s1.png"}
                   alt={`${serviceItem.name} service`}

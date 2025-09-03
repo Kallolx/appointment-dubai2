@@ -140,40 +140,61 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
     setIsLoading(true);
     
     try {
-      // Send OTP to phone number
-      const response = await fetch(buildApiUrl('/api/auth/send-otp'), {
+      // First check if phone number exists in database
+      const checkResponse = await fetch(buildApiUrl('/api/auth/check-phone'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: fullPhoneNumber })
       });
       
-      const data = await response.json();
+      const checkData = await checkResponse.json();
       
-      if (response.ok && data.success) {
-        setStep("otp");
-        startResendTimer();
-        
-        // Show different messages for test mode vs production
-        if (data.testMode) {
-          toast({
-            title: "Test OTP Sent",
-            description: `Test code: ${data.testOtp} (Development Mode)`,
-            duration: 10000 // Show longer for test mode
-          });
-          // Pre-fill OTP in test mode for easier testing
-          setOtp(data.testOtp);
+      if (checkResponse.ok) {
+        if (checkData.exists) {
+          // User exists - redirect to login page with password flow
+          setLoginModalOpen(false);
+          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}`;
+          return;
         } else {
-          toast({
-            title: "OTP Sent",
-            description: `Verification code sent to ${fullPhoneNumber}`,
+          // User doesn't exist - proceed with OTP for new user registration
+          // Send OTP to phone number
+          const response = await fetch(buildApiUrl('/api/auth/send-otp'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: fullPhoneNumber })
           });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            setStep("otp");
+            startResendTimer();
+            
+            // Show different messages for test mode vs production
+            if (data.testMode) {
+              toast({
+                title: "Test OTP Sent",
+                description: `Test code: ${data.testOtp} (Development Mode)`,
+                duration: 10000 // Show longer for test mode
+              });
+              // Pre-fill OTP in test mode for easier testing
+              setOtp(data.testOtp);
+            } else {
+              toast({
+                title: "OTP Sent",
+                description: `Verification code sent to ${fullPhoneNumber}`,
+              });
+            }
+          } else {
+            toast({
+              title: "Error",
+              description: data.message || "Failed to send OTP. Please try again.",
+              variant: "destructive"
+            });
+          }
         }
       } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to send OTP. Please try again.",
-          variant: "destructive"
-        });
+        throw new Error(checkData.message || 'Failed to check phone number');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -218,7 +239,7 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
           // Existing user - login successful
           login(data.user, data.token);
           setLoginModalOpen(false);
-          window.location.href = "/user";
+          window.location.href = "/";
         }
       } else {
         toast({

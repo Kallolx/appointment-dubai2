@@ -40,8 +40,6 @@ const StepTwo = ({
   onSelectionChange,
 }) => {
   const { token } = useAuth();
-  const [showAddAddress, setShowAddAddress] = useState(false);
-  const [showMapPicker, setShowMapPicker] = useState(false);
   const [currentStep, setCurrentStep] = useState("list"); // "list", "map", "form"
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [addressType, setAddressType] = useState("Apartment");
@@ -89,6 +87,7 @@ const StepTwo = ({
       const response = await axios.get(buildApiUrl("/api/user/addresses"), {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Fetched addresses:", response.data); // Debug log
       setSavedAddresses(response.data);
     } catch (error) {
       console.error("Error fetching saved addresses:", error);
@@ -232,10 +231,23 @@ const StepTwo = ({
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        // Add the saved address to the saved addresses list
-        const savedAddress = response.data;
-        setSavedAddresses((prev) => [...prev, savedAddress]);
-        setSelectedAddress(savedAddress);
+        // Refresh saved addresses from server to get the complete address data
+        await fetchSavedAddresses();
+        
+        // Find and select the newly saved address
+        const newAddressId = response.data.address_id || response.data.id;
+        if (newAddressId) {
+          // Wait a moment for the state to update, then select the new address
+          setTimeout(() => {
+            setSavedAddresses(current => {
+              const newAddress = current.find(addr => addr.id === newAddressId);
+              if (newAddress) {
+                setSelectedAddress(newAddress);
+              }
+              return current;
+            });
+          }, 100);
+        }
       } else {
         // For non-authenticated users, save locally
         const newAddress = {
@@ -530,7 +542,7 @@ const StepTwo = ({
             {savedAddresses.length > 0 && (
               <div className="space-y-3 mb-6">
                 {savedAddresses
-                  .filter(address => address.address_line1 && address.state && address.city)
+                  .filter(address => address.address_line1?.trim() && address.state?.trim() && address.city?.trim())
                   .map((address) => (
                   <div
                     key={`saved-${address.id}`}
@@ -630,7 +642,7 @@ const StepTwo = ({
 
             {/* No valid addresses message */}
             {!loadingSavedAddresses && 
-             savedAddresses.filter(address => address.address_line1 && address.state && address.city).length === 0 && 
+             savedAddresses.filter(address => address.address_line1?.trim() && address.state?.trim() && address.city?.trim()).length === 0 && 
              addresses.filter(address => address.address && address.area && address.city).length === 0 && (
               <div className="p-4 text-center text-gray-500 mb-6">
                 <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-400" />

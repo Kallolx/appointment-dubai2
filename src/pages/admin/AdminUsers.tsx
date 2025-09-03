@@ -115,7 +115,7 @@ const AdminUsers: React.FC = () => {
         status: user.status || 'active',
         total_appointments: Number(user.total_appointments) || 0,
         total_spent: Number(user.total_spent) || 0
-      }));
+      })).filter((user: UserData) =>  user.role !== 'super_admin');
       
       setUsers(usersWithDefaults);
       setFilteredUsers(usersWithDefaults);

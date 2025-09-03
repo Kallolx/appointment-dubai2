@@ -301,7 +301,7 @@ const StepThree = ({ onSelectionChange }) => {
                   >
                     {/* Extra Price Badge */}
                     {timeSlot.extra_price > 0 && (
-                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white text-[10px] md:text-xs px-2 rounded-full font-medium">
                         +{timeSlot.extra_price} AED
                       </div>
                     )}

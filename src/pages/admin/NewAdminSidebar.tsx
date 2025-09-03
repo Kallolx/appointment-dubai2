@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -17,6 +17,7 @@ import {
   Tag,
   Box,
   List,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -34,7 +35,8 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
   setIsMobileOpen,
 }) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // Grouped menu to support collapsible tree structure
   const menuGroups = [
@@ -228,6 +230,37 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
             })}
           </ul>
         </nav>
+
+        {/* Logout Button */}
+        <div className="px-3 py-4 border-t border-gray-200">
+          {!isCollapsed ? (
+            <button
+              onClick={() => {
+                logout();
+                setIsMobileOpen(false);
+                navigate('/login');
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                onClick={() => {
+                  logout();
+                  setIsMobileOpen(false);
+                  navigate('/login');
+                }}
+                className="p-2 rounded-md hover:bg-gray-100"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
