@@ -306,10 +306,23 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         firstItem?.service?.roomType ||
         firstItem?.service?.context?.selectedRoomType ||
         "Studio";
+      const roomTypeSlug = 
+        firstItem?.service?.room_type_slug ||
+        firstItem?.service?.context?.selectedRoomTypeSlug ||
+        "studio";
       const propertyType =
         firstItem?.service?.propertyType ||
         firstItem?.service?.context?.selectedPropertyType ||
         "Apartment";
+      const propertyTypeSlug =
+        firstItem?.service?.property_type_slug ||
+        firstItem?.service?.context?.selectedPropertyTypeSlug ||
+        "apartment";
+      const serviceCategory = firstItem?.service?.category || category || "general";
+      const serviceCategorySlug = 
+        firstItem?.service?.category_slug ||
+        firstItem?.service?.context?.selectedCategorySlug ||
+        category?.toLowerCase()?.replace(/\s+/g, '-') || "general";
       const quantity = firstItem?.count || 1;
 
       // Prepare appointment data
@@ -324,9 +337,12 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         extra_price: extraPrice,
         cod_fee: codFee,
         room_type: roomType,
+        room_type_slug: roomTypeSlug,
         property_type: propertyType,
+        property_type_slug: propertyTypeSlug,
         quantity: quantity,
-        service_category: firstItem?.service?.category || category || "general",
+        service_category: serviceCategory,
+        service_category_slug: serviceCategorySlug,
         payment_method: getPaymentMethodName(selectedPayment),
         notes: `Payment Method: ${getPaymentMethodName(
           selectedPayment
@@ -507,12 +523,6 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                         <div className="text-sm text-gray-600">
                           {selectedDateTime.time}
                         </div>
-                        {selectedDateTime.extra_price &&
-                          selectedDateTime.extra_price > 0 && (
-                            <div className="text-sm text-orange-600 font-medium">
-                              +{selectedDateTime.extra_price} AED (Time Slot Fee)
-                            </div>
-                          )}
                       </div>
                     </div>
 
@@ -550,7 +560,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                                 <span className="text-sm text-gray-600">
                                   Time Slot Fee
                                 </span>
-                                <span className="text-sm text-orange-600">
+                                <span className="text-sm text-gray-600">
                                   +
                                   {Number(selectedDateTime.extra_price).toFixed(
                                     2

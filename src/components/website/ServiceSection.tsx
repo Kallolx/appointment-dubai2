@@ -54,7 +54,7 @@ const ServiceSection: React.FC<Props> = ({ heading, services }) => {
           return (
             <div
               key={index}
-              className="min-w-[140px] sm:min-w-[160px] md:min-w-[240px] hover:cursor-pointer rounded-sm flex flex-col"
+              className="max-w-[160px] md:max-w-[320px] hover:cursor-pointer rounded-sm flex flex-col"
             >
               <Link to={linkTo} className="relative block">
                 {/* Image */}

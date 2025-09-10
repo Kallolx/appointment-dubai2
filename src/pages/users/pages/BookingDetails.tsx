@@ -172,25 +172,26 @@ const BookingDetails: React.FC = () => {
         return location;
       }
     }
-    
+
     // If it's already an object, format it
     if (typeof location === "object" && location !== null) {
       return formatAddressFromObject(location);
     }
-    
+
     return "Address not available";
   };
 
   const formatAddressFromObject = (loc: any) => {
     const addressParts = [];
-    
+
     // For saved addresses from database (raw JSON format)
     if (loc.address_line1) {
       addressParts.push(loc.address_line1);
       if (loc.address_line2) addressParts.push(loc.address_line2);
       if (loc.state) addressParts.push(loc.state);
       if (loc.city) addressParts.push(loc.city);
-      if (loc.postal_code && loc.postal_code !== "00000") addressParts.push(loc.postal_code);
+      if (loc.postal_code && loc.postal_code !== "00000")
+        addressParts.push(loc.postal_code);
       if (loc.country) addressParts.push(loc.country);
     }
     // For addresses from map/form
@@ -203,15 +204,26 @@ const BookingDetails: React.FC = () => {
     // For other object formats
     else {
       // Try to extract any available address fields
-      const possibleFields = ['street', 'building', 'apartment', 'area', 'district', 'city', 'state', 'country'];
+      const possibleFields = [
+        "street",
+        "building",
+        "apartment",
+        "area",
+        "district",
+        "city",
+        "state",
+        "country",
+      ];
       for (const field of possibleFields) {
         if (loc[field]) {
           addressParts.push(loc[field]);
         }
       }
     }
-    
-    return addressParts.length > 0 ? addressParts.join(', ') : "Address not available";
+
+    return addressParts.length > 0
+      ? addressParts.join(", ")
+      : "Address not available";
   };
 
   const formatPrice = (price: number | string) => {
@@ -221,43 +233,41 @@ const BookingDetails: React.FC = () => {
 
   const getServiceCategoryImage = (category?: string) => {
     switch (category?.toLowerCase()) {
-      case 'general_cleaning':
-        return '/general_cleaning/1.webp';
-      case 'healthcare_at_home':
-        return '/healthcare_at_home/1.webp';
-      case 'salons_and_spa':
-        return '/salons_and_spa/1.webp';
-      case 'pest_control':
-        return '/icons/pest.webp';
-      case 'maintenance':
-        return '/icons/maintanance.webp';
-      case 'deep_cleaning':
-        return '/icons/deepClean.webp';
+      case "general_cleaning":
+        return "/general_cleaning/1.webp";
+      case "healthcare_at_home":
+        return "/healthcare_at_home/1.webp";
+      case "salons_and_spa":
+        return "/salons_and_spa/1.webp";
+      case "pest_control":
+        return "/icons/pest.webp";
+      case "maintenance":
+        return "/icons/maintanance.webp";
+      case "deep_cleaning":
+        return "/icons/deepClean.webp";
       default:
-        return '/general_cleaning/1.webp'; // Default fallback
+        return "/general_cleaning/1.webp"; // Default fallback
     }
   };
 
   const getServiceCategoryIcon = (category?: string) => {
     switch (category?.toLowerCase()) {
-      case 'pest_control':
-        return '/icons/pest.webp';
-      case 'maintenance':
-        return '/icons/maintanance.webp';
-      case 'deep_cleaning':
-        return '/icons/deepClean.webp';
-      case 'healthcare_at_home':
-        return '/icons/health.webp';
-      case 'salons_and_spa':
-        return '/icons/spa.webp';
-      case 'general_cleaning':
-        return '/icons/cleaning.webp';
+      case "pest_control":
+        return "/icons/pest.webp";
+      case "maintenance":
+        return "/icons/maintanance.webp";
+      case "deep_cleaning":
+        return "/icons/deepClean.webp";
+      case "healthcare_at_home":
+        return "/icons/health.webp";
+      case "salons_and_spa":
+        return "/icons/spa.webp";
+      case "general_cleaning":
+        return "/icons/cleaning.webp";
       default:
-        return '/icons/cleaning.webp'; // Default fallback
+        return "/icons/cleaning.webp"; // Default fallback
     }
   };
-
-
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -389,14 +399,8 @@ const BookingDetails: React.FC = () => {
                       {isTimelineExpanded && (
                         <div className="flex items-start gap-4 mb-6">
                           <div className="relative z-10">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              orderData.status === 'confirmed' || orderData.status === 'completed' 
-                                ? 'bg-[#01788e]' 
-                                : 'bg-white border-2 border-gray-300'
-                            }`}>
-                              {(orderData.status === 'confirmed' || orderData.status === 'completed') && (
-                                <Check className="w-3 h-3 text-white" />
-                              )}
+                            <div className="w-6 h-6 bg-[#01788e] rounded-full flex items-center justify-center flex-shrink-0">
+                              <Check className="w-3 h-3 text-white" />
                             </div>
                           </div>
                           <div className="flex-1 pt-1">
@@ -404,10 +408,10 @@ const BookingDetails: React.FC = () => {
                               Booking confirmed
                             </h3>
                             <p className="text-xs text-gray-600 mt-1">
-                              {orderData.status === 'confirmed' || orderData.status === 'completed'
-                                ? 'A service provider has accepted your booking. Your booking will be delivered as per the booked date and time.'
-                                : 'Waiting for service provider confirmation...'
-                              }
+                              {orderData.status === "confirmed" ||
+                              orderData.status === "completed"
+                                ? "A service provider has accepted your booking. Your booking will be delivered as per the booked date and time."
+                                : "Waiting for service provider confirmation..."}
                             </p>
                           </div>
                         </div>
@@ -416,12 +420,14 @@ const BookingDetails: React.FC = () => {
                       {isTimelineExpanded && (
                         <div className="flex items-start gap-4">
                           <div className="relative z-10">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              orderData.status === 'completed' 
-                                ? 'bg-[#01788e]' 
-                                : 'bg-white border-2 border-gray-300'
-                            }`}>
-                              {orderData.status === 'completed' && (
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                orderData.status === "completed"
+                                  ? "bg-[#01788e]"
+                                  : "bg-white border-2 border-gray-300"
+                              }`}
+                            >
+                              {orderData.status === "completed" && (
                                 <Check className="w-3 h-3 text-white" />
                               )}
                             </div>
@@ -431,10 +437,9 @@ const BookingDetails: React.FC = () => {
                               Booking delivered
                             </h3>
                             <p className="text-xs text-gray-600 mt-1">
-                              {orderData.status === 'completed'
-                                ? 'Your booking has been completed successfully.'
-                                : 'Your booking will be completed soon.'
-                              }
+                              {orderData.status === "completed"
+                                ? "Your booking has been completed successfully."
+                                : "Your booking will be completed soon."}
                             </p>
                           </div>
                         </div>
@@ -529,17 +534,6 @@ const BookingDetails: React.FC = () => {
                   <MapPin className="w-4 h-4 text-gray-600" />
                   <div className="text-sm text-gray-700 break-words w-full">
                     {getLocationDisplay(orderData.location)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Map */}
-              <div className="mt-4">
-                <div className="w-full h-36 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <MapPin className="w-8 h-8 mx-auto mb-2" />
-                    <p className="text-sm">Location Map</p>
-                    <p className="text-xs text-gray-400 mt-1">Map will be displayed here</p>
                   </div>
                 </div>
               </div>

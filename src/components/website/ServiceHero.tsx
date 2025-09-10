@@ -171,14 +171,6 @@ const ServiceHero: React.FC<ServiceHeroProps> = ({ updateCity }) => {
         {/*Dark Overlay*/}
         <div className="absolute inset-0 bg-black opacity-20"></div>
 
-        {/* Decorative badge (top-right) */}
-        <img
-          src="/badge.png"
-          alt="badge"
-          aria-hidden="true"
-          className="absolute hidden md:block top-44 right-64 z-20 w-40 pointer-events-none select-none"
-        />
-
         {/* Content overlay */}
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 text-center text-white mt-32 md:mt-0">
           {/* Main Title */}
@@ -292,9 +284,9 @@ const ServiceHero: React.FC<ServiceHeroProps> = ({ updateCity }) => {
       </div>
 
       {/* Stats Section */}
-      <div className="bg-[#01788e] hidden md:block py-4 px-12">
-        <div className="max-w-9xl mx-auto">
-          <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-8 md:gap-12">
+      <div className="bg-[#01788e] hidden md:block py-4 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4 md:gap-8">
             {stats.map((stat, index) => (
               <div
                 key={index}

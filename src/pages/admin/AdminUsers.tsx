@@ -376,10 +376,6 @@ const AdminUsers: React.FC = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button size="sm">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add User
-            </Button>
           </div>
         </div>
 

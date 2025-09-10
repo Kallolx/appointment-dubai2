@@ -19,6 +19,7 @@ interface ServiceItem {
   category_name: string;
   description: string;
   image_url: string;
+  rating_text: string;
   sort_order: number;
   is_active: boolean;
 }
@@ -113,6 +114,7 @@ const ServiceItems = () => {
       category_id: item?.category_id || '',
       description: item?.description || '',
       image_url: item?.image_url || '',
+      rating_text: item?.rating_text || '',
       sort_order: item?.sort_order || 0,
       is_active: item?.is_active !== false
     });
@@ -200,6 +202,11 @@ const ServiceItems = () => {
           placeholder="Description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        />
+        <Input
+          placeholder="Rating Text (e.g., 4.7/5 (15K bookings))"
+          value={formData.rating_text}
+          onChange={(e) => setFormData({ ...formData, rating_text: e.target.value })}
         />
         <div className="flex items-center gap-4">
           <div>

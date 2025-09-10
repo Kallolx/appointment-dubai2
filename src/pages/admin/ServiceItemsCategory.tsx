@@ -406,26 +406,72 @@ const ServiceItemsCategory = () => {
         {/* Property Types Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Property Types</label>
-          <div className="grid grid-cols-2 gap-2">
-            {propertyTypes.map((propertyType) => (
-              <div key={propertyType.id} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={`property-${propertyType.id}`}
-                  checked={formData.selectedPropertyTypes.includes(propertyType.id)}
-                  onChange={(e) => {
-                    const updatedTypes = e.target.checked
-                      ? [...formData.selectedPropertyTypes, propertyType.id]
-                      : formData.selectedPropertyTypes.filter(id => id !== propertyType.id);
-                    setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
-                  }}
-                />
-                <label htmlFor={`property-${propertyType.id}`} className="text-sm">
-                  {propertyType.name}
-                </label>
+          <Select
+            value={formData.selectedPropertyTypes.length > 0 ? "selected" : "none"}
+            onValueChange={() => {}} // Controlled by individual checkboxes below
+          >
+            <SelectTrigger>
+              <SelectValue>
+                {formData.selectedPropertyTypes.length === 0 
+                  ? "Select Property Types" 
+                  : `${formData.selectedPropertyTypes.length} property type(s) selected`
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="max-h-[200px] overflow-y-auto">
+              {propertyTypes.map((propertyType) => (
+                <div key={propertyType.id} className="flex items-center space-x-2 px-2 py-1 hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    id={`property-${propertyType.id}`}
+                    checked={formData.selectedPropertyTypes.includes(propertyType.id)}
+                    onChange={(e) => {
+                      const updatedTypes = e.target.checked
+                        ? [...formData.selectedPropertyTypes, propertyType.id]
+                        : formData.selectedPropertyTypes.filter(id => id !== propertyType.id);
+                      setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor={`property-${propertyType.id}`} className="text-sm cursor-pointer flex-1">
+                    <span className="font-medium">{propertyType.slug}</span>
+                    <span className="text-gray-500 ml-2">({propertyType.name})</span>
+                  </label>
+                </div>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Display selected property types */}
+          {formData.selectedPropertyTypes.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs text-gray-600 mb-1">Selected property types:</p>
+              <div className="flex flex-wrap gap-1">
+                {formData.selectedPropertyTypes.map(typeId => {
+                  const propertyType = propertyTypes.find(pt => pt.id === typeId);
+                  return propertyType ? (
+                    <span 
+                      key={typeId} 
+                      className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                    >
+                      {propertyType.slug}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedTypes = formData.selectedPropertyTypes.filter(id => id !== typeId);
+                          setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
+                        }}
+                        className="ml-1 text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ) : null;
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+          
           <p className="text-xs text-gray-500">
             Select which property types are available for this service category
           </p>
@@ -480,7 +526,7 @@ const ServiceItemsCategory = () => {
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 mr-2" />Add Category</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Service Items Category</DialogTitle>
             </DialogHeader>
@@ -545,7 +591,7 @@ const ServiceItemsCategory = () => {
                       <Edit className="w-4 h-4" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Edit Service Items Category</DialogTitle>
                     </DialogHeader>

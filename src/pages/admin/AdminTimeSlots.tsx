@@ -18,6 +18,12 @@ interface TimeSlotData {
 interface AvailableDateOption {
   id: number;
   date: string; // YYYY-MM-DD
+  formatted_date: string; // "September 15, 2025"
+  day_name: string; // "Monday"
+  day_short: string; // "Mon"
+  month_short: string; // "Sep"
+  day_number: string; // "15"
+  year: string; // "2025"
   is_available: boolean;
   max_appointments: number;
 }
@@ -54,9 +60,12 @@ const AdminTimeSlots: React.FC = () => {
         return;
       }
 
-  // If a date is selected, pass it as a query parameter to fetch slots for that date
-  const url = buildApiUrl('/api/admin/available-time-slots') + (selectedDate ? `?date=${selectedDate}` : '');
-  const response = await fetch(url, {
+      // If a date is selected, pass it as a query parameter to fetch slots for that date
+      const url = buildApiUrl('/api/admin/available-time-slots') + (selectedDate ? `?date=${selectedDate}` : '');
+      console.log('🔍 Fetching time slots from URL:', url);
+      console.log('🔍 Selected date:', selectedDate);
+      
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -68,6 +77,8 @@ const AdminTimeSlots: React.FC = () => {
       }
 
       const data = await response.json();
+      console.log('🔍 Time slots response:', data);
+      console.log('🔍 Number of slots received:', data.length);
       setTimeSlots(data);
     } catch (err) {
       console.error('Error fetching time slots:', err);
@@ -88,20 +99,19 @@ const AdminTimeSlots: React.FC = () => {
       if (!res.ok) return;
       const data = await res.json();
 
-      // Normalize date values to YYYY-MM-DD (strip time portion if present)
-      const normalize = (d: any) => {
-        if (!d) return d;
-        if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
-        return d;
-      };
+      console.log('🔍 Raw data from backend:', data);
 
-      const normalized = Array.isArray(data)
-        ? data.map((item: any) => ({ ...item, date: normalize(item.date) }))
-        : [];
+      // Simply use dates as they come from database
+      const normalized = Array.isArray(data) ? data : [];
+
+      console.log('🔍 Normalized data:', normalized);
+      console.log('🔍 Sample date value:', normalized[0]?.date);
+      console.log('🔍 Type of date:', typeof normalized[0]?.date);
 
       setAvailableDates(normalized);
-      // default to first available date if none selected (use normalized date)
+      // default to first available date if none selected
       if (!selectedDate && normalized.length > 0) {
+        console.log('🔍 Setting selected date to:', normalized[0].date);
         setSelectedDate(normalized[0].date);
       }
     } catch (err) {
@@ -123,7 +133,7 @@ const AdminTimeSlots: React.FC = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ ...newSlot, date: selectedDate })
+        body: JSON.stringify({ ...newSlot, date: selectedDate }) // Use selected date directly
       });
 
       if (!response.ok) {
@@ -320,7 +330,7 @@ const AdminTimeSlots: React.FC = () => {
                 >
                   {availableDates.map((d) => (
                     <option key={d.id} value={d.date}>
-                      {new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                      {d.day_short}, {d.month_short} {d.day_number}, {d.year}
                     </option>
                   ))}
                 </select>

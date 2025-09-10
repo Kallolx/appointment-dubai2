@@ -18,56 +18,44 @@ const StepThree = ({ onSelectionChange }) => {
       setLoading(true);
       setError("");
       
-      // Fetch available dates
+      // Fetch available dates using the admin endpoint that returns formatted dates
       const datesResponse = await fetch(buildApiUrl('/api/available-dates'));
       if (!datesResponse.ok) {
         throw new Error('Failed to fetch available dates');
       }
       const datesData = await datesResponse.json();
       
-  // We will fetch time slots per-selected-date. Do not fetch all slots here.
+      console.log('🔍 StepThree - Raw dates from API:', datesData);
       
-      // Format dates for display
-      const formattedDates = datesData.map((dateItem, index) => {
-        // Normalize db date to YYYY-MM-DD without time portion
-        const rawDate = dateItem.date;
-        let dbDateStr = rawDate;
-        if (typeof rawDate === 'string') {
-          if (rawDate.includes('T')) {
-            dbDateStr = rawDate.split('T')[0];
-          } else if (rawDate.length >= 10) {
-            dbDateStr = rawDate.slice(0, 10);
-          }
-        } else if (rawDate instanceof Date) {
-          dbDateStr = rawDate.toISOString().split('T')[0];
-        }
-
-        const date = new Date(dbDateStr);
+      // Map the dates directly without any JavaScript Date conversion
+      const formattedDates = datesData.map((dateItem) => {
+        // Just use the date string as-is from the database
+        const dbDateStr = dateItem.date; // This should be YYYY-MM-DD format
+        
+        // Simple string parsing for display without Date objects
+        const [year, month, day] = dbDateStr.split('-');
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        // Calculate day of week without timezone issues
+        const date = new Date(Number(year), Number(month) - 1, Number(day));
         
         return {
           id: dateItem.id,
           dayName: dayNames[date.getDay()],
-          date: date.getDate(),
-          month: monthNames[date.getMonth()],
-          fullDate: `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
-          dateObj: date,
-          dbDate: dbDateStr, // Store normalized database date (YYYY-MM-DD)
+          date: Number(day),
+          month: monthNames[Number(month) - 1],
+          fullDate: `${monthNames[Number(month) - 1]} ${Number(day)}, ${year}`,
+          dbDate: dbDateStr, // Store database date as-is (YYYY-MM-DD)
           maxAppointments: dateItem.max_appointments
         };
       });
       
       setDates(formattedDates);
 
-      // Debug: Log the formatted dates
-      console.log('StepThree - formattedDates:', formattedDates);
-      if (formattedDates.length > 0) {
-        console.log('StepThree - First date dbDate:', formattedDates[0].dbDate);
-        console.log('StepThree - First date fullDate:', formattedDates[0].fullDate);
-      }
+      console.log('🔍 StepThree - Formatted dates:', formattedDates);
 
-      // Auto-select first date if available (set both display and db date)
+      // Auto-select first date if available
       if (formattedDates.length > 0 && !selectedDate) {
         setSelectedDate(formattedDates[0].fullDate);
         setSelectedDbDate(formattedDates[0].dbDate);

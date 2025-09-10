@@ -289,9 +289,9 @@ const ManageBooking: React.FC = () => {
           </div>
         </div>
       </div>
-             {/* Modal for editing options */}
-       <Dialog open={showModal} onOpenChange={setShowModal}>
-         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 relative !fixed !top-1/2 !left-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
+      {/* Modal for editing options */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 relative !fixed !top-1/2 !left-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
           {/* Loading Overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">

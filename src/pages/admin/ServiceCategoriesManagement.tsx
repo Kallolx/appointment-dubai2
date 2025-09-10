@@ -32,6 +32,8 @@ const ServiceCategoriesManagement: React.FC = () => {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<ServiceCategory | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
@@ -159,13 +161,17 @@ const ServiceCategoriesManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this service category?')) {
-      return;
-    }
+    // Open delete confirmation modal instead
+    const cat = categories.find(c => c.id === id) || null;
+    setDeletingCategory(cat);
+    setDeleteModalOpen(true);
+  };
 
+  const handleDeleteConfirmed = async () => {
+    if (!deletingCategory) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(buildApiUrl(`/api/admin/service-categories/${id}`), {
+      const response = await fetch(buildApiUrl(`/api/admin/service-categories/${deletingCategory.id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -177,20 +183,21 @@ const ServiceCategoriesManagement: React.FC = () => {
         throw new Error(errorData.message || 'Failed to delete category');
       }
 
-      toast({
-        title: "Success",
-        description: "Service category deleted successfully"
-      });
-
+      toast({ title: 'Success', description: 'Service category deleted successfully' });
+      setDeleteModalOpen(false);
+      setDeletingCategory(null);
       await fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete service category",
-        variant: "destructive"
-      });
+      toast({ title: 'Error', description: (error as Error).message || 'Failed to delete service category', variant: 'destructive' });
+      setDeleteModalOpen(false);
+      setDeletingCategory(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeletingCategory(null);
   };
 
   const handleEdit = (category: ServiceCategory) => {
@@ -242,27 +249,38 @@ const ServiceCategoriesManagement: React.FC = () => {
     >
       <div className="space-y-6">
         {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="relative flex-1 max-w-lg">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search categories..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="pl-10"
+              className="pl-10 pr-10"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-2 text-gray-500 hover:text-gray-700 p-1"
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
           </div>
-          
-          <Button 
-            onClick={() => {
-              resetForm();
-              setIsAddDialogOpen(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Category
-          </Button>
+
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                resetForm();
+                setIsAddDialogOpen(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Category
+            </Button>
+          </div>
         </div>
 
         {/* Categories List */}
@@ -285,7 +303,7 @@ const ServiceCategoriesManagement: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-auto border-collapse">
                   <thead className="border-b">
                     <tr className="text-left">
                       <th className="pb-3 font-medium text-gray-900">Category</th>
@@ -297,10 +315,9 @@ const ServiceCategoriesManagement: React.FC = () => {
                   </thead>
                   <tbody>
                     {filteredCategories.map((category) => (
-                      <tr key={category.id} className="border-b last:border-b-0">
-                        <td className="py-4">
+                      <tr key={category.id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors">
+                        <td className="py-4 align-top">
                           <div className="flex items-center gap-3">
-                            {/* image removed - categories are text-only now */}
                             <div>
                               <p className="font-medium text-gray-900">{category.name}</p>
                               {category.description && (
@@ -311,8 +328,8 @@ const ServiceCategoriesManagement: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 text-gray-600 font-mono text-sm">{category.slug}</td>
-                        <td className="py-4">
+                        <td className="py-4 align-top text-gray-600 font-mono text-sm">{category.slug}</td>
+                        <td className="py-4 align-top">
                           <Badge 
                             variant={category.is_active ? "default" : "secondary"}
                             className={category.is_active ? "bg-green-100 text-green-800" : ""}
@@ -320,13 +337,14 @@ const ServiceCategoriesManagement: React.FC = () => {
                             {category.is_active ? 'Active' : 'Inactive'}
                           </Badge>
                         </td>
-                        <td className="py-4 text-gray-600">{category.sort_order}</td>
-                        <td className="py-4">
+                        <td className="py-4 align-top text-gray-600">{category.sort_order}</td>
+                        <td className="py-4 align-top">
                           <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(category)}
+                              title="Edit"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -335,6 +353,7 @@ const ServiceCategoriesManagement: React.FC = () => {
                               size="sm"
                               onClick={() => handleDelete(category.id)}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -430,6 +449,20 @@ const ServiceCategoriesManagement: React.FC = () => {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirmation modal */}
+        {deleteModalOpen && deletingCategory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold mb-2">Delete category</h3>
+              <p className="text-sm text-gray-600 mb-4">Are you sure you want to delete <strong>{deletingCategory.name}</strong>? This action cannot be undone.</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleDeleteCancel}>Cancel</Button>
+                <Button className="bg-red-600 hover:bg-red-700" onClick={handleDeleteConfirmed}>Delete</Button>
+              </div>
             </div>
           </div>
         )}

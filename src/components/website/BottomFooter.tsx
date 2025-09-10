@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
 import React from "react";
-
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 const BottomFooter: React.FC = () => {
+  const { settings } = useWebsiteSettings();
+
+  // Helper function to determine if a URL should be shown
+  const shouldShowSocialLink = (url: string) => url && url.trim() !== '';
+
   return (
     <footer className="bg-[#054351] p-4 text-white">
       {/* BOTTOM SECTION - Resources, About us, Get in touch, Social Media and Legal Links */}
@@ -48,7 +53,7 @@ const BottomFooter: React.FC = () => {
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
                 </span>
-                <p>1403, Fortune Executive Tower, Cluster T, JLT, Dubai, UAE.</p>
+                <p>{settings.contact_address || "1403, Fortune Executive Tower, Cluster T, JLT, Dubai, UAE."}</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center flex-shrink-0">
@@ -56,7 +61,7 @@ const BottomFooter: React.FC = () => {
                     <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                   </svg>
                 </span>
-                <p>+971 4 506 1500</p>
+                <p>{settings.contact_phone || "+971 4 506 1500"}</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center flex-shrink-0">
@@ -65,7 +70,7 @@ const BottomFooter: React.FC = () => {
                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
                 </span>
-                <p>support@servicemarket.com</p>
+                <p>{settings.contact_email || "support@servicemarket.com"}</p>
               </div>
             </div>
           </div>
@@ -78,24 +83,66 @@ const BottomFooter: React.FC = () => {
           {/* Social Media Icons - Centered and Bigger */}
           <div className="flex justify-center mb-6">
               <div className="flex items-center gap-4">
-              <Link to="#" className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                <img src="/icons/facebook.svg" alt="Facebook" />
-              </Link>
-              <Link to="#" className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                <img src="/icons/instagram.svg" alt="Instagram" />
-              </Link>
-              <Link to="#" className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                <img src="/icons/twitter.svg" alt="Twitter" />
-              </Link>
-              <Link to="#" className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                  <img src="/icons/linkedin.svg" alt="Linkedin" />
-              </Link>
-              <Link to="#" className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                  <img src="/icons/google-1.svg" alt="Google" />
-              </Link>
-              <Link to="#" className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition">
-                <img src="/icons/whatsapp.svg" alt="Chat" />
-              </Link>
+              {shouldShowSocialLink(settings.facebook_url) && (
+                <a 
+                  href={settings.facebook_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                >
+                  <img src="/icons/facebook.svg" alt="Facebook" />
+                </a>
+              )}
+              {shouldShowSocialLink(settings.instagram_url) && (
+                <a 
+                  href={settings.instagram_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                >
+                  <img src="/icons/instagram.svg" alt="Instagram" />
+                </a>
+              )}
+              {shouldShowSocialLink(settings.twitter_url) && (
+                <a 
+                  href={settings.twitter_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                >
+                  <img src="/icons/twitter.svg" alt="Twitter" />
+                </a>
+              )}
+              {shouldShowSocialLink(settings.linkedin_url) && (
+                <a 
+                  href={settings.linkedin_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                >
+                    <img src="/icons/linkedin.svg" alt="Linkedin" />
+                </a>
+              )}
+              {shouldShowSocialLink(settings.google_url) && (
+                <a 
+                  href={settings.google_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                >
+                    <img src="/icons/google-1.svg" alt="Google" />
+                </a>
+              )}
+              {shouldShowSocialLink(settings.whatsapp_url) && (
+                <a 
+                  href={settings.whatsapp_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                >
+                  <img src="/icons/whatsapp.svg" alt="WhatsApp" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -111,7 +158,7 @@ const BottomFooter: React.FC = () => {
           {/* Copyright - Underneath Terms */}
           <div className="text-center">
             <p className="text-gray-200 text-sm">
-              Service Souk DMCC is licensed by Dubai Health Authority (DHA) under License No. 8357061. Copyright © 2013-2025
+              {settings.tagline}
             </p>
           </div>
         </div>

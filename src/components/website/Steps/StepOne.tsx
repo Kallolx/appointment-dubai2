@@ -29,6 +29,7 @@ const StepOne = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
+  const [selectedPropertyTypeId, setSelectedPropertyTypeId] = useState(0);
   const [modalCategory, setModalCategory] = useState("");
   const inputRef = useRef(null);
   const categoryRef = useRef(null);
@@ -324,10 +325,12 @@ const StepOne = ({
     const handleCardClick = () => {
       console.log("PropertyTypeCard - handleCardClick called with:", {
         propertyName: property.name,
+        propertyId: property.id,
         currentCategory: currentCategory,
         property: property,
       });
       setSelectedPropertyType(property.name);
+      setSelectedPropertyTypeId(property.id);
       setModalCategory(currentCategory);
       setIsModalOpen(true);
     };
@@ -636,7 +639,7 @@ const StepOne = ({
                   <div className="flex items-center gap-2">
                     <Star className="w-4 h-4 text-gray-600 fill-current" />
                     <span className="text-sm text-gray-600">
-                      4.7/5 (15K bookings)
+                      {serviceItem.rating_text || "4.7/5 (15K bookings)"}
                     </span>
                   </div>
                 </div>
@@ -735,7 +738,7 @@ const StepOne = ({
                       {/* Circular Icon */}
                       <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
                         <img
-                          src="/icons/pest.webp"
+                          src={cat.icon_url || cat.hero_image_url || "/icons/pest.webp"}
                           alt={`${cat.name} icon`}
                           className="w-full h-full object-cover"
                         />
@@ -797,6 +800,7 @@ const StepOne = ({
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           propertyType={selectedPropertyType}
+          propertyTypeId={selectedPropertyTypeId}
           category={modalCategory} // FIXED: Use modalCategory instead of selected
           onAddService={handleModalAddService}
           onRemoveService={handleModalRemoveService}

@@ -36,6 +36,7 @@ interface ServicePricing {
   room_type_id: number;
   price: number;
   discount_price?: number;
+  max_orders?: number;
   description?: string;
   is_special: boolean;
   is_active: boolean;
@@ -52,6 +53,7 @@ interface PricingForm {
   room_type_id: number;
   price: number;
   discount_price?: number;
+  max_orders?: number;
   description: string;
   is_special: boolean;
   is_active: boolean;
@@ -109,6 +111,7 @@ const ServicePricingManagement: React.FC = () => {
     room_type_id: 0,
     price: 0,
     discount_price: undefined,
+    max_orders: undefined,
     description: '',
     is_special: false,
     is_active: true
@@ -289,6 +292,7 @@ const ServicePricingManagement: React.FC = () => {
       room_type_id: 0,
       price: 0,
       discount_price: undefined,
+      max_orders: undefined,
       description: '',
       is_special: false,
       is_active: true
@@ -308,6 +312,7 @@ const ServicePricingManagement: React.FC = () => {
       room_type_id: pricing.room_type_id,
       price: pricing.price,
       discount_price: pricing.discount_price,
+      max_orders: pricing.max_orders,
       description: pricing.description || '',
       is_special: pricing.is_special,
       is_active: pricing.is_active
@@ -597,7 +602,7 @@ const ServicePricingManagement: React.FC = () => {
                     >
                       <option value="">All Property Types</option>
                       {propertyTypes.map(pt => (
-                        <option key={pt.id} value={pt.id}>{pt.name}</option>
+                        <option key={pt.id} value={pt.id}>{pt.slug} ({pt.name})</option>
                       ))}
                     </select>
                   </div>
@@ -867,7 +872,7 @@ const ServicePricingManagement: React.FC = () => {
                     >
                       <option value="">Select Property Type</option>
                       {propertyTypes.map(pt => (
-                        <option key={pt.id} value={pt.id}>{pt.name}</option>
+                        <option key={pt.id} value={pt.id}>{pt.slug} ({pt.name})</option>
                       ))}
                     </select>
                   </div>
@@ -912,6 +917,20 @@ const ServicePricingManagement: React.FC = () => {
                       value={form.discount_price || ''}
                       onChange={handleDiscountPriceChange}
                       placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Max Orders (Optional)</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={form.max_orders || ''}
+                      onChange={(e) => setForm(prev => ({ 
+                        ...prev, 
+                        max_orders: e.target.value ? parseInt(e.target.value) : undefined 
+                      }))}
+                      placeholder="e.g., 5 (leave empty for unlimited)"
                     />
                   </div>
                 </div>

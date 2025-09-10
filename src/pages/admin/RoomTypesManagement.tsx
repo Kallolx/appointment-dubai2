@@ -24,6 +24,7 @@ interface RoomType {
   slug: string;
   image_url: string | null;
   description: string | null;
+  whats_included: string[] | string | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -37,6 +38,7 @@ interface RoomForm {
   slug: string;
   image_url: string;
   description: string;
+  whats_included: string[];
   is_active: boolean;
   sort_order: number;
 }
@@ -67,6 +69,7 @@ export default function RoomTypesManagement() {
     slug: "",
     image_url: "",
     description: "",
+    whats_included: [],
     is_active: true,
     sort_order: 0,
   });
@@ -262,12 +265,28 @@ export default function RoomTypesManagement() {
 
   const handleEdit = (roomType: RoomType) => {
     setEditingRoom(roomType);
+    
+    // Parse whats_included if it's a JSON string
+    let whatsIncluded = [];
+    if (roomType.whats_included) {
+      if (Array.isArray(roomType.whats_included)) {
+        whatsIncluded = roomType.whats_included;
+      } else if (typeof roomType.whats_included === 'string') {
+        try {
+          whatsIncluded = JSON.parse(roomType.whats_included);
+        } catch (e) {
+          whatsIncluded = [];
+        }
+      }
+    }
+    
     setForm({
       property_type_id: roomType.property_type_id,
       name: roomType.name,
       slug: roomType.slug,
       image_url: roomType.image_url || "",
       description: roomType.description || "",
+      whats_included: whatsIncluded,
       is_active: roomType.is_active,
       sort_order: roomType.sort_order,
     });
@@ -312,6 +331,7 @@ export default function RoomTypesManagement() {
       slug: "",
       image_url: "",
       description: "",
+      whats_included: [],
       is_active: true,
       sort_order: 0,
     });
@@ -432,6 +452,7 @@ export default function RoomTypesManagement() {
                      slug: "",
                      image_url: "",
                      description: "",
+                     whats_included: [],
                      is_active: true,
                      sort_order: 0,
                    });
@@ -580,7 +601,7 @@ export default function RoomTypesManagement() {
                      <option value={0}>Select Property Type</option>
                      {propertyTypes.map((type) => (
                        <option key={type.id} value={type.id}>
-                         {type.name}
+                         {type.slug} ({type.name})
                        </option>
                      ))}
                    </select>
@@ -695,6 +716,55 @@ export default function RoomTypesManagement() {
                  />
                </div>
 
+               {/* What's Included Section */}
+               <div>
+                 <label className="block text-sm font-medium mb-2">
+                   What's Included
+                 </label>
+                 <div className="space-y-2">
+                   {Array.isArray(form.whats_included) ? form.whats_included.map((item, index) => (
+                     <div key={index} className="flex items-center space-x-2">
+                       <Input
+                         value={item}
+                         onChange={(e) => {
+                           const newItems = [...(Array.isArray(form.whats_included) ? form.whats_included : [])];
+                           newItems[index] = e.target.value;
+                           handleFormChange("whats_included", newItems);
+                         }}
+                         placeholder="Enter what's included..."
+                         className="flex-1"
+                       />
+                       <Button
+                         type="button"
+                         variant="outline"
+                         size="sm"
+                         onClick={() => {
+                           const currentArray = Array.isArray(form.whats_included) ? form.whats_included : [];
+                           const newItems = currentArray.filter((_, i) => i !== index);
+                           handleFormChange("whats_included", newItems);
+                         }}
+                         className="text-red-600 hover:text-red-700"
+                       >
+                         <X className="w-4 h-4" />
+                       </Button>
+                     </div>
+                   )) : null}
+                   <Button
+                     type="button"
+                     variant="outline"
+                     size="sm"
+                     onClick={() => {
+                       const currentArray = Array.isArray(form.whats_included) ? form.whats_included : [];
+                       handleFormChange("whats_included", [...currentArray, ""]);
+                     }}
+                     className="w-full border-dashed"
+                   >
+                     <Plus className="w-4 h-4 mr-2" />
+                     Add Item
+                   </Button>
+                 </div>
+               </div>
+
                <div className="flex justify-end space-x-2 pt-4 border-t">
                  <Button
                    type="button"
@@ -751,6 +821,7 @@ export default function RoomTypesManagement() {
                          slug: "",
                          image_url: "",
                          description: "",
+                         whats_included: [],
                          is_active: true,
                          sort_order: 0,
                        });

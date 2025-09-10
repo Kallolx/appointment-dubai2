@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 const services = [
   // Column 1: Moving & Storage + Cleaning Services
@@ -114,6 +115,7 @@ const Navbar: React.FC = () => {
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuth();
+  const { settings } = useWebsiteSettings();
 
   const handleLogout = () => {
     logout();
@@ -301,13 +303,27 @@ const Navbar: React.FC = () => {
               <Menu className="w-5 h-5 text-gray-600" />
             </button>
             <Link to="/">
-              <img src="/logo.svg" alt="Logo" className="h-8" />
+              <img 
+                src={settings.logo_url} 
+                alt={settings.site_name} 
+                className="h-8"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo.svg";
+                }}
+              />
             </Link>
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
             <Link to="/">
-              <img src="/logo.svg" alt="Logo" className="h-9" />
+              <img 
+                src={settings.logo_url} 
+                alt={settings.site_name} 
+                className="h-9"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo.svg";
+                }}
+              />
             </Link>
 
             <div className="relative">

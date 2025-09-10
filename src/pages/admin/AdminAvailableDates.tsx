@@ -7,7 +7,13 @@ import { Calendar, Plus, Edit, Trash2, Check, X } from 'lucide-react';
 
 interface AvailableDateData {
   id: number;
-  date: string;
+  date: string; // YYYY-MM-DD
+  formatted_date: string; // "September 15, 2025"
+  day_name: string; // "Monday"
+  day_short: string; // "Mon"
+  month_short: string; // "Sep"
+  day_number: string; // "15"
+  year: string; // "2025"
   is_available: boolean;
   max_appointments: number;
   created_at: string;
@@ -141,23 +147,18 @@ const AdminAvailableDates: React.FC = () => {
   }, []);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // No need to format, backend already provides formatted_date
+    return dateString;
   };
 
-  const getDayName = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short' });
+  const getDayName = (dayShort: string) => {
+    // Backend already provides day_short
+    return dayShort;
   };
 
   const isDatePast = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
+    const today = new Date().toISOString().split('T')[0]; // Get today as YYYY-MM-DD
+    return dateString < today;
   };
 
   if (loading) {
@@ -293,21 +294,18 @@ const AdminAvailableDates: React.FC = () => {
                               ? 'bg-green-200 text-green-800' 
                               : 'bg-yellow-200 text-yellow-800'
                         }`}>
-                          {getDayName(dateItem.date)}
+                          {dateItem.day_short}
                         </div>
                         <div>
                           <p className={`font-medium ${
                             isDatePast(dateItem.date) ? 'text-gray-600' : 'text-gray-900'
                           }`}>
-                            {new Date(dateItem.date).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
+                            {dateItem.month_short} {dateItem.day_number}
                           </p>
                           <p className={`text-xs ${
                             isDatePast(dateItem.date) ? 'text-gray-500' : 'text-gray-600'
                           }`}>
-                            {new Date(dateItem.date).getFullYear()}
+                            {dateItem.year}
                           </p>
                         </div>
                       </div>
@@ -363,10 +361,7 @@ const AdminAvailableDates: React.FC = () => {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Added:</span>
                         <span className="text-gray-600">
-                          {new Date(dateItem.created_at).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
+                          {dateItem.created_at.split('T')[0]}
                         </span>
                       </div>
                     </div>
