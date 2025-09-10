@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from '@/pages/admin/NewAdminLayout';
 import { Plus, Edit, Trash2 } from "lucide-react";
@@ -53,7 +54,10 @@ interface PropertyType {
 const ServiceItemsCategory = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ServiceItemsCategory | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<ServiceItemsCategory | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch service items categories
   const { data: categories = [], isLoading, error: categoriesError } = useQuery({
@@ -137,9 +141,18 @@ const ServiceItemsCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items-category"] });
       setIsAddModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Service category added successfully!",
+      });
     },
     onError: (error) => {
       console.error('Mutation error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add service category. Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -154,11 +167,26 @@ const ServiceItemsCategory = () => {
         },
         body: JSON.stringify(data),
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update service category');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items-category"] });
       setEditingCategory(null);
+      toast({
+        title: "Success",
+        description: "Service category updated successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update service category. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -169,12 +197,47 @@ const ServiceItemsCategory = () => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete service category');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items-category"] });
+      setDeleteModalOpen(false);
+      setDeletingCategory(null);
+      toast({
+        title: "Success",
+        description: "Service category deleted successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete service category. Please try again.",
+        variant: "destructive",
+      });
+      setDeleteModalOpen(false);
+      setDeletingCategory(null);
     },
   });
+
+  const handleDeleteClick = (category: ServiceItemsCategory) => {
+    setDeletingCategory(category);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingCategory) {
+      deleteMutation.mutate(deletingCategory.id);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeletingCategory(null);
+  };
 
   // Update property types for a category
   const updatePropertyTypesMutation = useMutation({
@@ -618,7 +681,7 @@ const ServiceItemsCategory = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(category.id)}
+                  onClick={() => handleDeleteClick(category)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -629,6 +692,37 @@ const ServiceItemsCategory = () => {
           <div className="text-center py-8 text-gray-500">
             No service item categories found
           </div>
+        )}
+
+        {/* Delete confirmation modal */}
+        {deleteModalOpen && deletingCategory && (
+          <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Service Category</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Are you sure you want to delete "<strong>{deletingCategory.name}</strong>"?
+                </p>
+                <p className="text-sm text-gray-500">
+                  This action cannot be undone. The service category will be permanently removed.
+                </p>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={handleDeleteCancel}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteConfirm}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </div>

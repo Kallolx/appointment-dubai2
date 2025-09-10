@@ -4,6 +4,7 @@ import NewAdminLayout from './NewAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Plus, Edit, Trash2, Check, X } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface TimeSlotData {
   id: number;
@@ -13,6 +14,16 @@ interface TimeSlotData {
   extra_price?: number; // Extra price in AED
   created_at: string;
   date?: string; // ISO date (YYYY-MM-DD) - optional if backend provides it
+  service_category_id?: number | null;
+  service_category_name?: string | null;
+  service_category_slug?: string | null;
+}
+
+interface ServiceCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
 }
 
 interface AvailableDateOption {
@@ -26,9 +37,12 @@ interface AvailableDateOption {
   year: string; // "2025"
   is_available: boolean;
   max_appointments: number;
+  service_category_id?: number | null;
+  service_category_name?: string | null;
 }
 
 const AdminTimeSlots: React.FC = () => {
+  const { toast } = useToast();
   const [timeSlots, setTimeSlots] = useState<TimeSlotData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,16 +53,21 @@ const AdminTimeSlots: React.FC = () => {
     start_time: '',
     end_time: '',
     is_available: true,
-    extra_price: 0
+    extra_price: 0,
+    service_category_id: null as number | null
   });
   const [editSlot, setEditSlot] = useState({
     start_time: '',
     end_time: '',
     is_available: true,
-    extra_price: 0
+    extra_price: 0,
+    service_category_id: null as number | null
   });
   const [availableDates, setAvailableDates] = useState<AvailableDateOption[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [filteredDates, setFilteredDates] = useState<AvailableDateOption[]>([]);
 
   const fetchTimeSlots = async () => {
     try {
@@ -60,10 +79,24 @@ const AdminTimeSlots: React.FC = () => {
         return;
       }
 
-      // If a date is selected, pass it as a query parameter to fetch slots for that date
-      const url = buildApiUrl('/api/admin/available-time-slots') + (selectedDate ? `?date=${selectedDate}` : '');
+      // Build URL with date and category filters
+      let url = buildApiUrl('/api/admin/available-time-slots');
+      const params = new URLSearchParams();
+      
+      if (selectedDate) {
+        params.append('date', selectedDate);
+      }
+      
+      if (selectedCategory) {
+        params.append('categoryId', selectedCategory.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
       console.log('🔍 Fetching time slots from URL:', url);
-      console.log('🔍 Selected date:', selectedDate);
+      console.log('🔍 Selected date:', selectedDate, 'Selected category:', selectedCategory);
       
       const response = await fetch(url, {
         headers: {
@@ -88,6 +121,39 @@ const AdminTimeSlots: React.FC = () => {
     }
   };
 
+  const fetchServiceCategories = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(buildApiUrl('/api/service-categories'), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        toast({
+          title: "Error",
+          description: "Unable to load service categories. Please refresh and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const data = await response.json();
+      setServiceCategories(data);
+    } catch (error) {
+      console.error('Error fetching service categories:', error);
+      toast({
+        title: "Error",
+        description: "Unable to load service categories. Please check your connection.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchAvailableDates = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -96,26 +162,54 @@ const AdminTimeSlots: React.FC = () => {
       const res = await fetch(buildApiUrl('/api/admin/available-dates'), {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: "Unable to load available dates. Please refresh and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
       const data = await res.json();
 
-      console.log('🔍 Raw data from backend:', data);
+      console.log('🔍 Raw dates data from backend:', data);
 
       // Simply use dates as they come from database
       const normalized = Array.isArray(data) ? data : [];
-
-      console.log('🔍 Normalized data:', normalized);
-      console.log('🔍 Sample date value:', normalized[0]?.date);
-      console.log('🔍 Type of date:', typeof normalized[0]?.date);
-
       setAvailableDates(normalized);
-      // default to first available date if none selected
-      if (!selectedDate && normalized.length > 0) {
-        console.log('🔍 Setting selected date to:', normalized[0].date);
-        setSelectedDate(normalized[0].date);
-      }
+      
+      // Filter dates by selected category
+      filterDatesByCategory(normalized, selectedCategory);
     } catch (err) {
       console.error('Failed to fetch available dates', err);
+      toast({
+        title: "Error",
+        description: "Unable to load available dates. Please check your connection.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filterDatesByCategory = (dates: AvailableDateOption[], categoryId: number | null) => {
+    if (!categoryId) {
+      // Show all dates if no category selected
+      setFilteredDates(dates);
+      if (!selectedDate && dates.length > 0) {
+        setSelectedDate(dates[0].date);
+      }
+    } else {
+      // Filter dates by category - show dates for this category or dates with no category
+      const filtered = dates.filter(date => 
+        date.service_category_id === categoryId || date.service_category_id === null
+      );
+      setFilteredDates(filtered);
+      
+      // Reset selected date if current selection is not in filtered results
+      if (selectedDate && !filtered.find(d => d.date === selectedDate)) {
+        setSelectedDate(filtered.length > 0 ? filtered[0].date : '');
+      } else if (!selectedDate && filtered.length > 0) {
+        setSelectedDate(filtered[0].date);
+      }
     }
   };
 
@@ -123,7 +217,20 @@ const AdminTimeSlots: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       if (!selectedDate) {
-        alert('Please select a date before adding a time slot');
+        toast({
+          title: "Missing Date",
+          description: "Please select a date before adding a time slot.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!newSlot.start_time || !newSlot.end_time) {
+        toast({
+          title: "Missing Time",
+          description: "Please enter both start and end times.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -133,7 +240,11 @@ const AdminTimeSlots: React.FC = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ ...newSlot, date: selectedDate }) // Use selected date directly
+        body: JSON.stringify({ 
+          ...newSlot, 
+          date: selectedDate,
+          service_category_id: selectedCategory // Use the selected category
+        })
       });
 
       if (!response.ok) {
@@ -142,12 +253,21 @@ const AdminTimeSlots: React.FC = () => {
       }
 
       // Reset form and refresh slots
-      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0 });
+      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: selectedCategory });
       setIsAddingSlot(false);
       fetchTimeSlots();
+      
+      toast({
+        title: "Success",
+        description: "Time slot added successfully!",
+      });
     } catch (err) {
       console.error('Error adding time slot:', err);
-      alert(err instanceof Error ? err.message : 'Failed to add time slot');
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Unable to add time slot. Please try again.',
+        variant: "destructive",
+      });
     }
   };
 
@@ -157,7 +277,8 @@ const AdminTimeSlots: React.FC = () => {
       start_time: slot.start_time,
       end_time: slot.end_time,
       is_available: slot.is_available,
-      extra_price: slot.extra_price || 0
+      extra_price: slot.extra_price || 0,
+      service_category_id: slot.service_category_id || null
     });
     setIsEditingSlot(true);
     setIsAddingSlot(false);
@@ -167,6 +288,15 @@ const AdminTimeSlots: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       if (!editingSlotId) return;
+
+      if (!editSlot.start_time || !editSlot.end_time) {
+        toast({
+          title: "Missing Time",
+          description: "Please enter both start and end times.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const response = await fetch(buildApiUrl(`/api/admin/available-time-slots/${editingSlotId}`), {
         method: 'PUT',
@@ -183,18 +313,27 @@ const AdminTimeSlots: React.FC = () => {
 
       // Reset edit form and refresh slots
       setEditingSlotId(null);
-      setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0 });
+      setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: null });
       setIsEditingSlot(false);
       fetchTimeSlots();
+      
+      toast({
+        title: "Success",
+        description: "Time slot updated successfully!",
+      });
     } catch (err) {
       console.error('Error updating time slot:', err);
-      alert('Failed to update time slot');
+      toast({
+        title: "Error",
+        description: "Unable to update time slot. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const cancelEdit = () => {
     setEditingSlotId(null);
-    setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0 });
+    setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: null });
     setIsEditingSlot(false);
   };
 
@@ -217,9 +356,18 @@ const AdminTimeSlots: React.FC = () => {
 
       // Refresh slots
       fetchTimeSlots();
+      
+      toast({
+        title: "Success",
+        description: `Time slot ${isAvailable ? 'enabled' : 'disabled'} successfully!`,
+      });
     } catch (err) {
       console.error('Error updating time slot:', err);
-      alert('Failed to update time slot availability');
+      toast({
+        title: "Error",
+        description: "Unable to update time slot availability. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -245,22 +393,37 @@ const AdminTimeSlots: React.FC = () => {
 
       // Refresh slots
       fetchTimeSlots();
+      
+      toast({
+        title: "Success",
+        description: "Time slot deleted successfully!",
+      });
     } catch (err) {
       console.error('Error deleting time slot:', err);
-      alert('Failed to delete time slot');
+      toast({
+        title: "Error",
+        description: "Unable to delete time slot. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   useEffect(() => {
+    fetchServiceCategories();
     fetchAvailableDates();
-    // fetch time slots for initial selectedDate (if set) when component mounts or when selectedDate changes
-    // fetchTimeSlots will be called by the effect watching selectedDate below
   }, []);
 
   useEffect(() => {
-    // whenever selectedDate changes, re-fetch time slots for that date
-    fetchTimeSlots();
-  }, [selectedDate]);
+    // When selected category changes, filter the dates
+    filterDatesByCategory(availableDates, selectedCategory);
+  }, [selectedCategory, availableDates]);
+
+  useEffect(() => {
+    // whenever selectedDate or selectedCategory changes, re-fetch time slots
+    if (selectedDate) {
+      fetchTimeSlots();
+    }
+  }, [selectedDate, selectedCategory]);
 
   const formatTime = (timeString: string) => {
     return new Date(`1970-01-01T${timeString}`).toLocaleTimeString('en-US', {
@@ -308,35 +471,57 @@ const AdminTimeSlots: React.FC = () => {
   return (
     <NewAdminLayout title="Time Slots" subtitle="Manage appointment time slots">
       <div className="space-y-6">
-        {/* Date filter / selector */}
+        {/* Combined Step 1 & 2: Category & Date Selection */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Select Date
-              </span>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Select Category & Date
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {availableDates.length === 0 ? (
-              <div className="text-sm text-gray-600">No available dates configured. Please add dates on the Available Dates page first.</div>
-            ) : (
-              <div className="flex items-center gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service Category
+                </label>
                 <select
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedCategory || ''}
+                  onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {availableDates.map((d) => (
-                    <option key={d.id} value={d.date}>
-                      {d.day_short}, {d.month_short} {d.day_number}, {d.year}
+                  <option value="">All Categories</option>
+                  {serviceCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
-                <div className="text-sm text-gray-500">Showing time slots for the selected date.</div>
               </div>
-            )}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Date
+                </label>
+                {filteredDates.length === 0 ? (
+                  <div className="text-sm text-gray-500 py-2">
+                    No dates available for selected category
+                  </div>
+                ) : (
+                  <select
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {filteredDates.map((d) => (
+                      <option key={d.id} value={d.date}>
+                        {d.day_short}, {d.month_short} {d.day_number}, {d.year}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
         {/* Add New Time Slot Section */}
@@ -345,11 +530,17 @@ const AdminTimeSlots: React.FC = () => {
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <Clock className="w-5 h-5" />
-                Add New Time Slot
+                Time Slots
+                {selectedDate && (
+                  <span className="text-sm font-normal text-gray-500">
+                    for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                )}
               </span>
               <Button
                 onClick={() => setIsAddingSlot(!isAddingSlot)}
                 variant={isAddingSlot ? "outline" : "default"}
+                disabled={!selectedDate}
               >
                 {isAddingSlot ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                 {isAddingSlot ? 'Cancel' : 'Add Slot'}
@@ -358,6 +549,22 @@ const AdminTimeSlots: React.FC = () => {
           </CardHeader>
           {isAddingSlot && (
             <CardContent>
+              {/* Category and Date Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div className="text-sm text-blue-800">
+                  <strong>Creating time slot for:</strong>
+                  <div className="mt-1">
+                    📅 Date: {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div>
+                    🏷️ Category: {selectedCategory ? 
+                      serviceCategories.find(c => c.id === selectedCategory)?.name : 
+                      'All Categories (General)'
+                    }
+                  </div>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -409,7 +616,7 @@ const AdminTimeSlots: React.FC = () => {
                     placeholder="0.00"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Additional charge for this time slot (optional)</p>
+                  <p className="text-xs text-gray-500 mt-1">Optional additional charge</p>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -495,7 +702,7 @@ const AdminTimeSlots: React.FC = () => {
                     placeholder="0.00"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Additional charge for this time slot (optional)</p>
+                  <p className="text-xs text-gray-500 mt-1">Optional additional charge</p>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -523,8 +730,8 @@ const AdminTimeSlots: React.FC = () => {
             {timeSlots.length === 0 ? (
               <div className="text-center py-8">
                 <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No time slots configured.</p>
-                <p className="text-sm text-gray-400">Add some time slots to allow customer bookings.</p>
+                <p className="text-gray-500">No time slots found.</p>
+                <p className="text-sm text-gray-400">Select a category and date above to add time slots.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -607,6 +814,12 @@ const AdminTimeSlots: React.FC = () => {
                             </span>
                           </div>
                         )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Category:</span>
+                          <span className="font-medium text-blue-600">
+                            {slot.service_category_name || 'All Categories'}
+                          </span>
+                        </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Added:</span>
                           <span className="text-gray-600">

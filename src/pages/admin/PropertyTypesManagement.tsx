@@ -52,6 +52,8 @@ const PropertyTypesManagement: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingProperty, setDeletingProperty] = useState<PropertyType | null>(null);
   const { toast } = useToast();
 
   // Stable form handlers using useCallback
@@ -237,8 +239,6 @@ const PropertyTypesManagement: React.FC = () => {
   };
 
   const handleDelete = useCallback(async (propertyId: number) => {
-    if (!confirm('Are you sure you want to delete this property type? This will remove the property type and may affect linked pricing or references.')) return;
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(buildApiUrl(`/api/admin/property-types/${propertyId}`), {
@@ -258,6 +258,8 @@ const PropertyTypesManagement: React.FC = () => {
         description: 'Property type deleted successfully'
       });
 
+      setDeleteModalOpen(false);
+      setDeletingProperty(null);
       await fetchProperties();
     } catch (error: any) {
       console.error('Error deleting property type:', error);
@@ -266,8 +268,26 @@ const PropertyTypesManagement: React.FC = () => {
         description: error.message || 'Failed to delete property type',
         variant: 'destructive'
       });
+      setDeleteModalOpen(false);
+      setDeletingProperty(null);
     }
   }, [toast]);
+
+  const handleDeleteClick = (property: PropertyType) => {
+    setDeletingProperty(property);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingProperty) {
+      handleDelete(deletingProperty.id);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeletingProperty(null);
+  };
 
   const resetForm = () => {
     setForm({
@@ -412,7 +432,7 @@ const PropertyTypesManagement: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(property.id)}
+                              onClick={() => handleDeleteClick(property)}
                               className="text-red-600 hover:text-red-700"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -670,6 +690,29 @@ const PropertyTypesManagement: React.FC = () => {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirmation modal */}
+        {deleteModalOpen && deletingProperty && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete Property Type</h3>
+              <p className="text-gray-600 mb-2">
+                Are you sure you want to delete "<strong>{deletingProperty.name}</strong>"?
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                This action cannot be undone. This will remove the property type and may affect linked pricing or references.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={handleDeleteCancel}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteConfirm}>
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         )}

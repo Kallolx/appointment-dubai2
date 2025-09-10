@@ -26,7 +26,11 @@ const countries = [
   { name: "Afghanistan", code: "af", dial_code: "+93" },
 ];
 
-const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (open: boolean) => void; initialPhone?: string }) => {
+const LoginModal = ({ setLoginModalOpen, initialPhone, redirectTo }: { 
+  setLoginModalOpen: (open: boolean) => void; 
+  initialPhone?: string;
+  redirectTo?: string;
+}) => {
   const [isCountryDrawerOpen, setIsCountryDrawerOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("United Arab Emirates");
   const [countrySearch, setCountrySearch] = useState("");
@@ -153,7 +157,8 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
         if (checkData.exists) {
           // User exists - redirect to login page with password flow
           setLoginModalOpen(false);
-          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}`;
+          const redirectParam = redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : '';
+          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}${redirectParam}`;
           return;
         } else {
           // User doesn't exist - proceed with OTP for new user registration
@@ -234,12 +239,19 @@ const LoginModal = ({ setLoginModalOpen, initialPhone }: { setLoginModalOpen: (o
       if (response.ok && data.success) {
         if (data.isNewUser) {
           // New user - redirect to registration
-          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}&new=true&verified=true`;
+          const redirectParam = redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : '';
+          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}&new=true&verified=true${redirectParam}`;
         } else {
           // Existing user - login successful
           login(data.user, data.token);
           setLoginModalOpen(false);
-          window.location.href = "/";
+          
+          // Redirect to specific page if provided, otherwise go to home
+          if (redirectTo) {
+            window.location.href = redirectTo;
+          } else {
+            window.location.href = "/";
+          }
         }
       } else {
         toast({

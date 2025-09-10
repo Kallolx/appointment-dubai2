@@ -53,6 +53,8 @@ export default function RoomTypesManagement() {
   const [editingRoom, setEditingRoom] = useState<RoomType | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingRoom, setDeletingRoom] = useState<RoomType | null>(null);
   
   // Enhanced filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -295,8 +297,6 @@ export default function RoomTypesManagement() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this room type?")) return;
-
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(buildApiUrl(`/api/admin/room-types/${id}`), {
@@ -306,22 +306,45 @@ export default function RoomTypesManagement() {
         },
       });
 
-      if (!response.ok) throw new Error("Failed to delete room type");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to delete room type (${response.status})`);
+      }
 
       toast({
         title: "Success",
         description: "Room type deleted successfully",
       });
 
+      setDeleteModalOpen(false);
+      setDeletingRoom(null);
       await fetchRooms();
     } catch (error) {
       console.error("Error deleting room type:", error);
       toast({
         title: "Error",
-        description: "Failed to delete room type",
+        description: error instanceof Error ? error.message : "Failed to delete room type",
         variant: "destructive",
       });
+      setDeleteModalOpen(false);
+      setDeletingRoom(null);
     }
+  };
+
+  const handleDeleteClick = (room: RoomType) => {
+    setDeletingRoom(room);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingRoom) {
+      handleDelete(deletingRoom.id);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeletingRoom(null);
   };
 
   const resetForm = () => {
@@ -925,7 +948,7 @@ export default function RoomTypesManagement() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(room.id)}
+                            onClick={() => handleDeleteClick(room)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-1"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -940,6 +963,29 @@ export default function RoomTypesManagement() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Delete confirmation modal */}
+        {deleteModalOpen && deletingRoom && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete Room Type</h3>
+              <p className="text-gray-600 mb-2">
+                Are you sure you want to delete "<strong>{deletingRoom.name}</strong>"?
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                This action cannot be undone. The room type will be permanently removed.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={handleDeleteCancel}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteConfirm}>
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </NewAdminLayout>
   );

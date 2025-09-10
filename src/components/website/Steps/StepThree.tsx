@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { buildApiUrl } from "@/config/api";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 
-const StepThree = ({ onSelectionChange }) => {
+const StepThree = ({ onSelectionChange, category }) => {
   const dateScrollRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -18,14 +18,41 @@ const StepThree = ({ onSelectionChange }) => {
       setLoading(true);
       setError("");
       
-      // Fetch available dates using the admin endpoint that returns formatted dates
-      const datesResponse = await fetch(buildApiUrl('/api/available-dates'));
+      // Get category ID from category slug if provided
+      let categoryId = null;
+      if (category) {
+        try {
+          const categoriesResponse = await fetch(buildApiUrl('/api/service-categories'));
+          if (categoriesResponse.ok) {
+            const categoriesData = await categoriesResponse.json();
+            const foundCategory = categoriesData.find(cat => cat.slug === category);
+            if (foundCategory) {
+              categoryId = foundCategory.id;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching categories for ID lookup:', error);
+        }
+      }
+      
+      // Fetch available dates using the API endpoint with category filter
+      const datesUrl = categoryId 
+        ? buildApiUrl(`/api/available-dates?categoryId=${categoryId}`)
+        : buildApiUrl('/api/available-dates');
+      
+      const datesResponse = await fetch(datesUrl);
       if (!datesResponse.ok) {
         throw new Error('Failed to fetch available dates');
       }
       const datesData = await datesResponse.json();
       
       console.log('🔍 StepThree - Raw dates from API:', datesData);
+      console.log('🔍 StepThree - Category:', category, 'Category ID:', categoryId);
+      console.log('🔍 StepThree - Dates URL used:', datesUrl);
+      
+      if (datesData.length === 0) {
+        console.log('⚠️ StepThree - No dates returned from API for category:', category);
+      }
       
       // Map the dates directly without any JavaScript Date conversion
       const formattedDates = datesData.map((dateItem) => {
@@ -80,16 +107,42 @@ const StepThree = ({ onSelectionChange }) => {
         return;
       }
 
-  const url = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
-  console.debug('[StepThree] fetching time slots from', url);
-  const res = await fetch(url);
+      // Get category ID from category slug if provided (same as in fetchAvailableData)
+      let categoryId = null;
+      if (category) {
+        try {
+          const categoriesResponse = await fetch(buildApiUrl('/api/service-categories'));
+          if (categoriesResponse.ok) {
+            const categoriesData = await categoriesResponse.json();
+            const foundCategory = categoriesData.find(cat => cat.slug === category);
+            if (foundCategory) {
+              categoryId = foundCategory.id;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching categories for time slots ID lookup:', error);
+        }
+      }
+
+      // Build URL with both date and category filter
+      let url = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
+      if (categoryId) {
+        url += `&categoryId=${categoryId}`;
+      }
+      
+      console.debug('[StepThree] fetching time slots from', url);
+      console.debug('[StepThree] category:', category, 'categoryId:', categoryId);
+      
+      const res = await fetch(url);
       if (!res.ok) {
         throw new Error('Failed to fetch time slots for date');
       }
       const data = await res.json();
-  console.debug('[StepThree] fetched', Array.isArray(data) ? data.length : 'non-array', 'time slots', data);
-
-      const formattedTimeSlots = data.map((slot) => {
+      console.debug('[StepThree] fetched', Array.isArray(data) ? data.length : 'non-array', 'time slots', data);
+      
+      if (data.length === 0) {
+        console.log('⚠️ StepThree - No time slots returned from API for date:', dbDate, 'category:', category);
+      }      const formattedTimeSlots = data.map((slot) => {
         const startTime = formatTime12Hour(slot.start_time);
         const endTime = formatTime12Hour(slot.end_time);
         return {
@@ -123,7 +176,7 @@ const StepThree = ({ onSelectionChange }) => {
   // Initialize data on mount
   useEffect(() => {
     fetchAvailableData();
-  }, []);
+  }, [category]); // Refetch when category changes
 
   useEffect(() => {
     if (onSelectionChange && selectedDate && selectedTime && selectedDbDate) {
@@ -205,7 +258,12 @@ const StepThree = ({ onSelectionChange }) => {
 
           {dates.length === 0 ? (
             <div className="p-6 text-center">
-              <p className="text-yellow-800">No available dates at the moment. Please check back later.</p>
+              <p className="text-yellow-800">
+                {category ? 
+                  `No available dates for this service category at the moment. Please check back later or contact us for assistance.` :
+                  'No available dates at the moment. Please check back later.'
+                }
+              </p>
             </div>
           ) : (
             <div className="relative">
@@ -273,7 +331,12 @@ const StepThree = ({ onSelectionChange }) => {
 
             {timeSlots.length === 0 ? (
               <div className="p-6 text-center">
-                <p className="text-yellow-800">No available time slots at the moment. Please check back later.</p>
+                <p className="text-yellow-800">
+                  {category ? 
+                    `No available time slots for this service category on the selected date. Please try a different date or contact us for assistance.` :
+                    'No available time slots at the moment. Please check back later.'
+                  }
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 max-w-2xl">

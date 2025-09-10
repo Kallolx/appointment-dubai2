@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { buildApiUrl } from "@/config/api";
 import NewAdminLayout from '@/pages/admin/NewAdminLayout';
 import { Plus, Edit, Trash2 } from "lucide-react";
@@ -33,7 +34,10 @@ interface Category {
 const ServiceItems = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ServiceItem | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<ServiceItem | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch service items
   const { data: serviceItems = [], isLoading } = useQuery({
@@ -42,6 +46,9 @@ const ServiceItems = () => {
       const response = await fetch(buildApiUrl('/api/admin/service-items'), {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+      if (!response.ok) {
+        throw new Error('Failed to fetch service items');
+      }
       return response.json();
     },
   });
@@ -66,11 +73,26 @@ const ServiceItems = () => {
         },
         body: JSON.stringify(data),
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add service item');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items"] });
       setIsAddModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Service item added successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add service item. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -85,11 +107,26 @@ const ServiceItems = () => {
         },
         body: JSON.stringify(data),
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update service item');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items"] });
       setEditingItem(null);
+      toast({
+        title: "Success",
+        description: "Service item updated successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update service item. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -100,12 +137,47 @@ const ServiceItems = () => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete service item');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-service-items"] });
+      setDeleteModalOpen(false);
+      setDeletingItem(null);
+      toast({
+        title: "Success",
+        description: "Service item deleted successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete service item. Please try again.",
+        variant: "destructive",
+      });
+      setDeleteModalOpen(false);
+      setDeletingItem(null);
     },
   });
+
+  const handleDeleteClick = (item: ServiceItem) => {
+    setDeletingItem(item);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingItem) {
+      deleteMutation.mutate(deletingItem.id);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeletingItem(null);
+  };
 
   const ServiceItemForm = ({ item, onSubmit, onCancel }: { item?: ServiceItem | null; onSubmit: (data: any) => void; onCancel: () => void }) => {
     const [formData, setFormData] = useState({
@@ -129,7 +201,7 @@ const ServiceItems = () => {
       const folder = import.meta.env.VITE_CLOUDINARY_FOLDER_MODE;
 
       if (!cloudName || !uploadPreset) {
-        throw new Error('Cloudinary config missing');
+        throw new Error('Image upload not configured. Please contact support.');
       }
 
       const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
@@ -141,7 +213,7 @@ const ServiceItems = () => {
       const res = await fetch(url, { method: 'POST', body: fd });
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Upload failed: ${text}`);
+        throw new Error(`Image upload failed: ${res.status} ${res.statusText}`);
       }
       const json = await res.json();
       return json.secure_url || json.url;
@@ -155,15 +227,19 @@ const ServiceItems = () => {
 
         if (selectedFile) {
           setUploading(true);
-          const uploadedUrl = await uploadToCloudinary(selectedFile);
-          dataToSend = { ...dataToSend, image_url: uploadedUrl };
-          setFormData((prev) => ({ ...prev, image_url: uploadedUrl }));
+          try {
+            const uploadedUrl = await uploadToCloudinary(selectedFile);
+            dataToSend = { ...dataToSend, image_url: uploadedUrl };
+            setFormData((prev) => ({ ...prev, image_url: uploadedUrl }));
+          } catch (uploadErr: any) {
+            throw new Error(`Image upload failed: ${uploadErr.message || 'Please try again'}`);
+          }
         }
 
         onSubmit(dataToSend);
       } catch (err: any) {
-        console.error('Cloudinary upload error', err);
-        setUploadError(err?.message || 'Upload failed');
+        console.error('Form submission error:', err);
+        setUploadError(err?.message || 'An error occurred. Please try again.');
       } finally {
         setUploading(false);
       }
@@ -326,7 +402,7 @@ const ServiceItems = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => deleteMutation.mutate(item.id)}
+                onClick={() => handleDeleteClick(item)}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -334,6 +410,37 @@ const ServiceItems = () => {
           </div>
         ))}
         </div>
+
+        {/* Delete confirmation modal */}
+        {deleteModalOpen && deletingItem && (
+          <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Service Item</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Are you sure you want to delete "<strong>{deletingItem.name}</strong>"?
+                </p>
+                <p className="text-sm text-gray-500">
+                  This action cannot be undone. The service item will be permanently removed.
+                </p>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={handleDeleteCancel}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteConfirm}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </NewAdminLayout>
   );

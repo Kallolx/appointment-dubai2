@@ -196,6 +196,7 @@ const ManageBooking: React.FC = () => {
                 time: data.time || "",
               });
             }}
+            category={null}
           />
         );
       case "address":

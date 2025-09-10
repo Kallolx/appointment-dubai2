@@ -64,6 +64,14 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
   const cartItemsArray = Object.values(cartItems).filter(
     (item) => item.count > 0
   );
+  
+  // Compute the service category slug for date/time filtering
+  const firstItem = cartItemsArray[0];
+  const serviceCategorySlug = 
+    firstItem?.service?.category_slug ||
+    firstItem?.service?.context?.selectedCategorySlug ||
+    category?.toLowerCase()?.replace(/\s+/g, '-') || null;
+  
   const subtotal = cartItemsArray.reduce((total, item) => {
     return total + item.service.price * item.count;
   }, 0);
@@ -276,7 +284,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
 
     if (!auth.isAuthenticated) {
       console.log("Please log in to book an appointment");
-      navigate("/login");
+      setLoginModalOpen(true);
       return;
     }
 
@@ -319,10 +327,6 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         firstItem?.service?.context?.selectedPropertyTypeSlug ||
         "apartment";
       const serviceCategory = firstItem?.service?.category || category || "general";
-      const serviceCategorySlug = 
-        firstItem?.service?.category_slug ||
-        firstItem?.service?.context?.selectedCategorySlug ||
-        category?.toLowerCase()?.replace(/\s+/g, '-') || "general";
       const quantity = firstItem?.count || 1;
 
       // Prepare appointment data
@@ -397,7 +401,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
           />
         );
       case 3:
-        return <StepThree onSelectionChange={handleSelectionChange} />;
+        console.log('🔍 CheckoutService - Passing category to StepThree:', serviceCategorySlug);
+        return <StepThree onSelectionChange={handleSelectionChange} category={serviceCategorySlug} />;
       case 4:
         return (
           <StepFour
@@ -669,7 +674,12 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
       </div>
 
       {/* Modal */}
-      {loginModalOpen && <LoginModal setLoginModalOpen={setLoginModalOpen} />}
+      {loginModalOpen && (
+        <LoginModal 
+          setLoginModalOpen={setLoginModalOpen} 
+          redirectTo={window.location.pathname + window.location.search}
+        />
+      )}
     </div>
   );
 };

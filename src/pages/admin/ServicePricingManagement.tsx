@@ -116,6 +116,8 @@ const ServicePricingManagement: React.FC = () => {
     is_special: false,
     is_active: true
   });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingPricing, setDeletingPricing] = useState<ServicePricing | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -254,8 +256,6 @@ const ServicePricingManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this pricing?')) return;
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(buildApiUrl(`/api/admin/service-pricing/${id}`), {
@@ -274,6 +274,8 @@ const ServicePricingManagement: React.FC = () => {
         description: "Pricing deleted successfully"
       });
 
+      setDeleteModalOpen(false);
+      setDeletingPricing(null);
       fetchPricings();
     } catch (error) {
       console.error('Error deleting pricing:', error);
@@ -282,7 +284,25 @@ const ServicePricingManagement: React.FC = () => {
         description: "Failed to delete pricing",
         variant: "destructive"
       });
+      setDeleteModalOpen(false);
+      setDeletingPricing(null);
     }
+  };
+
+  const handleDeleteClick = (pricing: ServicePricing) => {
+    setDeletingPricing(pricing);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingPricing) {
+      handleDelete(deletingPricing.id);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeletingPricing(null);
   };
 
   const resetForm = useCallback(() => {
@@ -750,7 +770,7 @@ const ServicePricingManagement: React.FC = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => handleDelete(pricing.id)}
+                                onClick={() => handleDeleteClick(pricing)}
                                 className="text-red-600 hover:text-red-700"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -977,6 +997,29 @@ const ServicePricingManagement: React.FC = () => {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirmation modal */}
+        {deleteModalOpen && deletingPricing && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete Service Pricing</h3>
+              <p className="text-gray-600 mb-2">
+                Are you sure you want to delete this pricing configuration?
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                This action cannot be undone. The pricing will be permanently removed.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={handleDeleteCancel}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteConfirm}>
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         )}

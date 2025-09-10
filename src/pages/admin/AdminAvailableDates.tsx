@@ -17,17 +17,29 @@ interface AvailableDateData {
   is_available: boolean;
   max_appointments: number;
   created_at: string;
+  service_category_id: number | null;
+  service_category_name: string | null;
+  service_category_slug: string | null;
+}
+
+interface ServiceCategory {
+  id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
 }
 
 const AdminAvailableDates: React.FC = () => {
   const [dates, setDates] = useState<AvailableDateData[]>([]);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAddingDate, setIsAddingDate] = useState(false);
   const [newDate, setNewDate] = useState({
     date: '',
     is_available: true,
-    max_appointments: 10
+    max_appointments: 10,
+    service_category_id: null as number | null
   });
 
   const fetchAvailableDates = async () => {
@@ -61,6 +73,32 @@ const AdminAvailableDates: React.FC = () => {
     }
   };
 
+  const fetchServiceCategories = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch(buildApiUrl('/api/admin/service-categories'), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch service categories');
+      }
+
+      const data = await response.json();
+      setCategories(data);
+    } catch (err) {
+      console.error('Error fetching service categories:', err);
+    }
+  };
+
   const addAvailableDate = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -80,7 +118,7 @@ const AdminAvailableDates: React.FC = () => {
       }
 
       // Reset form and refresh dates
-      setNewDate({ date: '', is_available: true, max_appointments: 10 });
+      setNewDate({ date: '', is_available: true, max_appointments: 10, service_category_id: null });
       setIsAddingDate(false);
       fetchAvailableDates();
     } catch (err) {
@@ -144,6 +182,7 @@ const AdminAvailableDates: React.FC = () => {
 
   useEffect(() => {
     fetchAvailableDates();
+    fetchServiceCategories();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -207,7 +246,7 @@ const AdminAvailableDates: React.FC = () => {
           </CardHeader>
           {isAddingDate && (
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date
@@ -220,6 +259,28 @@ const AdminAvailableDates: React.FC = () => {
                     min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Service Category
+                  </label>
+                  <select
+                    value={newDate.service_category_id || ''}
+                    onChange={(e) => setNewDate({ ...newDate, service_category_id: e.target.value ? parseInt(e.target.value) : null })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Categories (General)</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty to make available for all categories
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Max Appointments
@@ -352,6 +413,12 @@ const AdminAvailableDates: React.FC = () => {
                               ? 'Available' 
                               : 'Disabled'
                           }
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Category:</span>
+                        <span className="font-medium text-gray-900">
+                          {dateItem.service_category_name || 'All Categories'}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">

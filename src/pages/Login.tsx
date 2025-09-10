@@ -116,13 +116,22 @@ export default function Login() {
         // Use AuthContext login method
         login(data.user, data.token);
         
-        // Redirect based on user role
-        if (data.user.role === 'super_admin') {
-          navigate("/administrator");
-        } else if (data.user.role === 'admin') {
-          navigate("/admin");
+        // Check for redirect parameter
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect');
+        
+        if (redirectTo) {
+          // Redirect to the specified URL
+          window.location.href = decodeURIComponent(redirectTo);
         } else {
-          navigate("/");
+          // Redirect based on user role
+          if (data.user.role === 'super_admin') {
+            navigate("/administrator");
+          } else if (data.user.role === 'admin') {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
         }
       } else {
         toast({
@@ -199,13 +208,22 @@ export default function Login() {
         // Use AuthContext login method
         login(data.user, data.token);
         
-        // Redirect based on user role
-        if (data.user.role === 'super_admin') {
-          navigate("/superadmin");
-        } else if (data.user.role === 'admin') {
-          navigate("/admin");
+        // Check for redirect parameter
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect');
+        
+        if (redirectTo) {
+          // Redirect to the specified URL
+          window.location.href = decodeURIComponent(redirectTo);
         } else {
-          navigate("/");
+          // Redirect based on user role
+          if (data.user.role === 'super_admin') {
+            navigate("/superadmin");
+          } else if (data.user.role === 'admin') {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
         }
       } else {
         toast({
