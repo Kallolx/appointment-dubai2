@@ -1,7 +1,7 @@
 // API Configuration
 const API_CONFIG = {
   // Use environment variable or fallback to production URL with HTTPS
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://31.97.206.5:2025',
+  BASE_URL: import.meta.env.VITE_API_URL || 'https://vewadmin.com',
   
   // API endpoints
   ENDPOINTS: {

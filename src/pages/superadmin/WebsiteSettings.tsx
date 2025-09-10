@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { buildApiUrl } from "@/config/api";
 import SuperAdminLayout from "@/pages/superadmin/SuperAdminLayout";
 import {
   Card,
@@ -79,8 +80,7 @@ const WebsiteSettingsPage: React.FC = () => {
           return;
         }
 
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/api/admin/website-settings`, {
+  const response = await fetch(buildApiUrl('/api/admin/website-settings'), {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -168,8 +168,7 @@ const WebsiteSettingsPage: React.FC = () => {
 
       // Save settings to database
       const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/admin/website-settings`, {
+      const response = await fetch(buildApiUrl('/api/admin/website-settings'), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

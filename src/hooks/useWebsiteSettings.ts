@@ -42,24 +42,21 @@ export const useWebsiteSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        // Always use buildApiUrl, which is set to https://vewadmin.com
         const response = await fetch(buildApiUrl('/api/website-settings'));
-        
         if (!response.ok) {
           throw new Error('Failed to fetch website settings');
         }
-
         const data = await response.json();
         setSettings({ ...defaultSettings, ...data });
       } catch (err) {
         console.error('Error fetching website settings:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
-        // Use default settings on error
         setSettings(defaultSettings);
       } finally {
         setLoading(false);
       }
     };
-
     fetchSettings();
   }, []);
 
