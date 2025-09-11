@@ -276,6 +276,7 @@ const ServiceItemsCategory = () => {
   const [selectedFiles, setSelectedFiles] = useState<{ hero?: File | null }>({});
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [propertyTypeSearch, setPropertyTypeSearch] = useState('');
   const heroInputRef = useRef<HTMLInputElement | null>(null);
   // icon removed
 
@@ -428,6 +429,15 @@ const ServiceItemsCategory = () => {
         <div className="space-y-2">
           <label className="text-sm font-medium">Property Types ({formData.selectedPropertyTypes.length} selected)</label>
           
+          {/* Search input for property types */}
+          <Input
+            type="text"
+            placeholder="Search property types..."
+            value={propertyTypeSearch}
+            onChange={(e) => setPropertyTypeSearch(e.target.value)}
+            className="text-sm h-8"
+          />
+          
           {/* Selected types as compact chips */}
           {formData.selectedPropertyTypes.length > 0 && (
             <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded text-xs">
@@ -455,9 +465,14 @@ const ServiceItemsCategory = () => {
             </div>
           )}
 
-          {/* Compact checkbox list */}
+          {/* Compact checkbox list with search filtering */}
           <div className="max-h-32 overflow-y-auto border rounded p-2 bg-white text-sm">
-            {propertyTypes.map((propertyType) => (
+            {propertyTypes
+              .filter(propertyType => 
+                propertyType.slug.toLowerCase().includes(propertyTypeSearch.toLowerCase()) ||
+                propertyType.name.toLowerCase().includes(propertyTypeSearch.toLowerCase())
+              )
+              .map((propertyType) => (
               <label 
                 key={propertyType.id} 
                 className="flex items-center space-x-2 py-1 hover:bg-gray-50 cursor-pointer"
@@ -477,22 +492,56 @@ const ServiceItemsCategory = () => {
                 {!propertyType.is_active && <span className="text-xs text-red-500">(inactive)</span>}
               </label>
             ))}
+            
+            {/* Show "no results" message when search doesn't match anything */}
+            {propertyTypeSearch && propertyTypes.filter(pt => 
+              pt.slug.toLowerCase().includes(propertyTypeSearch.toLowerCase()) ||
+              pt.name.toLowerCase().includes(propertyTypeSearch.toLowerCase())
+            ).length === 0 && (
+              <div className="text-gray-500 text-xs py-2 text-center">
+                No property types found matching "{propertyTypeSearch}"
+              </div>
+            )}
           </div>
           
           {/* Compact helper buttons */}
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             <Button
               type="button"
               variant="outline"
               size="sm"
               className="text-xs h-7"
               onClick={() => {
-                const allIds = propertyTypes.filter(pt => pt.is_active).map(pt => pt.id);
-                setFormData({ ...formData, selectedPropertyTypes: allIds });
+                const allActiveIds = propertyTypes.filter(pt => pt.is_active).map(pt => pt.id);
+                setFormData({ ...formData, selectedPropertyTypes: allActiveIds });
               }}
             >
               All Active
             </Button>
+            
+            {propertyTypeSearch && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => {
+                  const filteredIds = propertyTypes
+                    .filter(pt => 
+                      pt.is_active && (
+                        pt.slug.toLowerCase().includes(propertyTypeSearch.toLowerCase()) ||
+                        pt.name.toLowerCase().includes(propertyTypeSearch.toLowerCase())
+                      )
+                    )
+                    .map(pt => pt.id);
+                  const newSelection = [...new Set([...formData.selectedPropertyTypes, ...filteredIds])];
+                  setFormData({ ...formData, selectedPropertyTypes: newSelection });
+                }}
+              >
+                Add Filtered
+              </Button>
+            )}
+            
             <Button
               type="button"
               variant="outline"
@@ -504,6 +553,20 @@ const ServiceItemsCategory = () => {
             >
               Clear
             </Button>
+            
+            {propertyTypeSearch && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => {
+                  setPropertyTypeSearch('');
+                }}
+              >
+                Clear Search
+              </Button>
+            )}
           </div>
         </div>
         <Textarea
