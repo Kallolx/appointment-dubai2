@@ -424,6 +424,88 @@ const ServiceItemsCategory = () => {
             </SelectContent>
           </Select>
         )}
+        {/* Property Types Selection - Compact */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Property Types ({formData.selectedPropertyTypes.length} selected)</label>
+          
+          {/* Selected types as compact chips */}
+          {formData.selectedPropertyTypes.length > 0 && (
+            <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded text-xs">
+              {formData.selectedPropertyTypes.map(typeId => {
+                const propertyType = propertyTypes.find(pt => pt.id === typeId);
+                return propertyType ? (
+                  <span 
+                    key={typeId} 
+                    className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded"
+                  >
+                    {propertyType.slug}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updatedTypes = formData.selectedPropertyTypes.filter(id => id !== typeId);
+                        setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
+                      }}
+                      className="ml-1 text-blue-600 hover:text-red-600 font-bold text-xs"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : null;
+              })}
+            </div>
+          )}
+
+          {/* Compact checkbox list */}
+          <div className="max-h-32 overflow-y-auto border rounded p-2 bg-white text-sm">
+            {propertyTypes.map((propertyType) => (
+              <label 
+                key={propertyType.id} 
+                className="flex items-center space-x-2 py-1 hover:bg-gray-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.selectedPropertyTypes.includes(propertyType.id)}
+                  onChange={(e) => {
+                    const updatedTypes = e.target.checked
+                      ? [...formData.selectedPropertyTypes, propertyType.id]
+                      : formData.selectedPropertyTypes.filter(id => id !== propertyType.id);
+                    setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
+                  }}
+                  className="w-3 h-3 text-blue-600"
+                />
+                <span className="text-sm">{propertyType.slug}</span>
+                {!propertyType.is_active && <span className="text-xs text-red-500">(inactive)</span>}
+              </label>
+            ))}
+          </div>
+          
+          {/* Compact helper buttons */}
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs h-7"
+              onClick={() => {
+                const allIds = propertyTypes.filter(pt => pt.is_active).map(pt => pt.id);
+                setFormData({ ...formData, selectedPropertyTypes: allIds });
+              }}
+            >
+              All Active
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs h-7"
+              onClick={() => {
+                setFormData({ ...formData, selectedPropertyTypes: [] });
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
         <Textarea
           placeholder="Description"
           value={formData.description}
@@ -466,79 +548,6 @@ const ServiceItemsCategory = () => {
           onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
         />
         
-        {/* Property Types Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Property Types</label>
-          <Select
-            value={formData.selectedPropertyTypes.length > 0 ? "selected" : "none"}
-            onValueChange={() => {}} // Controlled by individual checkboxes below
-          >
-            <SelectTrigger>
-              <SelectValue>
-                {formData.selectedPropertyTypes.length === 0 
-                  ? "Select Property Types" 
-                  : `${formData.selectedPropertyTypes.length} property type(s) selected`
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="max-h-[200px] overflow-y-auto">
-              {propertyTypes.map((propertyType) => (
-                <div key={propertyType.id} className="flex items-center space-x-2 px-2 py-1 hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    id={`property-${propertyType.id}`}
-                    checked={formData.selectedPropertyTypes.includes(propertyType.id)}
-                    onChange={(e) => {
-                      const updatedTypes = e.target.checked
-                        ? [...formData.selectedPropertyTypes, propertyType.id]
-                        : formData.selectedPropertyTypes.filter(id => id !== propertyType.id);
-                      setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                  <label htmlFor={`property-${propertyType.id}`} className="text-sm cursor-pointer flex-1">
-                    <span className="font-medium">{propertyType.slug}</span>
-                    <span className="text-gray-500 ml-2">({propertyType.name})</span>
-                  </label>
-                </div>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Display selected property types */}
-          {formData.selectedPropertyTypes.length > 0 && (
-            <div className="mt-2">
-              <p className="text-xs text-gray-600 mb-1">Selected property types:</p>
-              <div className="flex flex-wrap gap-1">
-                {formData.selectedPropertyTypes.map(typeId => {
-                  const propertyType = propertyTypes.find(pt => pt.id === typeId);
-                  return propertyType ? (
-                    <span 
-                      key={typeId} 
-                      className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                    >
-                      {propertyType.slug}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updatedTypes = formData.selectedPropertyTypes.filter(id => id !== typeId);
-                          setFormData({ ...formData, selectedPropertyTypes: updatedTypes });
-                        }}
-                        className="ml-1 text-blue-600 hover:text-blue-800"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ) : null;
-                })}
-              </div>
-            </div>
-          )}
-          
-          <p className="text-xs text-gray-500">
-            Select which property types are available for this service category
-          </p>
-        </div>
         
         <div className="flex items-center space-x-2">
           <input

@@ -205,48 +205,48 @@ const StepOne = ({
     else setSearchTerm("");
   }, [searchOpen]);
 
-  // Detect current category based on scroll position (services list)
+  // Detect current category based on scroll position (services list) - DISABLED FOR TESTING
   useEffect(() => {
+    // Temporarily disabled to test scrolling
+    return;
+    
     if (searchOpen || displayCategories.length === 0) return; // skip while searching
 
+    let scrollTimeout;
     const handleScroll = () => {
-      const scrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
+      // Clear previous timeout to debounce
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      
+      // Add delay to avoid interfering with smooth scrolling
+      scrollTimeout = setTimeout(() => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        let currentCat = selected;
+        let bestMatch = null;
+        let maxVisibleArea = 0;
 
-      let currentCat = selected;
-      let minDistance = Infinity;
-
-      for (const cat of displayCategories) {
-        const section = sectionRefs.current[cat.slug];
-        if (section) {
-          const sectionTop = section.offsetTop;
-          const sectionHeight = section.offsetHeight;
-          const sectionCenter = sectionTop + sectionHeight / 2;
-          const distance = Math.abs(
-            scrollTop + windowHeight / 2 - sectionCenter
-          );
-
-          if (distance < minDistance) {
-            minDistance = distance;
-            currentCat = cat.slug;
+        for (const cat of displayCategories) {
+          const section = sectionRefs.current[cat.slug];
+          if (section) {
+            const rect = section.getBoundingClientRect();
+            // Calculate visible area of the section
+            const visibleTop = Math.max(0, rect.top);
+            const visibleBottom = Math.min(window.innerHeight, rect.bottom);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            
+            // Only consider sections that are significantly visible
+            if (visibleHeight > maxVisibleArea && visibleHeight > 200) {
+              maxVisibleArea = visibleHeight;
+              bestMatch = cat.slug;
+            }
           }
         }
-      }
 
-      if (currentCat !== selected && minDistance < 100) {
-        console.log(
-          "Scroll detection updating selected from",
-          selected,
-          "to",
-          currentCat,
-          "distance:",
-          minDistance
-        );
-        setSelected(currentCat);
-        // Also scroll the category tab into view
-        scrollCategoryIntoView(currentCat);
-      }
+        // Only update if we have a clear winner and it's different from current
+        if (bestMatch && bestMatch !== selected && maxVisibleArea > 300) {
+          setSelected(bestMatch);
+          scrollCategoryIntoView(bestMatch);
+        }
+      }, 300); // Longer delay to reduce interference
     };
 
     window.addEventListener("scroll", handleScroll, {
@@ -254,6 +254,7 @@ const StepOne = ({
     });
 
     return () => {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
       window.removeEventListener("scroll", handleScroll);
     };
   }, [displayCategories, selected, searchOpen]);
@@ -261,32 +262,28 @@ const StepOne = ({
   // Scroll to section when category clicked
   const scrollToCategory = (catSlug) => {
     console.log("scrollToCategory called with:", catSlug);
-    console.log("Current selected before update:", selected);
 
     // Update selected state immediately
     setSelected(catSlug);
 
-    // Add a small delay to prevent scroll detection from overriding
+    // Scroll to the section with a small delay
     setTimeout(() => {
-      // Then scroll to the section
-      if (!sectionRefs.current[catSlug]) {
+      const section = sectionRefs.current[catSlug];
+      if (!section) {
         console.log("Section ref not found for:", catSlug);
         return;
       }
 
-      // Scroll to the section with offset to account for sticky header
-      const section = sectionRefs.current[catSlug];
-      const headerHeight = 120; // Approximate height of sticky header
-      const sectionTop = section.offsetTop - headerHeight;
+      // Calculate position with offset for sticky header
+      const headerHeight = 70; // Account for sticky tabs
+      const elementPosition = section.offsetTop - headerHeight;
 
-      // Use window.scrollTo for page scrolling
+      // Smooth scroll to position
       window.scrollTo({
-        top: sectionTop,
+        top: Math.max(0, elementPosition),
         behavior: "smooth",
       });
-    }, 50);
-
-    console.log("Selected state updated to:", catSlug);
+    }, 100);
   };
 
   // Scroll category tab into view
@@ -694,15 +691,15 @@ const StepOne = ({
 
       {/* Main Content Container with Padding */}
       <div>
-        {/* Sticky Search Bar + Tabs */}
-        <div className="sticky -mx-4 border-b border-gray-200 top-[56px] md:top-[64px] z-30 mb-4">
+        {/* Sticky Tabs */}
+        <div className="sticky top-0 -mx-4 border-b border-gray-200 z-50 mb-4 bg-white">
           {/* Categories Section */}
-          <div className="p-2 pt-2 bg-white">
+          <div className="p-3 bg-white">
             <div className="relative">
               {/* Left Arrow - Hidden on mobile */}
               <button
                 onClick={() => scrollCategories("left")}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block bg-white shadow-sm rounded-full"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
@@ -710,8 +707,11 @@ const StepOne = ({
               {/* Categories Container - Full width on mobile, with margins on desktop */}
               <div
                 ref={categoryRef}
-                className="flex gap-3 overflow-x-auto scrollbar-hide mx-0 md:mx-6 w-full md:w-auto"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                className="flex gap-3 overflow-x-auto mx-0 md:mx-6 w-full md:w-auto py-1"
+                style={{ 
+                  scrollbarWidth: "none", 
+                  msOverflowStyle: "none"
+                }}
               >
                 {displayCategories.map((cat) => {
                   const isSelected = selected === cat.slug;
@@ -754,7 +754,7 @@ const StepOne = ({
               {/* Right Arrow - Hidden on mobile */}
               <button
                 onClick={() => scrollCategories("right")}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block"
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 p-1 hidden md:block bg-white shadow-sm rounded-full"
               >
                 <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
@@ -765,11 +765,7 @@ const StepOne = ({
         </div>
 
         {/* Services Content */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
+        <div className="flex-1">
           {searchOpen && searchTerm ? (
             <SearchResults />
           ) : (

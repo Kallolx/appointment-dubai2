@@ -12,6 +12,7 @@ import {
   Map, 
   MessageSquare, 
   CreditCard,
+  Mail,
   Key, 
   Save, 
   TestTube, 
@@ -50,6 +51,13 @@ const SuperAdminApiConfig: React.FC = () => {
   const [twilioAuthToken, setTwilioAuthToken] = useState('');
   const [twilioPhoneNumber, setTwilioPhoneNumber] = useState('');
   const [ziinaApiKey, setZiinaApiKey] = useState('');
+  
+  // SMTP Configuration states
+  const [smtpUsername, setSmtpUsername] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpServer, setSmtpServer] = useState('');
+  const [smtpPort, setSmtpPort] = useState('');
+  const [smtpSecurity, setSmtpSecurity] = useState('ssl');
 
   useEffect(() => {
     fetchApiConfigurations();
@@ -80,6 +88,13 @@ const SuperAdminApiConfig: React.FC = () => {
           setTwilioPhoneNumber(additionalConfig.phone_number || '');
         } else if (config.service_name === 'ziina') {
           setZiinaApiKey(config.api_key);
+        } else if (config.service_name === 'smtp') {
+          const additionalConfig = config.additional_config || {};
+          setSmtpUsername(config.api_key);
+          setSmtpPassword(additionalConfig.password || '');
+          setSmtpServer(additionalConfig.server || '');
+          setSmtpPort(additionalConfig.port || '465');
+          setSmtpSecurity(additionalConfig.security || 'ssl');
         }
       });
 
@@ -112,6 +127,14 @@ const SuperAdminApiConfig: React.FC = () => {
         };
       } else if (serviceName === 'ziina') {
         apiKey = ziinaApiKey;
+      } else if (serviceName === 'smtp') {
+        apiKey = smtpUsername;
+        additionalConfig = {
+          password: smtpPassword,
+          server: smtpServer,
+          port: smtpPort,
+          security: smtpSecurity
+        };
       }
 
       const response = await axios.post(
@@ -236,6 +259,8 @@ const SuperAdminApiConfig: React.FC = () => {
                       <Map className="w-5 h-5 text-blue-600" />
                     ) : config.service_name === 'twilio' ? (
                       <MessageSquare className="w-5 h-5 text-green-600" />
+                    ) : config.service_name === 'smtp' ? (
+                      <Mail className="w-5 h-5 text-orange-600" />
                     ) : (
                       <CreditCard className="w-5 h-5 text-purple-600" />
                     )}
@@ -261,7 +286,7 @@ const SuperAdminApiConfig: React.FC = () => {
 
         {/* API Configuration Tabs */}
         <Tabs defaultValue="google_maps" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="google_maps" className="flex items-center gap-2">
               <Map className="w-4 h-4" />
               Google Maps
@@ -269,6 +294,10 @@ const SuperAdminApiConfig: React.FC = () => {
             <TabsTrigger value="twilio" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               Twilio
+            </TabsTrigger>
+            <TabsTrigger value="smtp" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              SMTP
             </TabsTrigger>
             <TabsTrigger value="ziina" className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
@@ -367,6 +396,110 @@ const SuperAdminApiConfig: React.FC = () => {
                   <Button 
                     onClick={() => saveApiConfiguration('twilio')}
                     disabled={saving || !twilioAccountSid.trim() || !twilioAuthToken.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? 'Saving...' : 'Save Configuration'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SMTP Configuration */}
+          <TabsContent value="smtp">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-orange-600" />
+                  SMTP Email Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="smtp-username">Username / Email</Label>
+                    <Input
+                      id="smtp-username"
+                      value={smtpUsername}
+                      onChange={(e) => setSmtpUsername(e.target.value)}
+                      placeholder="tutor@gsmarena1.com"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="smtp-password">Password</Label>
+                    <Input
+                      id="smtp-password"
+                      type="password"
+                      value={smtpPassword}
+                      onChange={(e) => setSmtpPassword(e.target.value)}
+                      placeholder="Enter email account password"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="smtp-server">SMTP Server</Label>
+                    <Input
+                      id="smtp-server"
+                      value={smtpServer}
+                      onChange={(e) => setSmtpServer(e.target.value)}
+                      placeholder="mail.gsmarena1.com"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="smtp-port">SMTP Port</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id="smtp-port"
+                        value={smtpPort}
+                        onChange={(e) => setSmtpPort(e.target.value)}
+                        placeholder="465"
+                        className="flex-1"
+                      />
+                      <select
+                        value={smtpSecurity}
+                        onChange={(e) => {
+                          setSmtpSecurity(e.target.value);
+                          // Auto-set port based on security type
+                          if (e.target.value === 'ssl') {
+                            setSmtpPort('465');
+                          } else if (e.target.value === 'tls') {
+                            setSmtpPort('587');
+                          }
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="ssl">SSL (465)</option>
+                        <option value="tls">TLS (587)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">Configuration Info:</h4>
+                  <div className="text-xs text-blue-700 space-y-1">
+                    <p><strong>SSL (Recommended):</strong> Port 465 with SSL encryption</p>
+                    <p><strong>TLS (Alternative):</strong> Port 587 with TLS encryption</p>
+                    <p><strong>Authentication:</strong> Required for all connections</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  Used for sending appointment confirmations, notifications, and system emails
+                </p>
+
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => saveApiConfiguration('smtp')}
+                    disabled={saving || !smtpUsername.trim() || !smtpPassword.trim() || !smtpServer.trim()}
                     className="flex items-center gap-2"
                   >
                     <Save className="w-4 h-4" />

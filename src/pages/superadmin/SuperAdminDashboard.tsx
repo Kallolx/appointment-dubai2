@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Map,
   MessageSquare,
+  Mail,
   Activity
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ interface SystemStats {
   apiStatuses: {
     google_maps: 'active' | 'inactive' | 'testing';
     twilio: 'active' | 'inactive' | 'testing';
+    smtp: 'active' | 'inactive' | 'testing';
   };
   databaseSize: string;
   lastBackup: string;
@@ -45,7 +47,8 @@ const SuperAdminDashboard: React.FC = () => {
     systemHealth: 'healthy',
     apiStatuses: {
       google_maps: 'inactive',
-      twilio: 'inactive'
+      twilio: 'inactive',
+      smtp: 'inactive'
     },
     databaseSize: '0 MB',
     lastBackup: 'Never'
@@ -174,7 +177,7 @@ const SuperAdminDashboard: React.FC = () => {
         </Card>
 
         {/* API Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -209,6 +212,25 @@ const SuperAdminDashboard: React.FC = () => {
             <CardContent>
               <p className="text-sm text-gray-600">
                 Used for SMS notifications, OTP verification, and communication services.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-orange-600" />
+                  SMTP Email
+                </div>
+                <Badge className={getApiStatusColor(stats.apiStatuses.smtp)}>
+                  <span className="capitalize">{stats.apiStatuses.smtp}</span>
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">
+                Used for sending appointment confirmations, notifications, and system emails.
               </p>
             </CardContent>
           </Card>
