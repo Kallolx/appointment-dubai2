@@ -157,13 +157,44 @@ const StepFour = ({
       const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
       const quantity = firstItem?.count || 1;
 
+      // Helper function to extract start time from time range
+      const extractStartTime = (timeRange) => {
+        if (!timeRange) return timeRange;
+        
+        // If it's already in correct format (like "14:00:00"), return as is
+        if (timeRange.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
+          return timeRange;
+        }
+        
+        // Extract start time from range like "2:00 PM - 2:30 PM"
+        const startTimeStr = timeRange.split(' - ')[0];
+        
+        // Convert 12-hour format to 24-hour format for database
+        const convertTo24Hour = (time12h) => {
+          const [time, modifier] = time12h.split(' ');
+          let [hours, minutes] = time.split(':');
+          
+          if (hours === '12') {
+            hours = '00';
+          }
+          
+          if (modifier === 'PM') {
+            hours = parseInt(hours, 10) + 12;
+          }
+          
+          return `${hours.toString().padStart(2, '0')}:${minutes}:00`;
+        };
+        
+        return convertTo24Hour(startTimeStr);
+      };
+
       // Prepare appointment data
       const appointmentData = {
         service: cartItems
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", "),
         appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
-        appointment_time: selectedDateTime.time,
+        appointment_time: extractStartTime(selectedDateTime.time), // Convert time range to start time
         location: selectedAddress,
         price: total,
         extra_price: extraPrice,
@@ -180,6 +211,8 @@ const StepFour = ({
 
       // Debug: Log the appointment data being sent
       console.log('StepFour - selectedDateTime object:', selectedDateTime);
+      console.log('StepFour - original time range:', selectedDateTime.time);
+      console.log('StepFour - converted appointment_time:', appointmentData.appointment_time);
       console.log('StepFour - appointment_date being sent:', selectedDateTime.dbDate || selectedDateTime.date);
       console.log('StepFour - Appointment data being sent:', appointmentData);
       console.log('StepFour - First item details:', firstItem);
@@ -469,13 +502,6 @@ const StepFour = ({
             </div>
           </div>
 
-          {/* Map placeholder without rounded corners */}
-          <div className="mt-4 overflow-hidden">
-            <div
-              ref={(el) => (mapContainerRef.current = el)}
-              className="w-full h-36 bg-gray-100 pointer-events-none select-none"
-            />
-          </div>
         </div>
       </div>
 
