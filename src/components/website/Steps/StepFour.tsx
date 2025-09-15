@@ -19,7 +19,7 @@ import { useGoogleMapsLoader } from "@/contexts/GoogleMapsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { ziinaService } from "@/services/ziinaService";
+
 
 const StepFour = ({
   cartItems,
@@ -157,36 +157,8 @@ const StepFour = ({
       const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
       const quantity = firstItem?.count || 1;
 
-      // Helper function to extract start time from time range
-      const extractStartTime = (timeRange) => {
-        if (!timeRange) return timeRange;
-        
-        // If it's already in correct format (like "14:00:00"), return as is
-        if (timeRange.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
-          return timeRange;
-        }
-        
-        // Extract start time from range like "2:00 PM - 2:30 PM"
-        const startTimeStr = timeRange.split(' - ')[0];
-        
-        // Convert 12-hour format to 24-hour format for database
-        const convertTo24Hour = (time12h) => {
-          const [time, modifier] = time12h.split(' ');
-          let [hours, minutes] = time.split(':');
-          
-          if (hours === '12') {
-            hours = '00';
-          }
-          
-          if (modifier === 'PM') {
-            hours = parseInt(hours, 10) + 12;
-          }
-          
-          return `${hours.toString().padStart(2, '0')}:${minutes}:00`;
-        };
-        
-        return convertTo24Hour(startTimeStr);
-      };
+      // Note: Time format is now correctly sent from StepThree in database format (HH:MM:SS)
+      // No conversion needed since StepThree.tsx now sends the actual start_time from database
 
       // Prepare appointment data
       const appointmentData = {
@@ -194,7 +166,7 @@ const StepFour = ({
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", "),
         appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
-        appointment_time: extractStartTime(selectedDateTime.time), // Convert time range to start time
+        appointment_time: selectedDateTime.time, // Use database time format directly
         location: selectedAddress,
         price: total,
         extra_price: extraPrice,
@@ -211,19 +183,14 @@ const StepFour = ({
 
       // Debug: Log the appointment data being sent
       console.log('StepFour - selectedDateTime object:', selectedDateTime);
-      console.log('StepFour - original time range:', selectedDateTime.time);
-      console.log('StepFour - converted appointment_time:', appointmentData.appointment_time);
+      console.log('StepFour - database time format:', selectedDateTime.time);
       console.log('StepFour - appointment_date being sent:', selectedDateTime.dbDate || selectedDateTime.date);
       console.log('StepFour - Appointment data being sent:', appointmentData);
       console.log('StepFour - First item details:', firstItem);
       console.log('StepFour - Category:', category);
 
       // Handle different payment methods
-      if (selectedPayment === "ziina") {
-        await handleZiinaPayment(appointmentData);
-      } else {
-        await handleRegularPayment(appointmentData);
-      }
+      await handleRegularPayment(appointmentData);
     } catch (error) {
       console.error("Error creating appointment:", error);
       toast({
@@ -240,77 +207,10 @@ const StepFour = ({
     switch (paymentId) {
       case "card":
         return "Credit/Debit Card";
-      case "ziina":
-        return "Ziina";
-      case "tabby":
-        return "Tabby";
       case "cod":
         return "Cash on Delivery";
       default:
         return "Unknown";
-    }
-  };
-
-  const handleZiinaPayment = async (appointmentData: any) => {
-    try {
-      // First create the appointment with pending status
-      const response = await fetch(buildApiUrl("/api/user/appointments"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...appointmentData,
-          status: "pending_payment"
-        }),
-      });
-
-      const data = await response.json();
-
-      console.log('Ziina payment - Appointment creation response:', data);
-      console.log('Ziina payment - Response status:', response.status);
-      console.log('Ziina payment - Full response object:', response);
-
-      if (!response.ok) {
-        console.error('Ziina payment - Appointment creation failed:', data);
-        throw new Error(data.message || "Failed to create appointment");
-      }
-
-      // Check if appointment data exists
-      if (!data.appointment_id) {
-        console.error('Ziina payment - Missing appointment data:', data);
-        console.error('Ziina payment - Response headers:', response.headers);
-        throw new Error("Appointment creation failed - missing appointment ID");
-      }
-
-      // Create Ziina payment
-      const paymentData = {
-        amount: total,
-        currency: "AED",
-        description: `Payment for ${appointmentData.service}`,
-        order_id: `appointment_${data.appointment_id}`,
-        customer_email: user?.email,
-        customer_phone: user?.phone,
-        return_url: `${window.location.origin}/order-confirmation?appointment_id=${data.appointment_id}&payment_success=true`,
-        cancel_url: `${window.location.origin}/payment-cancelled?appointment_id=${data.appointment_id}`
-      };
-
-      console.log('Ziina payment - Payment data:', paymentData);
-
-      const paymentResponse = await ziinaService.createPaymentViaBackend(paymentData);
-
-      console.log('Ziina payment - Payment response:', paymentResponse);
-
-      if (paymentResponse.success && paymentResponse.payment_url) {
-        // Redirect to Ziina payment page
-        window.location.href = paymentResponse.payment_url;
-      } else {
-        throw new Error(paymentResponse.message || "Failed to create payment");
-      }
-    } catch (error) {
-      console.error("Ziina payment error:", error);
-      throw error;
     }
   };
 
@@ -350,25 +250,6 @@ const StepFour = ({
       id: "card",
       name: "Add New Card",
       icon: <PlusCircle className="w-5 h-5" />,
-    },
-    {
-      id: "ziina",
-      name: "Ziina",
-      icon: (
-        <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-600 rounded flex items-center justify-center">
-          <span className="text-white text-xs font-bold">Z</span>
-        </div>
-      ),
-      description: "Pay with Ziina digital wallet",
-    },
-    {
-      id: "tabby",
-      name: "Tabby",
-      // use the provided inline-styled span as the icon
-      icon: (
-        <img src="/icons/tabby.svg" alt="Tabby" className="h-5" />
-      ),
-      description: "Split payments with Tabby",
     },
     {
       id: "cod",
@@ -553,15 +434,7 @@ const StepFour = ({
                       <h3 className="font-medium text-gray-900">
                         {method.name}
                       </h3>
-                      {method.id === "tabby" && (
-                        <Info className="w-5 h-5 text-gray-600 mt-0.5" />
-                      )}
                     </div>
-                    {method.id !== "tabby" && method.description && (
-                      <p className="text-sm text-gray-500">
-                        {method.description}
-                      </p>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

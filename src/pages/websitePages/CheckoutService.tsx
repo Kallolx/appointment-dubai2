@@ -29,6 +29,7 @@ interface SelectedDateTime {
   date: string | null;
   dbDate?: string | null;
   time: string | null;
+  displayTime?: string | null;
   extra_price?: number;
 }
 
@@ -355,6 +356,19 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
           .join(", ")}`,
       };
 
+      // Debug: Log the exact data being sent to production
+      console.log("CheckoutService - PRODUCTION DEBUG - Full appointment data:", appointmentData);
+      console.log("CheckoutService - PRODUCTION DEBUG - selectedDateTime object:", selectedDateTime);
+      console.log("CheckoutService - PRODUCTION DEBUG - selectedAddress object:", selectedAddress);
+      console.log("CheckoutService - PRODUCTION DEBUG - Data types:", {
+        appointment_date: typeof appointmentData.appointment_date,
+        appointment_time: typeof appointmentData.appointment_time,
+        location: typeof appointmentData.location,
+        price: typeof appointmentData.price
+      });
+      console.log("CheckoutService - PRODUCTION DEBUG - Time value:", appointmentData.appointment_time);
+      console.log("CheckoutService - PRODUCTION DEBUG - Date value:", appointmentData.appointment_date);
+
       // Debug: Log the appointment data being sent
       console.log(
         "CheckoutService - Appointment data being sent:",
@@ -526,7 +540,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                           {selectedDateTime.date}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {selectedDateTime.time}
+                          {selectedDateTime.displayTime || selectedDateTime.time}
                         </div>
                       </div>
                     </div>

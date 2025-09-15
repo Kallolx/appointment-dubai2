@@ -16,6 +16,7 @@ import Navbar from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 
 interface OrderData {
+  payment_success: any;
   id: number;
   service: string;
   appointment_date: string;

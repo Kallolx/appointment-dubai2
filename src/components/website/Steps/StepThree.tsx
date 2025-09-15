@@ -185,12 +185,14 @@ const StepThree = ({ onSelectionChange, category }) => {
       // Debug: Log the date formats being sent
       console.log('StepThree - selectedDate (display):', selectedDate);
       console.log('StepThree - selectedDbDate (database):', selectedDbDate);
-      console.log('StepThree - selectedTime:', selectedTime);
+      console.log('StepThree - selectedTime (display):', selectedTime);
+      console.log('StepThree - Database start_time:', selectedTimeSlot?.start_time);
       
       onSelectionChange({
         date: selectedDate, // Keep display format for UI
         dbDate: selectedDbDate, // Send database format for backend
-        time: selectedTime,
+        time: selectedTimeSlot?.start_time || selectedTime, // Send database start_time instead of display format
+        displayTime: selectedTime, // Keep display format for UI
         extra_price: selectedTimeSlot?.extra_price || 0
       });
     }

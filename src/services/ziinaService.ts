@@ -147,34 +147,72 @@ class ZiinaService {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        console.error('ZiinaService - No authentication token found');
         throw new Error('User not authenticated');
       }
 
+      // Add timestamp to prevent caching
       const url = buildApiUrl('/api/payments/ziina/create') + '?t=' + Date.now();
-      console.log('Ziina Service - Making POST request to:', url);
-      console.log('Ziina Service - Request data:', paymentData);
+      console.log('ZiinaService - Making POST request to:', url);
+      console.log('ZiinaService - Request headers will include Authorization Bearer token');
+      console.log('ZiinaService - Request data:', paymentData);
       
-      const response = await fetch(url, {
+      const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify(paymentData)
+      };
+      
+      console.log('ZiinaService - Full request options:', {
+        ...requestOptions,
+        headers: {
+          ...requestOptions.headers,
+          'Authorization': 'Bearer [HIDDEN]'
+        }
       });
       
-      console.log('Ziina Service - Response status:', response.status);
-      console.log('Ziina Service - Response URL:', response.url);
+      const response = await fetch(url, requestOptions);
+      
+      console.log('ZiinaService - Response status:', response.status);
+      console.log('ZiinaService - Response statusText:', response.statusText);
+      console.log('ZiinaService - Response URL:', response.url);
+      console.log('ZiinaService - Response headers:', Object.fromEntries(response.headers.entries()));
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create payment');
+      // Handle response parsing more carefully
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('ZiinaService - Raw response text:', responseText);
+        
+        if (responseText) {
+          data = JSON.parse(responseText);
+        } else {
+          throw new Error('Empty response from server');
+        }
+      } catch (parseError) {
+        console.error('ZiinaService - Error parsing response:', parseError);
+        throw new Error('Invalid response format from payment server');
       }
 
+      console.log('ZiinaService - Parsed response data:', data);
+
+      if (!response.ok) {
+        console.error('ZiinaService - HTTP error:', {
+          status: response.status,
+          statusText: response.statusText,
+          data
+        });
+        throw new Error(data?.message || `Payment server error: ${response.status} ${response.statusText}`);
+      }
+
+      console.log('ZiinaService - Payment creation successful:', data);
       return data;
     } catch (error) {
-      console.error('Backend Ziina payment creation error:', error);
+      console.error('ZiinaService - Payment creation error:', error);
       return {
         success: false,
         payment_id: '',
