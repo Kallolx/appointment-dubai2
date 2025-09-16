@@ -372,7 +372,7 @@ const StepFour = ({
         },
         body: JSON.stringify({
           ...appointmentData,
-          status: "pending_payment",
+          status: "pending",
           payment_method: "Ziina",
         }),
       });

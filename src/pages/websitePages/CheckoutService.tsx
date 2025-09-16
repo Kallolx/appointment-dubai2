@@ -3,7 +3,7 @@ import StepFour from "@/components/website/Steps/StepFour";
 import StepOne from "@/components/website/Steps/StepOne";
 import StepThree from "@/components/website/Steps/StepThree";
 import StepTwo from "@/components/website/Steps/StepTwo";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, Info, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginModal from "@/components/website/LoginModal";
 import { useState, useEffect } from "react";
@@ -288,6 +288,13 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     });
   };
 
+  const handleRemoveItemCompletely = (serviceId: string) => {
+    setCartItems((prev) => {
+      const { [serviceId]: removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
   // Transform cartItems to match ServiceItem interface for Calculation component
   const transformedCartItems = Object.fromEntries(
     Object.entries(cartItems).map(([key, item]) => [
@@ -371,7 +378,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         },
         body: JSON.stringify({
           ...appointmentData,
-          status: "pending_payment",
+          status: "pending",
         }),
       });
 
@@ -711,12 +718,23 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                             key={item.service.id}
                             className="flex justify-between items-center"
                           >
-                            <span className="text-sm text-gray-600">
-                              {item.service.name} x {item.count}
-                            </span>
-                            <span className="text-sm font-medium">
-                              AED {(item.service.price * item.count).toFixed(2)}
-                            </span>
+                            <div className="flex-1 pr-2">
+                              <span className="text-sm text-gray-600 block truncate" title={`${item.service.name} x ${item.count}`}>
+                                {item.service.name} x {item.count}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">
+                                AED {(item.service.price * item.count).toFixed(2)}
+                              </span>
+                              <button
+                                onClick={() => handleRemoveItemCompletely(item.service.id)}
+                                className="hover:bg-gray-100 border border-gray-300 rounded"
+                                title="Remove item"
+                              >
+                                <X className="w-3 h-3 text-black hover:text-red-600" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

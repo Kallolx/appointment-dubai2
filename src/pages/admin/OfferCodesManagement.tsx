@@ -499,171 +499,125 @@ const OfferCodesManagement: React.FC = () => {
       {/* Create/Edit Modal */}
       {(showCreateModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                {showCreateModal ? 'Create New Offer Code' : 'Edit Offer Code'}
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="px-4 py-3 border-b">
+              <h3 className="text-lg font-medium">
+                {showCreateModal ? 'Create Offer' : 'Edit Offer'}
               </h3>
             </div>
             
-            <form onSubmit={showCreateModal ? handleCreateOffer : handleUpdateOffer} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Offer Code *
-                  </label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="SAVE20"
-                      maxLength={20}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={generateRandomCode}
-                      className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                    >
-                      Generate
-                    </button>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Offer Name *
-                  </label>
+            <form onSubmit={showCreateModal ? handleCreateOffer : handleUpdateOffer} className="p-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="20% Off Everything"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                    className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="SAVE20"
+                    maxLength={20}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={generateRandomCode}
+                    className="px-3 py-2 text-xs bg-gray-100 rounded hover:bg-gray-200"
+                  >
+                    Generate
+                  </button>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={3}
-                  placeholder="Special discount for new customers"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="20% Off"
+                  required
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Type *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                   <select
                     value={formData.discountType}
                     onChange={(e) => setFormData({ ...formData, discountType: e.target.value as 'percentage' | 'fixed' })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount (AED)</option>
+                    <option value="percentage">Percentage</option>
+                    <option value="fixed">Fixed Amount</option>
                   </select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Value *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Value</label>
                   <input
                     type="number"
                     value={formData.discountValue}
                     onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder={formData.discountType === 'percentage' ? '20' : '50'}
-                    step={formData.discountType === 'percentage' ? '0.01' : '0.01'}
+                    step="0.01"
                     min="0"
                     max={formData.discountType === 'percentage' ? '100' : undefined}
                     required
                   />
                 </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="datetime-local"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Min Order Amount (AED)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="datetime-local"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Order (AED)</label>
                   <input
                     type="number"
                     value={formData.minimumOrderAmount}
                     onChange={(e) => setFormData({ ...formData, minimumOrderAmount: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.01"
                     min="0"
                   />
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Max Discount Amount (AED)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.maximumDiscountAmount}
-                    onChange={(e) => setFormData({ ...formData, maximumDiscountAmount: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Leave empty for no limit"
-                    step="0.01"
-                    min="0"
-                  />
-                </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Usage Limit
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Usage Limit</label>
                   <input
                     type="number"
                     value={formData.usageLimit}
                     onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Leave empty for unlimited"
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Unlimited"
                     min="1"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
                 </div>
               </div>
@@ -673,14 +627,12 @@ const OfferCodesManagement: React.FC = () => {
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 rounded"
                 />
-                <label className="ml-2 block text-sm text-gray-700">
-                  Active (users can use this offer)
-                </label>
+                <label className="ml-2 text-sm text-gray-700">Active</label>
               </div>
               
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div className="flex justify-end gap-2 pt-3 border-t">
                 <button
                   type="button"
                   onClick={() => {
@@ -689,15 +641,15 @@ const OfferCodesManagement: React.FC = () => {
                     setSelectedOffer(null);
                     resetForm();
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-3 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                  className="px-3 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
                 >
-                  {showCreateModal ? 'Create Offer' : 'Update Offer'}
+                  {showCreateModal ? 'Create' : 'Update'}
                 </button>
               </div>
             </form>
