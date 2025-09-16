@@ -1,6 +1,6 @@
 import React, { ReactNode, useState, useEffect } from 'react';
 import NewAdminSidebar from './NewAdminSidebar';
-import { Menu, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Menu, ArrowLeft } from 'lucide-react';
 
 interface NewAdminLayoutProps {
   children: ReactNode;
@@ -17,96 +17,79 @@ const NewAdminLayout: React.FC<NewAdminLayoutProps> = ({
   showBackButton = false, 
   onBackClick 
 }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
+  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth < 768) {
-        setIsSidebarCollapsed(true);
-      }
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar */}
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Sidebar */}
       <NewAdminSidebar 
-        isCollapsed={isSidebarCollapsed} 
-        setIsCollapsed={setIsSidebarCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
       
-      {/* Main Content */}
-      <div className={`${isMobile ? 'ml-0' : (isSidebarCollapsed ? 'ml-16' : 'ml-64')} transition-all duration-300`}>
-        <div className="w-full">
-          {/* Header (if title/subtitle provided) */}
-          {(title || subtitle) && (
-            <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm sticky top-0 z-10">
-              <div className="max-w-7xl mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-4">
+      {/* Main Content Area */}
+      <div className="lg:ml-64">
+        {/* Header */}
+        {(title || subtitle) && (
+          <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+            <div className="px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  {/* Mobile Menu Button */}
+                  <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <Menu className="w-5 h-5 text-gray-600" />
+                  </button>
+                  
                   {/* Back Button */}
                   {showBackButton && (
                     <button
                       onClick={onBackClick}
                       className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                     >
-                      <ArrowLeft className="w-5 h-5 text-gray-700" />
+                      <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </button>
                   )}
                   
-                  {/* Mobile Menu Button */}
-                  {isMobile && (
-                    <button
-                      onClick={() => setIsMobileOpen(true)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors md:hidden"
-                    >
-                      <Menu className="w-5 h-5 text-gray-700" />
-                    </button>
-                  )}
-                  
-                  {/* Desktop Toggle Button */}
-                  {!isMobile && !showBackButton && (
-                    <button
-                      onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors hidden md:block"
-                    >
-                      {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-                    </button>
-                  )}
-                  
-                  <div>
+                  {/* Title and Subtitle */}
+                  <div className="min-w-0">
                     {title && (
-                      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 truncate">
                         {title}
                       </h1>
                     )}
                     {subtitle && (
-                      <p className="text-gray-600 text-sm sm:text-base mt-1">
+                      <p className="text-sm text-gray-600 mt-0.5 truncate">
                         {subtitle}
                       </p>
                     )}
                   </div>
                 </div>
+                
+                {/* Header Actions (if needed in future) */}
+                <div className="flex items-center space-x-3">
+                  {/* Add any header actions here */}
+                </div>
               </div>
             </div>
-          )}
-          
-          {/* Page Content */}
-          <main className="p-4 sm:p-6 overflow-y-auto">
+          </header>
+        )}
+        
+        {/* Main Content */}
+        <main className="flex-1">
+          <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

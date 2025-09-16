@@ -19,6 +19,7 @@ import { useGoogleMapsLoader } from "@/contexts/GoogleMapsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { ziinaService } from "@/services/ziinaService";
 
 
 const StepFour = ({
@@ -29,10 +30,19 @@ const StepFour = ({
   selectedPayment,
   setSelectedPayment,
   category,
+  appliedOffer = null,
+  discountAmount = 0,
+  onOfferChange = (offer, discount) => {},
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showAddCardModal, setShowAddCardModal] = useState(false);
+  
+  // Offer code states (now received as props, keeping local state for validation)
+  const [offerCode, setOfferCode] = useState("");
+  const [isValidatingOffer, setIsValidatingOffer] = useState(false);
+  const [offerError, setOfferError] = useState("");
+  const [finalAmount, setFinalAmount] = useState(subtotal - discountAmount);
 
   const { user, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
@@ -46,6 +56,69 @@ const StepFour = ({
   const [expandedItemId, setExpandedItemId] = useState<string | number | null>(
     null
   );
+
+  // Update final amount when subtotal or discount changes
+  useEffect(() => {
+    setFinalAmount(Math.max(0, subtotal - discountAmount));
+  }, [subtotal, discountAmount]);
+
+  // Offer code validation function
+  const validateOfferCode = async () => {
+    if (!offerCode.trim()) {
+      setOfferError("Please enter an offer code");
+      return;
+    }
+
+    setIsValidatingOffer(true);
+    setOfferError("");
+
+    try {
+      const response = await fetch(buildApiUrl('/api/offer-codes/validate'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: offerCode.trim(),
+          orderAmount: subtotal,
+          serviceIds: cartItems.map(item => item.id || item.serviceId)
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onOfferChange(data.offer, data.discountAmount);
+        setFinalAmount(data.finalAmount);
+        setOfferError("");
+        toast({
+          title: "Offer Applied!",
+          description: `You saved AED ${data.savings} with ${data.offer.name}`,
+          variant: "default"
+        });
+      } else {
+        setOfferError(data.message || "Invalid offer code");
+        onOfferChange(null, 0);
+      }
+    } catch (error) {
+      console.error('Error validating offer code:', error);
+      setOfferError("Failed to validate offer code. Please try again.");
+    } finally {
+      setIsValidatingOffer(false);
+    }
+  };
+
+  // Remove applied offer
+  const removeOffer = () => {
+    onOfferChange(null, 0);
+    setOfferCode("");
+    setOfferError("");
+    toast({
+      title: "Offer Removed",
+      description: "The offer code has been removed from your order",
+      variant: "default"
+    });
+  };
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -157,6 +230,11 @@ const StepFour = ({
       const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
       const quantity = firstItem?.count || 1;
 
+      // Calculate total including fees and VAT
+      const codFee = selectedPayment === "cod" ? 5 : 0;
+      const extraPrice = Number(selectedDateTime.extra_price) || 0;
+      const total = subtotal + extraPrice + codFee + (subtotal + extraPrice + codFee) * 0.05;
+
       // Note: Time format is now correctly sent from StepThree in database format (HH:MM:SS)
       // No conversion needed since StepThree.tsx now sends the actual start_time from database
 
@@ -168,7 +246,9 @@ const StepFour = ({
         appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
         appointment_time: selectedDateTime.time, // Use database time format directly
         location: selectedAddress,
-        price: total,
+        price: finalAmount, // Use final amount after discount
+        original_price: subtotal, // Keep original price for reference
+        discount_amount: discountAmount,
         extra_price: extraPrice,
         cod_fee: codFee,
         room_type: roomType,
@@ -176,9 +256,10 @@ const StepFour = ({
         quantity: quantity,
         service_category: firstItem?.service?.category || category || 'general',
         payment_method: getPaymentMethodName(selectedPayment),
+        offer_code_id: appliedOffer?.id || null,
         notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${cartItems
           .map((item) => `${item.service.name} (x${item.count})`)
-          .join(", ")}`,
+          .join(", ")}${appliedOffer ? `. Applied Offer: ${appliedOffer.name} (${appliedOffer.code})` : ''}`,
       };
 
       // Debug: Log the appointment data being sent
@@ -190,7 +271,11 @@ const StepFour = ({
       console.log('StepFour - Category:', category);
 
       // Handle different payment methods
-      await handleRegularPayment(appointmentData);
+      if (selectedPayment === "ziina") {
+        await handleZiinaPayment(appointmentData);
+      } else {
+        await handleRegularPayment(appointmentData);
+      }
     } catch (error) {
       console.error("Error creating appointment:", error);
       toast({
@@ -207,6 +292,8 @@ const StepFour = ({
     switch (paymentId) {
       case "card":
         return "Credit/Debit Card";
+      case "ziina":
+        return "Ziina";
       case "cod":
         return "Cash on Delivery";
       default:
@@ -227,6 +314,35 @@ const StepFour = ({
     const data = await response.json();
 
     if (response.ok) {
+      // Apply offer code if one was used
+      if (appliedOffer && data.appointment?.id) {
+        try {
+          await fetch(buildApiUrl('/api/offer-codes/apply'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              offerId: appliedOffer.id,
+              orderAmount: subtotal,
+              appointmentId: data.appointment.id
+            })
+          });
+        } catch (offerError) {
+          console.error('Failed to apply offer code:', offerError);
+          // Don't block the booking process if offer application fails
+        }
+      }
+      
+      // Clear all cart data after successful booking
+      try {
+        localStorage.removeItem('checkout_cart_items');
+        localStorage.removeItem('pendingCartItems');
+      } catch (error) {
+        console.error('Failed to clear cart data:', error);
+      }
+      
       // Navigate to order confirmation page with order data
       navigate("/order-confirmation", {
         state: {
@@ -245,11 +361,89 @@ const StepFour = ({
     }
   };
 
+  const handleZiinaPayment = async (appointmentData: any) => {
+    try {
+      // First create the appointment with pending payment status
+      const response = await fetch(buildApiUrl("/api/user/appointments"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...appointmentData,
+          status: "pending_payment",
+          payment_method: "Ziina",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create appointment");
+      }
+
+      // Check if appointment data exists
+      if (!data.appointment_id) {
+        console.error("Missing appointment data:", data);
+        throw new Error("Appointment creation failed - missing appointment ID");
+      }
+
+      // Calculate total with VAT
+      const codFee = 0; // No COD fee for Ziina
+      const extraPrice = Number(selectedDateTime.extra_price) || 0;
+      const total = subtotal + extraPrice + (subtotal + extraPrice) * 0.05;
+
+      // Create Ziina payment
+      const paymentData = {
+        amount: total,
+        currency: "AED",
+        description: `Payment for ${appointmentData.service}`,
+        order_id: `appointment_${data.appointment_id}`,
+        customer_email: user?.email,
+        customer_phone: user?.phone,
+        return_url: `${window.location.origin}/order-confirmation?appointment_id=${data.appointment_id}&payment_success=true`,
+        cancel_url: `${window.location.origin}/payment-cancelled?appointment_id=${data.appointment_id}`,
+      };
+
+      const paymentResponse = await ziinaService.createPaymentViaBackend(paymentData);
+
+      if (paymentResponse.success && paymentResponse.payment_url) {
+        // Clear cart data before redirecting
+        try {
+          localStorage.removeItem('checkout_cart_items');
+          localStorage.removeItem('pendingCartItems');
+        } catch (error) {
+          console.error('Failed to clear cart data:', error);
+        }
+        
+        // Redirect to Ziina payment page
+        window.location.href = paymentResponse.payment_url;
+      } else {
+        throw new Error(paymentResponse.message || "Failed to create payment");
+      }
+    } catch (error) {
+      console.error("Ziina payment error:", error);
+      toast({
+        title: "Payment Error",
+        description: error instanceof Error ? error.message : "Failed to process payment",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const paymentMethods = [
     {
       id: "card",
       name: "Add New Card",
       icon: <PlusCircle className="w-5 h-5" />,
+    },
+    {
+      id: "ziina",
+      name: "Pay with Credit/Debit Card",
+      icon: <CreditCard className="w-5 h-5" />,
+      logo: "/icons/ziina-logo.svg", // Add Ziina logo if available
     },
     {
       id: "cod",
@@ -387,18 +581,64 @@ const StepFour = ({
       </div>
 
       {/* Offers Section */}
-      <div className="p-6 pt-0">
+      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Info className="w-5 h-5 text-blue-600" />
           Offers & Discounts
         </h2>
-        <div className="flex justify-between">
-          <p className="text-gray-600 hover:text-blue-800 text-sm font-medium">
-            Promo Code
-          </p>
-          <p className="text-gray-600 cursor-pointer underline text-sm font-medium">
-            Apply
-          </p>
-        </div>
+        
+        {!appliedOffer ? (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Enter promo code"
+                  value={offerCode}
+                  onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isValidatingOffer}
+                />
+                {offerError && (
+                  <p className="text-red-500 text-sm mt-1">{offerError}</p>
+                )}
+              </div>
+              <button
+                onClick={validateOfferCode}
+                disabled={isValidatingOffer || !offerCode.trim()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 min-w-[100px] justify-center"
+              >
+                {isValidatingOffer ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Apply"
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <Check className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-green-800">{appliedOffer.name}</p>
+                  <p className="text-sm text-green-600">Code: {appliedOffer.code}</p>
+                  <p className="text-sm text-green-600">You saved AED {discountAmount.toFixed(2)}</p>
+                </div>
+              </div>
+              <button
+                onClick={removeOffer}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="Remove offer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Payment Methods */}
@@ -433,7 +673,7 @@ const StepFour = ({
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-gray-900">
                         {method.name}
-                      </h3>
+                      </h3>                      
                     </div>
                   </div>
                 </div>
@@ -490,18 +730,35 @@ const StepFour = ({
             </div>
           )}
 
+          {appliedOffer && discountAmount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-green-600 text-sm flex items-center gap-1">
+                <Check className="w-4 h-4" />
+                Discount ({appliedOffer.code})
+              </span>
+              <span className="font-medium text-green-600 text-sm">
+                -{discountAmount.toFixed(2)} AED
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-between">
             <span className="text-gray-600 text-sm">VAT (5%)</span>
-            <span className="font-medium text-sm">AED {vat.toFixed(2)}</span>
+            <span className="font-medium text-sm">AED {(finalAmount * 0.05).toFixed(2)}</span>
           </div>
 
           <div className="border-t pt-3">
             <div className="flex justify-between">
               <span className="text-base font-semibold">Total to Pay</span>
               <span className="text-base font-bold text-gray-600">
-                AED {total.toFixed(2)}
+                AED {(finalAmount + (finalAmount * 0.05) + extraPrice + codFee).toFixed(2)}
               </span>
             </div>
+            {appliedOffer && (
+              <div className="text-sm text-green-600 mt-1">
+                You saved AED {discountAmount.toFixed(2)}!
+              </div>
+            )}
           </div>
         </div>
       </div>

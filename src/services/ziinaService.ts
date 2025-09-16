@@ -147,15 +147,11 @@ class ZiinaService {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.error('ZiinaService - No authentication token found');
         throw new Error('User not authenticated');
       }
 
       // Add timestamp to prevent caching
       const url = buildApiUrl('/api/payments/ziina/create') + '?t=' + Date.now();
-      console.log('ZiinaService - Making POST request to:', url);
-      console.log('ZiinaService - Request headers will include Authorization Bearer token');
-      console.log('ZiinaService - Request data:', paymentData);
       
       const requestOptions = {
         method: 'POST',
@@ -167,26 +163,12 @@ class ZiinaService {
         body: JSON.stringify(paymentData)
       };
       
-      console.log('ZiinaService - Full request options:', {
-        ...requestOptions,
-        headers: {
-          ...requestOptions.headers,
-          'Authorization': 'Bearer [HIDDEN]'
-        }
-      });
-      
       const response = await fetch(url, requestOptions);
-      
-      console.log('ZiinaService - Response status:', response.status);
-      console.log('ZiinaService - Response statusText:', response.statusText);
-      console.log('ZiinaService - Response URL:', response.url);
-      console.log('ZiinaService - Response headers:', Object.fromEntries(response.headers.entries()));
 
       // Handle response parsing more carefully
       let data;
       try {
         const responseText = await response.text();
-        console.log('ZiinaService - Raw response text:', responseText);
         
         if (responseText) {
           data = JSON.parse(responseText);
@@ -198,27 +180,46 @@ class ZiinaService {
         throw new Error('Invalid response format from payment server');
       }
 
-      console.log('ZiinaService - Parsed response data:', data);
-
       if (!response.ok) {
-        console.error('ZiinaService - HTTP error:', {
-          status: response.status,
-          statusText: response.statusText,
-          data
-        });
-        throw new Error(data?.message || `Payment server error: ${response.status} ${response.statusText}`);
+        const errorMessage = data?.message || data?.error || `Payment server error: ${response.status} ${response.statusText}`;
+        throw new Error(errorMessage);
       }
 
-      console.log('ZiinaService - Payment creation successful:', data);
-      return data;
+      // Validate required response fields
+      if (!data.success || !data.payment_url) {
+        throw new Error(data?.message || 'Invalid payment response');
+      }
+
+      return {
+        success: true,
+        payment_id: data.payment_id || '',
+        payment_url: data.payment_url,
+        status: data.status || 'pending',
+        message: data.message || 'Payment created successfully'
+      };
     } catch (error) {
       console.error('ZiinaService - Payment creation error:', error);
+      
+      // Return user-friendly error messages
+      let userMessage = 'Payment creation failed';
+      if (error instanceof Error) {
+        if (error.message.includes('not authenticated')) {
+          userMessage = 'Please log in to continue';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          userMessage = 'Network error. Please check your connection';
+        } else if (error.message.includes('server error')) {
+          userMessage = 'Server error. Please try again later';
+        } else {
+          userMessage = error.message;
+        }
+      }
+      
       return {
         success: false,
         payment_id: '',
         payment_url: '',
         status: 'failed',
-        message: error instanceof Error ? error.message : 'Payment creation failed'
+        message: userMessage
       };
     }
   }

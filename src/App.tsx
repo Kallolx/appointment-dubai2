@@ -57,10 +57,12 @@ import PropertyTypesManagement from "./pages/admin/PropertyTypesManagement";
 import RoomTypesManagement from "./pages/admin/RoomTypesManagement";
 import ServicePricingManagement from "./pages/admin/ServicePricingManagement";
 import ContentManagement from "./pages/admin/ContentManagement";
+import OfferCodesManagement from "./pages/admin/OfferCodesManagement";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 import Careers from "./pages/websitePages/Careers";
 import Sitemap from "./pages/websitePages/Sitemap";
 import WebsiteSettings from "./pages/superadmin/WebsiteSettings";
+import SharedAppointmentView from "./pages/SharedAppointmentView";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +78,10 @@ const App = () => (
             <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Login />} />
+          
+          {/* Public Shared Appointment Route - No authentication required */}
+          <Route path="/shared-appointment/:token" element={<SharedAppointmentView />} />
+          
           {/* frontend Routes */}
           <Route path="/" element={<MainLayout />}>
             <Route path="" element={<Home />} />
@@ -125,6 +131,7 @@ const App = () => (
           <Route path="/admin/room-types" element={<AdminProtectedRoute><RoomTypesManagement /></AdminProtectedRoute>} />
           <Route path="/admin/service-pricing" element={<AdminProtectedRoute><ServicePricingManagement /></AdminProtectedRoute>} />
           <Route path="/admin/content" element={<AdminProtectedRoute><ContentManagement /></AdminProtectedRoute>} />
+          <Route path="/admin/offer-codes" element={<AdminProtectedRoute><OfferCodesManagement /></AdminProtectedRoute>} />
           <Route path="/administrator/website" element={<SuperAdminProtectedRoute><WebsiteSettings /></SuperAdminProtectedRoute>} />
 
           {/* Admin Dashboard - Redirect to role-based */}

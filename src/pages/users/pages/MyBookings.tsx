@@ -19,6 +19,14 @@ interface Appointment {
   status: string;
   notes?: string;
   created_at: string;
+  // Additional fields
+  extra_price?: number;
+  cod_fee?: number;
+  room_type?: string;
+  property_type?: string;
+  service_category?: string;
+  quantity?: number;
+  payment_method?: string;
 }
 
 const MyBookings: React.FC = () => {
@@ -131,103 +139,96 @@ const MyBookings: React.FC = () => {
     }
   };
 
-  const renderBookingCard = (booking: Appointment) => (
-    <Card key={booking.id} className="mb-4 border border-gray-200 hover:shadow-md transition-shadow">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-          {/* Main Content */}
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">{booking.service}</h3>
+  const renderBookingCard = (booking: Appointment) => {
+    // Safe number parsing
+    const parsePrice = (value: any): number => {
+      if (value === null || value === undefined || value === '') return 0;
+      const parsed = typeof value === 'string' ? parseFloat(value) : Number(value);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    const basePrice = parsePrice(booking.price);
+    const total = basePrice + parsePrice(booking.extra_price) + parsePrice(booking.cod_fee);
+
+    return (
+      <Card key={booking.id} className="mb-3 border border-gray-200 hover:shadow-sm transition-shadow">
+        <CardContent className="p-3">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
+            {/* ID & Service */}
+            <div className="md:col-span-2">
+              <div className="font-medium text-gray-900">{booking.service}</div>
+              <div className="text-xs text-gray-500">Order #{booking.id}</div>
+              {booking.service_category && (
+                <div className="text-xs text-blue-600">{booking.service_category}</div>
+              )}
+            </div>
+
+            {/* Date & Time */}
+            <div>
+              <div className="text-sm font-medium text-gray-900">
+                {formatDate(booking.appointment_date)}
+              </div>
+              <div className="text-xs text-gray-600 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatTime(booking.appointment_time)}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div>
+              <div className="text-sm text-gray-900 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-gray-400" />
+                <span className="truncate">{getLocationDisplay(booking.location)}</span>
+              </div>
+              {booking.property_type && (
+                <div className="text-xs text-gray-500">{booking.property_type}</div>
+              )}
+            </div>
+
+            {/* Status & Price */}
+            <div className="text-center">
               {getStatusBadge(booking.status)}
+              <div className="text-lg font-bold text-gray-900 mt-1">AED {total.toFixed(2)}</div>
+              {booking.payment_method && (
+                <div className="text-xs text-gray-500">{booking.payment_method}</div>
+              )}
             </div>
-            
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <span className="break-words">{formatDate(booking.appointment_date)} between</span>
-              </div>
-              <div className="flex items-center gap-2 ml-6">
-                <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <span className="break-words">{formatTime(booking.appointment_time)} - {
-                  (() => {
-                    const [hours, minutes] = booking.appointment_time.split(':');
-                    const endTime = new Date();
-                    endTime.setHours(parseInt(hours, 10) + 1);
-                    endTime.setMinutes(parseInt(minutes, 10));
-                    return endTime.toLocaleTimeString([], { 
-                      hour: 'numeric', 
-                      minute: '2-digit',
-                      hour12: true 
-                    });
-                  })()
-                }</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <span className="break-words">{getLocationDisplay(booking.location)}</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Price and Actions */}
-          <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-4 lg:text-right lg:ml-4">
-            <div className="order-1 sm:order-2 lg:order-1">
-              <div className="text-xl font-bold text-gray-900 mb-2">
-                AED {typeof booking.price === 'string' ? parseFloat(booking.price).toFixed(2) : booking.price?.toFixed(2) || '0.00'}
-              </div>
-            </div>
-            
-            {/* Action buttons for different states */}
-            <div className="order-2 sm:order-1 lg:order-2 w-full sm:w-auto">
+
+            {/* Actions */}
+            <div className="flex gap-1">
               {booking.status === 'confirmed' && (
-                <div className="flex flex-row sm:flex-col lg:flex-col gap-2">
-                  <button className="flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium flex-1 sm:flex-none justify-center">
-                    <Phone className="h-4 w-4" />
-                    <span className="hidden sm:inline">Call Professional</span>
-                    <span className="sm:hidden">Call</span>
-                  </button>
-                  <button className="flex items-center gap-1 bg-gray-50 text-gray-700 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors text-sm font-medium flex-1 sm:flex-none justify-center">
-                    <MessageCircle className="h-4 w-4" />
-                    <span>Chat</span>
-                  </button>
-                </div>
+                <button className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 hover:bg-blue-100">
+                  <Phone className="w-3 h-3" />
+                  Call
+                </button>
               )}
               
               {booking.status === 'pending' && (
-                <div className="flex flex-row sm:flex-col lg:flex-col gap-2">
-                  <button className="bg-red-50 text-red-700 px-3 py-2 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-sm font-medium flex-1 sm:flex-none">
-                    Cancel
-                  </button>
-                </div>
+                <button className="bg-red-50 text-red-700 px-2 py-1 rounded text-xs border border-red-200 hover:bg-red-100">
+                  Cancel
+                </button>
               )}
               
               {booking.status === 'completed' && (
-                <div className="flex flex-row sm:flex-col lg:flex-col gap-2">
-                  <button className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors text-sm font-medium flex-1 sm:flex-none">
-                    Rate & Review
-                  </button>
-                  <button className="bg-green-50 text-green-700 px-3 py-2 rounded-lg border border-green-200 hover:bg-green-100 transition-colors text-sm font-medium flex-1 sm:flex-none">
-                    Book Again
-                  </button>
-                </div>
+                <button className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded text-xs border border-yellow-200 hover:bg-yellow-100">
+                  Rate
+                </button>
               )}
               
-              {/* View Details Button - Always shown */}
               <button 
                 onClick={() => navigate(`/order-confirmation`, { 
                   state: { orderData: booking } 
                 })}
-                className="w-full mt-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-200 transition-colors text-sm font-medium"
+                className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs border border-gray-200 hover:bg-gray-200"
               >
-                View Details
+                Details
               </button>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderTabContent = () => {
     let bookings: Appointment[] = [];

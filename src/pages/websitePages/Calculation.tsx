@@ -29,6 +29,8 @@ interface CalculationProps {
   selectedPayment?: string; // Add payment method prop
   handleBookNow?: () => void; // Add order creation function
   currentStep?: number; // Add current step number
+  discountAmount?: number; // Add discount amount prop
+  appliedOffer?: any; // Add applied offer prop
 }
 
 const Calculation: React.FC<CalculationProps> = ({
@@ -41,6 +43,8 @@ const Calculation: React.FC<CalculationProps> = ({
   selectedPayment,
   handleBookNow,
   currentStep,
+  discountAmount = 0,
+  appliedOffer = null,
 }) => {
   const { professional, date, time } = selectedDateTime || {};
   const [showDrawer, setShowDrawer] = useState(false);
@@ -65,7 +69,7 @@ const Calculation: React.FC<CalculationProps> = ({
 
   const extraPrice = Number(selectedDateTime.extra_price) || 0;
   const codFee = selectedPayment === "cod" ? 5 : 0; // AED 5 for Cash on Delivery
-  const finalTotal = totalPrice + extraPrice;
+  const finalTotal = Math.max(0, totalPrice + extraPrice - discountAmount); // Apply discount to final total
 
   return (
     <>
@@ -217,15 +221,37 @@ const Calculation: React.FC<CalculationProps> = ({
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-gray-600 text-sm">Sub Total</span>
                   <span className="font-semibold text-gray-800 text-sm">
-                    AED {(finalTotal + extraPrice + codFee).toFixed(2)}
+                    AED {(totalPrice + extraPrice).toFixed(2)}
                   </span>
                 </div>
+
+                {/* Discount Display */}
+                {appliedOffer && discountAmount > 0 && (
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-green-600 text-sm">
+                      {appliedOffer.discountType === 'percentage' ? `${appliedOffer.discountValue}%` : `AED ${appliedOffer.discountValue}`} Off ({appliedOffer.code})
+                    </span>
+                    <span className="text-green-600 text-sm font-semibold">
+                      -AED {discountAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* COD Fee */}
+                {codFee > 0 && (
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-gray-600 text-sm">COD Fee</span>
+                    <span className="text-gray-800 text-sm">
+                      AED {codFee.toFixed(2)}
+                    </span>
+                  </div>
+                )}
 
                 {/* VAT */}
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-gray-600 text-sm">VAT (5%)</span>
                   <span className="text-gray-800 text-sm">
-                    AED {((finalTotal + extraPrice + codFee) * 0.05).toFixed(2)}
+                    AED {((finalTotal + codFee) * 0.05).toFixed(2)}
                   </span>
                 </div>
 
@@ -234,7 +260,7 @@ const Calculation: React.FC<CalculationProps> = ({
                   <div className="flex justify-between items-center">
                     <span className="text-base font-semibold text-gray-900">Total to Pay</span>
                     <span className="text-base font-bold text-gray-800">
-                      AED {(finalTotal + extraPrice + codFee + (finalTotal + extraPrice + codFee) * 0.05).toFixed(2)}
+                      AED {(finalTotal + codFee + (finalTotal + codFee) * 0.05).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -253,7 +279,7 @@ const Calculation: React.FC<CalculationProps> = ({
             <span className="text-gray-700 font-medium text-sm">
               AED{" "}
               {(
-                (finalTotal + extraPrice + codFee + (finalTotal + extraPrice + codFee) * 0.05) /
+                (finalTotal + codFee + (finalTotal + codFee) * 0.05) /
                 4
               ).toFixed(2)}
               /month{" "}
@@ -280,7 +306,7 @@ const Calculation: React.FC<CalculationProps> = ({
             <div className="font-semibold flex flex-col leading-none">
               <span className="text-gray-500 text-sm">Total</span>
               <span className="text-xl text-gray-600 font-bold ">
-                AED {(finalTotal + extraPrice + codFee + (finalTotal + extraPrice + codFee) * 0.05).toFixed(2)}
+                AED {(finalTotal + codFee + (finalTotal + codFee) * 0.05).toFixed(2)}
               </span>
             </div>
             {showDrawer ? (

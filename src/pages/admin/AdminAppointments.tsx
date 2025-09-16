@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import ShareAppointmentModal from "@/components/admin/ShareAppointmentModal";
 import { 
   Calendar, 
   CheckCircle, 
@@ -25,7 +26,8 @@ import {
   FileText,
   Eye,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react';
 
 interface AppointmentData {
@@ -61,6 +63,10 @@ const AdminAppointments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Share modal state
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [appointmentToShare, setAppointmentToShare] = useState<AppointmentData | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -260,6 +266,18 @@ const AdminAppointments: React.FC = () => {
   const closeModal = () => {
     setSelectedAppointment(null);
     setIsModalOpen(false);
+  };
+
+  // Helper function to open share modal
+  const openShareModal = (appointment: AppointmentData) => {
+    setAppointmentToShare(appointment);
+    setShareModalOpen(true);
+  };
+
+  // Helper function to close share modal
+  const closeShareModal = () => {
+    setAppointmentToShare(null);
+    setShareModalOpen(false);
   };
 
   // Helper function to get service details
@@ -520,8 +538,22 @@ const AdminAppointments: React.FC = () => {
                                   openAppointmentModal(appointment);
                                 }}
                                 className="h-8 w-8 p-0"
+                                title="View Details"
                               >
                                 <Eye className="w-4 h-4" />
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openShareModal(appointment);
+                                }}
+                                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Share Appointment"
+                              >
+                                <Share2 className="w-4 h-4" />
                               </Button>
                               
                               {appointment.status === 'pending' && (
@@ -533,6 +565,7 @@ const AdminAppointments: React.FC = () => {
                                       updateAppointmentStatus(appointment.id, 'confirmed');
                                     }}
                                     className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white"
+                                    title="Confirm Appointment"
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                   </Button>
@@ -544,6 +577,7 @@ const AdminAppointments: React.FC = () => {
                                       updateAppointmentStatus(appointment.id, 'cancelled');
                                     }}
                                     className="h-8 w-8 p-0"
+                                    title="Cancel Appointment"
                                   >
                                     <XCircle className="w-4 h-4" />
                                   </Button>
@@ -558,6 +592,7 @@ const AdminAppointments: React.FC = () => {
                                     updateAppointmentStatus(appointment.id, 'in-progress');
                                   }}
                                   className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                  title="Start Service"
                                 >
                                   Start
                                 </Button>
@@ -571,6 +606,7 @@ const AdminAppointments: React.FC = () => {
                                     updateAppointmentStatus(appointment.id, 'completed');
                                   }}
                                   className="h-8 px-3 bg-gray-600 hover:bg-gray-700 text-white text-xs"
+                                  title="Complete Service"
                                 >
                                   Complete
                                 </Button>
@@ -836,6 +872,19 @@ const AdminAppointments: React.FC = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Share Appointment Modal */}
+        <ShareAppointmentModal
+          isOpen={shareModalOpen}
+          onClose={closeShareModal}
+          appointmentId={appointmentToShare?.id || 0}
+          appointmentData={appointmentToShare ? {
+            customer_name: appointmentToShare.customer_name,
+            service: appointmentToShare.service,
+            appointment_date: appointmentToShare.appointment_date,
+            appointment_time: appointmentToShare.appointment_time
+          } : undefined}
+        />
       </div>
     </NewAdminLayout>
   );

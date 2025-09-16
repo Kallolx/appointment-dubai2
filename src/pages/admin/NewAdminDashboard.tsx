@@ -32,37 +32,62 @@ const NewAdminDashboard: React.FC = () => {
         return;
       }
 
-      // Fetch today's appointments
-      const appointmentsResponse = await axios.get(buildApiUrl('/api/admin/appointments'), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Fetch appointments and users in parallel
+      const [appointmentsResponse, usersResponse] = await Promise.all([
+        axios.get(buildApiUrl('/api/admin/appointments'), {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(buildApiUrl('/api/admin/users'), {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
 
-      // Fetch all users count
-      const usersResponse = await axios.get(buildApiUrl('/api/admin/users'), {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Process data
-      const allAppointments = appointmentsResponse.data;
+      const allAppointments = appointmentsResponse.data || [];
+      const allUsers = usersResponse.data || [];
+      
+      // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
-      const todayAppointments = allAppointments.filter(apt => 
-        apt.appointment_date === today
+      // Filter today's appointments
+      const todayAppointments = allAppointments.filter((apt: any) => {
+        const aptDate = apt.appointment_date;
+        if (typeof aptDate === 'string') {
+          return aptDate.split('T')[0] === today;
+        }
+        return false;
+      });
+
+      // Calculate today's revenue
+      const todayRevenue = todayAppointments.reduce((sum: number, apt: any) => 
+        sum + (parseFloat(apt.price) || 0), 0
       );
 
-      const todayRevenue = todayAppointments.reduce((sum, apt) => 
-        sum + parseFloat(apt.price || 0), 0
-      );
+      // Get pending appointments count (as available slots indicator)
+      const pendingAppointments = allAppointments.filter((apt: any) => apt.status === 'pending').length;
+
+      // For stats, let's show upcoming appointments (future + today) instead of just today
+      const currentDate = new Date().toISOString().split('T')[0];
+      const upcomingAppointments = allAppointments.filter((apt: any) => {
+        const aptDate = apt.appointment_date;
+        if (typeof aptDate === 'string') {
+          return aptDate.split('T')[0] >= currentDate; // Today or future
+        }
+        return false;
+      });
 
       setStats({
-        todayAppointments: todayAppointments.length,
-        totalUsers: usersResponse.data.length,
-        availableSlots: 36, // This would need a separate API endpoint
+        todayAppointments: upcomingAppointments.length, // Show upcoming instead of just today
+        totalUsers: allUsers.length,
+        availableSlots: pendingAppointments, // Show pending appointments instead
         todayRevenue: todayRevenue
       });
 
-      // Set recent appointments (today's appointments)
-      setAppointments(todayAppointments.slice(0, 4));
+      // Set appointments to display (today's first, then recent)
+      const appointmentsToShow = todayAppointments.length > 0 
+        ? todayAppointments.slice(0, 4)
+        : allAppointments.slice(0, 4);
+      
+      setAppointments(appointmentsToShow);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -71,6 +96,14 @@ const NewAdminDashboard: React.FC = () => {
         description: "Failed to load dashboard data",
         variant: "destructive"
       });
+      
+      // Set default values on error
+      setStats({
+        todayAppointments: 0,
+        totalUsers: 0,
+        availableSlots: 0,
+        todayRevenue: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -78,12 +111,12 @@ const NewAdminDashboard: React.FC = () => {
 
   const quickStats = [
     {
-      title: "Today's Appointments",
+      title: "Appointments",
       value: loading ? "..." : stats.todayAppointments.toString(),
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      change: "Today"
+      change: "Today & future"
     },
     {
       title: "Total Customers",
@@ -94,16 +127,16 @@ const NewAdminDashboard: React.FC = () => {
       change: "All registered users"
     },
     {
-      title: "Available Slots",
+      title: "Pending Appointments",
       value: loading ? "..." : stats.availableSlots.toString(),
       icon: Clock,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      change: "Next 7 days"
+      change: "Awaiting confirmation"
     },
     {
       title: "Revenue Today",
-      value: loading ? "..." : `$${stats.todayRevenue.toFixed(2)}`,
+      value: loading ? "..." : `AED ${stats.todayRevenue.toFixed(2)}`,
       icon: DollarSign,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
@@ -215,11 +248,11 @@ const NewAdminDashboard: React.FC = () => {
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
-                          {appointment.user_name ? appointment.user_name.split(' ').map((n: string) => n[0]).join('') : 'U'}
+                          {appointment.customer_name ? appointment.customer_name.split(' ').map((n: string) => n[0]).join('') : 'U'}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{appointment.user_name || 'Unknown User'}</p>
+                        <p className="font-medium text-gray-900">{appointment.customer_name || 'Unknown User'}</p>
                         <p className="text-sm text-gray-600">{appointment.service}</p>
                         <p className="text-xs text-gray-500">{parseAddress(appointment.location)}</p>
                       </div>
@@ -241,54 +274,6 @@ const NewAdminDashboard: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Manage Dates */}
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-blue-50">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Manage Available Dates</h3>
-                  <p className="text-sm text-gray-600">Add or remove available booking dates</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Manage Time Slots */}
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-50">
-                  <Clock className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Manage Time Slots</h3>
-                  <p className="text-sm text-gray-600">Configure available time slots</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* View All Appointments */}
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-green-50">
-                  <Users className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">All Appointments</h3>
-                  <p className="text-sm text-gray-600">View and manage all bookings</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* System Status */}
         <Card>
