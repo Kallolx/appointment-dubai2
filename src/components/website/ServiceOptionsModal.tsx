@@ -17,6 +17,7 @@ interface ServiceOption {
   room_type_slug: string;
   category_slug?: string; // Add category slug
   property_type_slug?: string; // Add property type slug
+  service_items_category?: string; // Add service items category
   whats_included?: string[]; // Add whats_included
   // Add service item data from admin panel
   serviceItem?: {
@@ -32,7 +33,8 @@ interface ServiceOption {
   };
   // NEW: Add context for complete selection information
   context?: {
-    selectedCategory: string;      // "General", "Mosquitoes", etc.
+    selectedCategory: string;      // "pest-control", "cleaning", etc. (service category slug)
+    selectedServiceItemsCategory?: string; // "Cockroaches", "General", etc. (service items category name)
     selectedPropertyType: string;  // "Apartment", "Villa", etc.
     selectedServiceItem: string;   // "Pest control in Dubai", etc.
   };
@@ -48,7 +50,8 @@ interface ServiceOptionsModalProps {
   onRemoveService?: (service: ServiceOption) => void;
   // NEW: Add context for complete selection information
   context?: {
-    selectedCategory: string;      // "General", "Mosquitoes", etc.
+    selectedCategory: string;      // "pest-control", "cleaning", etc. (service category slug)
+    selectedServiceItemsCategory?: string; // "Cockroaches", "General", etc. (service items category name)
     selectedPropertyType: string;  // "Apartment", "Villa", etc.
     selectedServiceItem: string;   // "Pest control in Dubai", etc.
   };
@@ -304,9 +307,12 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
       property_type_slug: service.property_type_slug || '', // Include property type slug
       roomType: service.room_type_name || 'Studio',
       room_type_slug: service.room_type_slug || '', // Include room type slug
+      // NEW: Add service items category based on context
+      service_items_category: context?.selectedServiceItemsCategory || context?.selectedCategory || category,
       // NEW: Include context if available
       context: context ? {
         selectedCategory: context.selectedCategory,
+        selectedServiceItemsCategory: context.selectedServiceItemsCategory,
         selectedPropertyType: context.selectedPropertyType,
         selectedServiceItem: context.selectedServiceItem
       } : undefined

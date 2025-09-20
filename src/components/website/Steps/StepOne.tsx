@@ -31,6 +31,7 @@ const StepOne = ({
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
   const [selectedPropertyTypeId, setSelectedPropertyTypeId] = useState(0);
   const [modalCategory, setModalCategory] = useState("");
+  const [selectedServiceItemsCategory, setSelectedServiceItemsCategory] = useState("");
   const inputRef = useRef(null);
   const categoryRef = useRef(null);
   const sectionRefs = useRef({});
@@ -318,17 +319,19 @@ const StepOne = ({
   };
 
   // Component for rendering property type cards
-  const PropertyTypeCard = ({ property, currentCategory }) => {
+  const PropertyTypeCard = ({ property, currentCategory, categoryName }) => {
     const handleCardClick = () => {
       console.log("PropertyTypeCard - handleCardClick called with:", {
         propertyName: property.name,
         propertyId: property.id,
         currentCategory: currentCategory,
+        categoryName: categoryName,
         property: property,
       });
       setSelectedPropertyType(property.name);
       setSelectedPropertyTypeId(property.id);
       setModalCategory(currentCategory);
+      setSelectedServiceItemsCategory(categoryName); // Store the actual service items category name
       setIsModalOpen(true);
     };
 
@@ -443,6 +446,7 @@ const StepOne = ({
                 key={index}
                 property={property}
                 currentCategory={category.parent_category_slug || category.slug}
+                categoryName={category.name}
               />
             ))
           ) : (
@@ -692,7 +696,7 @@ const StepOne = ({
       {/* Main Content Container with Padding */}
       <div>
         {/* Sticky Tabs */}
-        <div className="sticky top-0 -mx-4 border-b border-gray-200 z-50 mb-4 bg-white">
+        <div className="sticky top-0 -mx-4 border-b border-gray-200 z-30 mb-4 bg-white">
           {/* Categories Section */}
           <div className="p-3 bg-white">
             <div className="relative">
@@ -803,6 +807,7 @@ const StepOne = ({
           // NEW: Add context for complete selection information
           context={{
             selectedCategory: modalCategory,
+            selectedServiceItemsCategory: selectedServiceItemsCategory, // Pass the actual service items category name
             selectedPropertyType: selectedPropertyType,
             selectedServiceItem: serviceSlug || "Service", // Use serviceSlug if available
           }}

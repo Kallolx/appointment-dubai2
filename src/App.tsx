@@ -85,7 +85,7 @@ const App = () => (
           
           {/* frontend Routes */}
           <Route path="/" element={<MainLayout />}>
-            <Route path="" element={<RedirectToPestControl />} />
+            <Route path="" element={<Home />} />
             <Route
               path="single-category/:category"
               element={<SingleCategory />}

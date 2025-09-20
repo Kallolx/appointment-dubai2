@@ -27,6 +27,7 @@ interface Appointment {
   room_type?: string;
   property_type?: string;
   service_category?: string;
+  service_items_category?: string; // Add service items category
   quantity?: number;
   payment_method?: string;
 }
@@ -74,6 +75,12 @@ const MyBookings: React.FC = () => {
       });
 
       const appointments = response.data;
+      console.log("MyBookings - Raw appointment data:", appointments);
+      console.log("MyBookings - Service categories and items:", appointments.map((booking: Appointment) => ({
+        id: booking.id,
+        service_category: booking.service_category,
+        service_items_category: booking.service_items_category
+      })));
 
       // Categorize appointments
       const today = new Date();
@@ -206,75 +213,78 @@ const MyBookings: React.FC = () => {
     const total = basePrice + parsePrice(booking.extra_price) + parsePrice(booking.cod_fee);
 
     return (
-      <Card key={booking.id} className="mb-3 border border-gray-200 hover:shadow-sm transition-shadow">
-        <CardContent className="p-3">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
-            {/* ID & Service */}
-            <div className="md:col-span-2">
-              <div className="font-medium text-gray-900">{booking.service}</div>
-              <div className="text-xs text-gray-500">Order #{booking.id}</div>
+      <Card key={booking.id} className="mb-4 shadow-sm">
+        <CardContent className="p-4">
+          {/* Header: Service name and status */}
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-sm">{booking.service}</h3>
+              <p className="text-xs text-gray-500">Order #{booking.id}</p>
+            </div>
+            {getStatusBadge(booking.status)}
+          </div>
+
+          {/* Service details in simple rows */}
+          <div className="space-y-2 mb-3">
+            {/* Categories */}
+            <div className="flex gap-2 flex-wrap">
               {booking.service_category && (
-                <div className="text-xs text-blue-600">{booking.service_category}</div>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                  {booking.service_category}
+                </span>
+              )}
+              {booking.service_items_category && booking.service_items_category !== booking.service_category && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                  {booking.service_items_category}
+                </span>
               )}
             </div>
 
-            {/* Date & Time */}
-            <div>
-              <div className="text-sm font-medium text-gray-900">
-                {formatDate(booking.appointment_date)}
-              </div>
-              <div className="text-xs text-gray-600 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatTime(booking.appointment_time)}
-              </div>
+            {/* Date and time */}
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Calendar className="w-4 h-4" />
+              <span>{formatDate(booking.appointment_date)}</span>
+              <Clock className="w-4 h-4 ml-2" />
+              <span>{formatTime(booking.appointment_time)}</span>
             </div>
 
             {/* Location */}
-            <div>
-              <div className="text-sm text-gray-900 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-gray-400" />
-                <span className="truncate">{getLocationDisplay(booking.location)}</span>
-              </div>
-              {booking.property_type && (
-                <div className="text-xs text-gray-500">{booking.property_type}</div>
-              )}
+            <div className="flex items-start gap-2 text-sm text-gray-600">
+              <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span className="truncate">{getLocationDisplay(booking.location)}</span>
             </div>
 
-            {/* Status & Price */}
-            <div className="text-center">
-              {getStatusBadge(booking.status)}
-              <div className="text-lg font-bold text-gray-900 mt-1">AED {total.toFixed(2)}</div>
+            {/* Property and room type */}
+            {(booking.property_type || booking.room_type) && (
+              <div className="text-sm text-gray-600">
+                {booking.property_type && <span>{booking.property_type}</span>}
+                {booking.property_type && booking.room_type && <span> • </span>}
+                {booking.room_type && <span>{booking.room_type}</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Price and actions */}
+          <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+            <div>
+              <div className="text-lg font-bold text-gray-900">AED {total.toFixed(2)}</div>
               {booking.payment_method && (
                 <div className="text-xs text-gray-500">{booking.payment_method}</div>
               )}
             </div>
-
-            {/* Actions */}
-            <div className="flex gap-1">
-              {booking.status === 'confirmed' && (
-                <button className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-200 hover:bg-blue-100">
-                  <Phone className="w-3 h-3" />
-                  Call
-                </button>
-              )}
-              
-              {(booking.status || '').toLowerCase() !== 'cancelled' && (booking.status || '').toLowerCase() !== 'completed' && (
+            
+            <div className="flex gap-2">
+              {(booking.status || '').toLowerCase() !== 'cancelled' && 
+               (booking.status || '').toLowerCase() !== 'completed' && (
                 <button
                   onClick={() => {
                     setCancellingId(booking.id);
                     setShowCancelDialog(true);
                   }}
-                  className="bg-red-50 text-red-700 px-2 py-1 rounded text-xs border border-red-200 hover:bg-red-100 flex items-center"
+                  className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded border border-red-200 hover:bg-red-100"
                   disabled={isCancelling}
                 >
-                  <XCircle className="w-3 h-3 mr-1" />
                   {isCancelling && cancellingId === booking.id ? 'Cancelling...' : 'Cancel'}
-                </button>
-              )}
-              
-              {booking.status === 'completed' && (
-                <button className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded text-xs border border-yellow-200 hover:bg-yellow-100">
-                  Rate
                 </button>
               )}
               
@@ -282,7 +292,7 @@ const MyBookings: React.FC = () => {
                 onClick={() => navigate(`/order-confirmation`, { 
                   state: { orderData: booking } 
                 })}
-                className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs border border-gray-200 hover:bg-gray-200"
+                className="text-xs bg-gray-50 text-gray-600 px-3 py-1 rounded border border-gray-200 hover:bg-gray-100"
               >
                 Details
               </button>
@@ -359,8 +369,8 @@ const MyBookings: React.FC = () => {
     >
       <div className="bg-white rounded-lg shadow-sm">
         {/* Tab Navigation */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg max-w-md">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
             {[
               { key: "upcoming", label: "Upcoming" },
               { key: "history", label: "History" },
@@ -369,7 +379,7 @@ const MyBookings: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 py-2 px-2 sm:px-4 text-sm font-medium rounded-md transition-colors ${
                   activeTab === tab.key
                     ? "bg-white text-blue-600 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
@@ -382,7 +392,7 @@ const MyBookings: React.FC = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {renderTabContent()}
         </div>
       </div>

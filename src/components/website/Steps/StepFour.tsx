@@ -238,6 +238,11 @@ const StepFour = ({
       // Note: Time format is now correctly sent from StepThree in database format (HH:MM:SS)
       // No conversion needed since StepThree.tsx now sends the actual start_time from database
 
+      // Extract service items category from cart items
+      const serviceItemsCategory = cartItems.length > 0 
+        ? cartItems[0].service.service_items_category || cartItems[0].service.category 
+        : null;
+
       // Prepare appointment data
       const appointmentData = {
         service: cartItems
@@ -255,6 +260,7 @@ const StepFour = ({
         property_type: propertyType,
         quantity: quantity,
         service_category: firstItem?.service?.category || category || 'general',
+        service_items_category: serviceItemsCategory,
         payment_method: getPaymentMethodName(selectedPayment),
         offer_code_id: appliedOffer?.id || null,
         notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${cartItems

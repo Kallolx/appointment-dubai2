@@ -522,6 +522,11 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
       const quantity = firstItem?.count || 1;
 
       // Prepare appointment data
+      // Extract service items category from cart items
+      const serviceItemsCategory = cartItemsArray.length > 0 
+        ? cartItemsArray[0].service.service_items_category || cartItemsArray[0].service.category 
+        : null;
+
       const appointmentData = {
         service: cartItemsArray
           .map((item) => `${item.service.name} (x${item.count})`)
@@ -541,6 +546,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
         quantity: quantity,
         service_category: serviceCategory,
         service_category_slug: serviceCategorySlug,
+        service_items_category: serviceItemsCategory,
         payment_method: getPaymentMethodName(selectedPayment),
         notes: `Payment Method: ${getPaymentMethodName(
           selectedPayment
@@ -699,7 +705,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
             </div>
 
             {/* Right Section for Steps 1-3 */}
-            <div className="hidden md:block min-w-0">
+            <div className="hidden md:block min-w-64">
               <div className="sticky top-40 z-30">
                 <div className="bg-white rounded-sm shadow-lg mb-4 w-full max-w-md mx-auto overflow-hidden">
                   <div className="p-4">

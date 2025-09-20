@@ -48,6 +48,7 @@ interface AppointmentData {
   property_type_slug?: string;
   service_category?: string;
   service_category_slug?: string;
+  service_items_category?: string; // Add service items category
   quantity?: number;
   payment_method?: string;
   notes?: string;
@@ -237,6 +238,7 @@ const AdminAppointments: React.FC = () => {
       appointment.property_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       appointment.room_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       appointment.service_category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.service_items_category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       appointment.id.toString().includes(searchTerm);
     
     return statusMatch && searchMatch;
@@ -759,11 +761,18 @@ const AdminAppointments: React.FC = () => {
                     <span className="font-medium text-sm">Service Details</span>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     {selectedAppointment.service_category && (
                       <div>
-                        <p className="text-xs text-gray-500">Category</p>
+                        <p className="text-xs text-gray-500">Service Category</p>
                         <p className="font-medium text-sm text-gray-900">{selectedAppointment.service_category}</p>
+                      </div>
+                    )}
+
+                    {selectedAppointment.service_items_category && (
+                      <div>
+                        <p className="text-xs text-gray-500">Service Items</p>
+                        <p className="font-medium text-sm text-blue-700">{selectedAppointment.service_items_category}</p>
                       </div>
                     )}
                     

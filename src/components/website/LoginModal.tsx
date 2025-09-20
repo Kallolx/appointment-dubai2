@@ -297,7 +297,7 @@ const LoginModal = ({ setLoginModalOpen, initialPhone, redirectTo }: {
     setResendTimer(0);
   };
   return (
-    <div className="fixed inset-0 flex justify-end items-end z-[100] md:items-center md:justify-center">
+    <div className="fixed inset-0 flex justify-end items-end z-[200] md:items-center md:justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-40" onClick={() => setLoginModalOpen(false)} />
 
           <div className="bg-white rounded-t-lg shadow-lg w-full mx-0 z-[110] md:mx-0 md:max-w-md md:rounded-sm">

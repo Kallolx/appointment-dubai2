@@ -55,16 +55,17 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
       children: [
         { icon: Tag, label: "Categories", path: "/admin/service-categories" },
         { icon: Menu, label: "Service Items", path: "/admin/service-items" },
+                {
+          icon: List,
+          label: "Items Category",
+          path: "/admin/service-items-category",
+        },
         {
           icon: Settings,
           label: "Property Types",
           path: "/admin/property-types",
         },
-        {
-          icon: List,
-          label: "Items Category",
-          path: "/admin/service-items-category",
-        },
+
         { icon: Box, label: "Room Types", path: "/admin/room-types" },
         { icon: FileText, label: "Pricing", path: "/admin/service-pricing" },
       ],
