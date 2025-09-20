@@ -27,7 +27,8 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  Share2
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 
 interface AppointmentData {
@@ -299,6 +300,38 @@ const AdminAppointments: React.FC = () => {
       method: appointment.payment_method || 'Not specified'
     };
     return info;
+  };
+
+  // Helper function to open location in maps
+  const openInMaps = (location: any) => {
+    try {
+      let loc = location;
+      if (typeof location === "string") {
+        try {
+          loc = JSON.parse(location);
+        } catch {
+          // If it's not valid JSON, treat as address string
+          const encodedAddress = encodeURIComponent(location);
+          window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+          return;
+        }
+      }
+
+      // Check if we have coordinates
+      if (loc.lat && loc.lng) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`, '_blank');
+        return;
+      }
+
+      // Fall back to address search
+      const addressString = formatAddressFromObject(loc);
+      const encodedAddress = encodeURIComponent(addressString);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    } catch (error) {
+      console.error('Error opening maps:', error);
+      // Fallback to Google Maps home
+      window.open('https://www.google.com/maps', '_blank');
+    }
   };
 
   // Pagination handlers
@@ -786,9 +819,20 @@ const AdminAppointments: React.FC = () => {
 
                   {/* Location */}
                   <div className="border rounded p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="w-4 h-4 text-red-600" />
-                      <span className="font-medium text-sm">Location</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-red-600" />
+                        <span className="font-medium text-sm">Location</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openInMaps(selectedAppointment.location)}
+                        className="h-7 px-2 text-xs flex items-center gap-1 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Open in Map
+                      </Button>
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
                       {formatLocation(selectedAppointment.location)}

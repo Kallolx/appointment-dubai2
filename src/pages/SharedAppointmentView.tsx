@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { buildApiUrl } from "@/config/api";
 import axios from 'axios';
 import { 
@@ -18,7 +19,8 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Share2
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 
 interface AppointmentData {
@@ -188,6 +190,38 @@ const SharedAppointmentView: React.FC = () => {
       total: basePrice + extraPrice + codFee,
       method: appointment.payment_method || 'Not specified'
     };
+  };
+
+  // Helper function to open location in maps
+  const openInMaps = (location: any) => {
+    try {
+      let loc = location;
+      if (typeof location === "string") {
+        try {
+          loc = JSON.parse(location);
+        } catch {
+          // If it's not valid JSON, treat as address string
+          const encodedAddress = encodeURIComponent(location);
+          window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+          return;
+        }
+      }
+
+      // Check if we have coordinates
+      if (loc.lat && loc.lng) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`, '_blank');
+        return;
+      }
+
+      // Fall back to address search
+      const addressString = formatAddressFromObject(loc);
+      const encodedAddress = encodeURIComponent(addressString);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    } catch (error) {
+      console.error('Error opening maps:', error);
+      // Fallback to Google Maps home
+      window.open('https://www.google.com/maps', '_blank');
+    }
   };
 
   if (loading) {
@@ -362,9 +396,20 @@ const SharedAppointmentView: React.FC = () => {
           {/* Location */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Service Location
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Service Location
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openInMaps(appointment.location)}
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open in Map
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>

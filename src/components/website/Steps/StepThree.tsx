@@ -377,7 +377,7 @@ const StepThree = ({ onSelectionChange, category }) => {
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-start gap-3">
             <Info className="w-5 h-5 text-gray-600 mt-0.5" />
             <div className="text-xs text-gray-700">
-              Free cancellation up to 6 hours before your booking start time. <a href="/cancellation-policy" className="text-red-900 underline">View cancellation policy</a>
+              Free cancellation up to 6 hours before your booking start time. <a href="/privacy-policy" className="text-red-900 underline">View cancellation policy</a>
             </div>
           </div>
         </div>

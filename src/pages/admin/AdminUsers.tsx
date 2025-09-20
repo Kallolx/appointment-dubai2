@@ -79,12 +79,21 @@ const AdminUsers: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: '',
     email: '',
     phone: '',
     role: 'user',
     status: 'active'
+  });
+  const [createForm, setCreateForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user'
   });
 
   const fetchUsers = async () => {
@@ -227,6 +236,61 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  // Handle creating new user
+  const handleCreateUser = async () => {
+    if (!createForm.fullName || !createForm.email || !createForm.phone || !createForm.password) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      // Use registration endpoint for all user creation
+      const response = await fetch(buildApiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fullName: createForm.fullName,
+          email: createForm.email,
+          phone: createForm.phone,
+          password: createForm.password,
+          role: createForm.role
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Reset form and close dialog
+        setCreateForm({
+          fullName: '',
+          email: '',
+          phone: '',
+          password: '',
+          role: 'user'
+        });
+        setIsCreateDialogOpen(false);
+        
+        // Refresh users list
+        await fetchUsers();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create user');
+      }
+    } catch (err) {
+      console.error('Error creating user:', err);
+      setError(err instanceof Error ? err.message : 'Could not create user. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -358,7 +422,6 @@ const AdminUsers: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
@@ -367,6 +430,15 @@ const AdminUsers: React.FC = () => {
           
           {/* Action Buttons */}
           <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create User
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -691,7 +763,6 @@ const AdminUsers: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -719,6 +790,109 @@ const AdminUsers: React.FC = () => {
               </Button>
               <Button onClick={handleSaveEdit}>
                 Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create User Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                Create New User
+              </DialogTitle>
+              <DialogDescription>
+                Create a new user or admin account. They can login with these credentials.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="create-name">Full Name *</Label>
+                <Input
+                  id="create-name"
+                  placeholder="Enter full name"
+                  value={createForm.fullName}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, fullName: e.target.value }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="create-email">Email *</Label>
+                <Input
+                  id="create-email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="create-phone">Phone Number *</Label>
+                <Input
+                  id="create-phone"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="create-password">Password *</Label>
+                <Input
+                  id="create-password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="create-role">Role *</Label>
+                <Select 
+                  value={createForm.role} 
+                  onValueChange={(value) => setCreateForm(prev => ({ ...prev, role: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <DialogFooter className="pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+                disabled={isCreating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateUser}
+                disabled={isCreating}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isCreating ? (
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Creating...
+                  </div>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Create User
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -44,27 +44,30 @@ const OrderConfirmation: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const order = location.state?.orderData;
-    const appointmentId = searchParams.get('appointment_id');
-    const paymentSuccess = searchParams.get('payment_success');
-    
+    const appointmentId = searchParams.get("appointment_id");
+    const paymentSuccess = searchParams.get("payment_success");
+
     if (order) {
       console.log("OrderConfirmation - orderData received:", order);
       console.log("OrderConfirmation - status:", order.status);
       setOrderData(order);
-    } else if (appointmentId && paymentSuccess === 'true') {
+    } else if (appointmentId && paymentSuccess === "true") {
       // Handle direct redirect from Ziina payment success
-      console.log("OrderConfirmation - Payment success redirect for appointment:", appointmentId);
+      console.log(
+        "OrderConfirmation - Payment success redirect for appointment:",
+        appointmentId
+      );
       setOrderData({
         id: parseInt(appointmentId),
-        status: 'confirmed',
-        payment_method: 'Ziina',
+        status: "confirmed",
+        payment_method: "Ziina",
         payment_success: true,
-        service: 'Service',
-        appointment_date: new Date().toISOString().split('T')[0],
-        appointment_time: 'Time',
-        location: 'Location',
+        service: "Service",
+        appointment_date: new Date().toISOString().split("T")[0],
+        appointment_time: "Time",
+        location: "Location",
         price: 0,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       } as any);
     } else {
       // Redirect back if no order data
@@ -359,7 +362,9 @@ const OrderConfirmation: React.FC = () => {
               <img src="/icons/check.svg" alt="check" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {orderData.payment_success ? "Payment Successful!" : "You're all set!"}
+              {orderData.payment_success
+                ? "Payment Successful!"
+                : "You're all set!"}
             </h1>
             {orderData.payment_success && (
               <p className="text-green-600 font-medium mb-2">
@@ -483,32 +488,6 @@ const OrderConfirmation: React.FC = () => {
             </CardContent>
           </div>
 
-          {/* App Banner */}
-          <div className="mb-6 bg-[#67307d] max-w-md mx-auto">
-            <div className="p-4 text-white">
-              <div className="flex flex-col">
-                {/* Top Section - Heading and Brand */}
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-bold">Earn 188 Smiles Points</h3>
-                  <span className="text-base font-bold lowercase">smiles</span>
-                </div>
-
-                {/* Middle Section - Description */}
-                <p className="text-white text-xs mb-3 leading-relaxed">
-                  Sign up or merge your Smiles account and earn 188 Smiles
-                  points after your service is delivered
-                </p>
-
-                {/* Bottom Section - Button */}
-                <div className="text-left">
-                  <button className="bg-white text-[#01788e] px-4 py-2 rounded-sm font-bold hover:bg-gray-100 transition-colors uppercase text-sm">
-                    Connect Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* horizotal dottet divider */}
           <div className="w-full h-[2px] bg-gray-200 my-6"></div>
 
@@ -540,7 +519,7 @@ const OrderConfirmation: React.FC = () => {
           </div>
 
           {/* Manage Booking Button */}
-          <div className="text-center">
+          <div className="text-center mb-6">
             <button
               onClick={() =>
                 navigate(`/booking-details/${orderData.id}`, {
@@ -553,6 +532,7 @@ const OrderConfirmation: React.FC = () => {
             </button>
           </div>
         </div>
+        <Footer />
       </div>
     </div>
   );

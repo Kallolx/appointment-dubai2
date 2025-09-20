@@ -909,17 +909,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                     </div>
                   </div>
 
-                  {/* Tabby Installment Info - Edge to Edge Background */}
-                  <div className="bg-gray-100 text-xs flex items-center justify-between px-4 py-3">
-                    <span className="text-gray-700 font-medium">
-                      AED {monthlyInstallment}/month
-                      <span className="text-gray-500 font-normal"> for 4 months with</span>
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <img src="/icons/tabby.svg" alt="Tabby" className="h-5" />
-                      <Info className="w-4 h-4 text-gray-600" />
-                    </span>
-                  </div>
+                  {/* Tabby Installment Info removed as per request */}
                 </div>
               </div>
             </div>
@@ -928,7 +918,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
 
         {/* Fixed Next Button - Desktop Only */}
         {step < 4 && (
-          <div className="hidden md:block fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-30">
+          <div className="hidden md:block fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
             <div className="w-full max-w-[400px] mx-auto">
               <button
                 onClick={nextStep}

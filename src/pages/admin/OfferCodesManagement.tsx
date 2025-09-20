@@ -85,13 +85,23 @@ const OfferCodesManagement: React.FC = () => {
     
     try {
       const token = localStorage.getItem('token');
+      
+      // Prepare the data, converting empty strings to null for numeric fields
+      const submitData = {
+        ...formData,
+        discountValue: parseFloat(formData.discountValue) || 0,
+        minimumOrderAmount: parseFloat(formData.minimumOrderAmount) || 0,
+        maximumDiscountAmount: formData.maximumDiscountAmount ? parseFloat(formData.maximumDiscountAmount) : null,
+        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null
+      };
+      
       const response = await fetch(buildApiUrl('/api/admin/offer-codes'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
       const data = await response.json();
@@ -124,13 +134,23 @@ const OfferCodesManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Prepare the data, converting empty strings to null for numeric fields
+      const submitData = {
+        ...formData,
+        discountValue: parseFloat(formData.discountValue) || 0,
+        minimumOrderAmount: parseFloat(formData.minimumOrderAmount) || 0,
+        maximumDiscountAmount: formData.maximumDiscountAmount ? parseFloat(formData.maximumDiscountAmount) : null,
+        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null
+      };
+      
       const response = await fetch(buildApiUrl(`/api/admin/offer-codes/${selectedOffer.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
       const data = await response.json();
@@ -610,6 +630,21 @@ const OfferCodesManagement: React.FC = () => {
                 </div>
                 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Discount (AED)</label>
+                  <input
+                    type="number"
+                    value={formData.maximumDiscountAmount}
+                    onChange={(e) => setFormData({ ...formData, maximumDiscountAmount: e.target.value })}
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="No limit"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Usage Limit</label>
                   <input
                     type="number"
@@ -620,16 +655,19 @@ const OfferCodesManagement: React.FC = () => {
                     min="1"
                   />
                 </div>
-              </div>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 rounded"
-                />
-                <label className="ml-2 text-sm text-gray-700">Active</label>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <div className="flex items-center pt-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 rounded"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">Active</label>
+                  </div>
+                </div>
               </div>
               
               <div className="flex justify-end gap-2 pt-3 border-t">

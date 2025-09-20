@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   BarChart3,
   Settings, 
@@ -28,10 +28,12 @@ interface SuperAdminSidebarProps {
 
 const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
+    navigate("/");
   };
 
   const menuItems = [

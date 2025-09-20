@@ -9,7 +9,13 @@ import {
   Phone,
   Plus,
   Clock,
+  MessageCircle,
+  Copy,
 } from "lucide-react";
+import axios from 'axios';
+import { buildApiUrl } from '@/config/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -40,9 +46,7 @@ const ManageBooking: React.FC = () => {
   const location = useLocation();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<
-    "date" | "address" | "payment" | "cancel" | null
-  >(null);
+  const [modalType, setModalType] = useState<"cancel" | null>(null);
   const [selectedDateTime, setSelectedDateTime] = useState({
     date: "",
     time: "",
@@ -71,66 +75,67 @@ const ManageBooking: React.FC = () => {
     }
   }, [location.state, navigate]);
 
-  const handleOptionClick = (
-    type: "date" | "address" | "payment" | "cancel" | "report"
-  ) => {
-    if (type === "report") {
-      // Handle report delay functionality
-      console.log("Reporting technician delay...");
-      return;
-    }
-    setModalType(type as "date" | "address" | "payment" | "cancel");
-    setShowModal(true);
-  };
-
   const handleModalClose = () => {
     setShowModal(false);
     setModalType(null);
   };
 
-  const handleConfirm = async () => {
+  const { token } = useAuth();
+  const { toast } = useToast();
+
+  const handleCancelBooking = () => {
+    setModalType("cancel");
+    setShowModal(true);
+  };
+
+  const performCancel = async () => {
+    if (!bookingId) return;
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
     setIsLoading(true);
-
     try {
-      // Here you would save the changes to the backend
-      console.log("Saving changes...", {
-        bookingId,
-        selectedDateTime,
-        selectedAddress,
-        modalType,
-        selectedPayment,
+      await axios.put(buildApiUrl(`/api/user/appointments/${bookingId}`), { status: 'cancelled' }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Notify other parts of app to refresh bookings
+      window.dispatchEvent(new CustomEvent('booking:changed', { detail: { id: bookingId, action: 'cancelled' } }));
 
-      // Close modal and redirect to booking details
+      toast({ title: 'Success', description: 'Booking cancelled' });
+
+      // Close modal and navigate back to bookings list
       setShowModal(false);
-      setModalType(null);
-
-      // Navigate to booking details with success state
-      navigate(`/booking-details/${bookingId}`, {
-        state: {
-          orderData,
-          showUpdateToast: true,
-          updateType: modalType,
-        },
-      });
+      navigate('/user/bookings');
     } catch (error) {
-      console.error("Error updating booking:", error);
-      // You can add error handling here
+      console.error('Error cancelling booking:', error);
+      toast({ title: 'Error', description: 'Failed to cancel booking', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancelBooking = () => {
-    handleOptionClick("cancel");
-  };
-
   const handleContactSupport = () => {
     navigate("/customer-support");
   };
+
+  const copyPhoneNumber = (phoneNumber: string) => {
+    navigator.clipboard.writeText(phoneNumber);
+    toast({ title: 'Copied', description: 'Phone number copied to clipboard' });
+  };
+
+  const openWhatsAppChat = () => {
+    const phoneNumber = "+971501234567"; // Replace with your actual WhatsApp number
+    const message = `Hi, I need help with my booking #${bookingId}`;
+    const whatsappUrl = `https://wa.me/${phoneNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  // Configuration - Replace these with your actual contact details
+  const SUPPORT_PHONE = "+971 50 123 4567";
+  const SUPPORT_PHONE_RAW = "+971501234567";
 
   if (!orderData) {
     return (
@@ -152,95 +157,36 @@ const ManageBooking: React.FC = () => {
 
   const managementOptions = [
     {
-      id: "report",
-      title: "Report a delay in the technician's arrival",
-      onClick: () => handleOptionClick("report"),
-      className: "text-red-600 hover:bg-red-50",
+      id: "phone",
+      title: "Call Customer Support",
+      subtitle: SUPPORT_PHONE,
+      icon: Phone,
+      onClick: () => copyPhoneNumber(SUPPORT_PHONE_RAW),
+      className: "text-blue-600 hover:bg-blue-50",
+      actionText: "Tap to copy number"
     },
     {
-      id: "date",
-      title: "Change booking date or time",
-      onClick: () => handleOptionClick("date"),
-    },
-    {
-      id: "address",
-      title: "Change the address",
-      onClick: () => handleOptionClick("address"),
-    },
-    {
-      id: "payment",
-      title: "Change the payment method",
-      onClick: () => handleOptionClick("payment"),
+      id: "whatsapp",
+      title: "Live Chat Support",
+      subtitle: "Get instant help via WhatsApp",
+      icon: MessageCircle,
+      onClick: openWhatsAppChat,
+      className: "text-green-600 hover:bg-green-50",
+      actionText: "Start chat"
     },
     {
       id: "cancel",
-      title: "Cancel the booking",
+      title: "Cancel Booking",
+      subtitle: "Cancel your current booking",
+      icon: X,
       onClick: handleCancelBooking,
-      className: "text-gray-900 hover:bg-gray-50",
-    },
-    {
-      id: "support",
-      title: "Contact Customer Support",
-      onClick: handleContactSupport,
+      className: "text-red-600 hover:bg-red-50",
+      actionText: "Cancel booking"
     },
   ];
 
   const renderModalContent = () => {
-    switch (modalType) {
-      case "date":
-        return (
-          <StepThree
-            onSelectionChange={(data) => {
-              setSelectedDateTime({
-                date: data.date || "",
-                time: data.time || "",
-              });
-            }}
-            category={null}
-          />
-        );
-      case "address":
-        return (
-          <StepTwo
-            handleAddItemsClick={() => {}}
-            handleRemoveItemClick={() => {}}
-            cartItems={[]}
-            onSelectionChange={(data) => {
-              setSelectedAddress(data.address);
-            }}
-          />
-        );
-      case "payment":
-        return (
-          <StepFour
-            cartItems={[
-              {
-                service: {
-                  id: 1,
-                  name: orderData.service,
-                  price:
-                    typeof orderData.price === "string"
-                      ? parseFloat(orderData.price)
-                      : orderData.price,
-                },
-                count: 1,
-              },
-            ]}
-            selectedDateTime={selectedDateTime}
-            subtotal={
-              typeof orderData.price === "string"
-                ? parseFloat(orderData.price)
-                : orderData.price
-            }
-            selectedAddress={selectedAddress}
-            selectedPayment={undefined}
-            setSelectedPayment={undefined}
-            category={undefined}
-          />
-        );
-      default:
-        return null;
-    }
+    return null; // Only cancel modal is used now
   };
 
   return (
@@ -262,27 +208,48 @@ const ManageBooking: React.FC = () => {
         </div>
 
         <div className="max-w-2xl mt-8 mx-auto px-4">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Need Help?</h2>
+            <p className="text-gray-600">Get quick support or manage your booking</p>
+          </div>
+          
           <div className="space-y-4">
             {managementOptions.map((option) => {
+              const IconComponent = option.icon;
               return (
                 <button
                   key={option.id}
                   onClick={option.onClick}
-                  className={`w-full p-4 bg-white border border-gray-200 rounded-lg ${
+                  className={`w-full p-4 bg-white border border-gray-200 rounded-lg transition-colors ${
                     option.className || "hover:bg-gray-50"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-left text-sm md:text-md font-medium ${
-                        option.className?.includes("text-red-600")
-                          ? "text-red-600"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {option.title}
-                    </span>
-                    <ArrowLeft className="w-4 h-4 text-gray-400 transform rotate-180" />
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      option.id === 'phone' ? 'bg-blue-100' :
+                      option.id === 'whatsapp' ? 'bg-green-100' :
+                      'bg-red-100'
+                    }`}>
+                      <IconComponent className="w-6 h-6" />
+                    </div>
+                    
+                    <div className="flex-1 text-left">
+                      <h3 className="font-medium text-gray-900">{option.title}</h3>
+                      <p className="text-sm text-gray-600">{option.subtitle}</p>
+                    </div>
+                    
+                    <div className="text-right">
+                      <span className="text-xs text-gray-500">{option.actionText}</span>
+                      {option.id === 'phone' && (
+                        <Copy className="w-4 h-4 text-gray-400 mt-1 ml-auto" />
+                      )}
+                      {option.id === 'whatsapp' && (
+                        <ArrowLeft className="w-4 h-4 text-gray-400 transform rotate-180 mt-1 ml-auto" />
+                      )}
+                      {option.id === 'cancel' && (
+                        <ArrowLeft className="w-4 h-4 text-gray-400 transform rotate-180 mt-1 ml-auto" />
+                      )}
+                    </div>
                   </div>
                 </button>
               );
@@ -290,7 +257,7 @@ const ManageBooking: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* Modal for editing options */}
+      {/* Modal for cancel confirmation */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 relative !fixed !top-1/2 !left-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
           {/* Loading Overlay */}
@@ -304,186 +271,7 @@ const ManageBooking: React.FC = () => {
               </div>
             </div>
           )}
-          {modalType === "date" && (
-            <>
-              {/* Custom Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Date & Time
-                </h2>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-3 pt-0">
-                {renderModalContent()}
-
-                {/* Disclaimer */}
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-yellow-600 text-sm font-bold">
-                        !
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      We can not guarantee the availability of the selected or
-                      preferred technician once the date/time of service is
-                      changed or any other changes are requested.
-                    </p>
-                  </div>
-                </div>
-
-                {/* CONFIRM Button */}
-                <div className="mt-6">
-                  <button
-                    onClick={handleConfirm}
-                    disabled={isLoading}
-                    className={`w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 transition-colors text-base flex items-center justify-center gap-2 ${
-                      isLoading ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Updating...
-                      </>
-                    ) : (
-                      "CONFIRM"
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {modalType === "address" && (
-            <>
-              {/* Custom Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Change Address
-                </h2>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-3 pt-0">
-                {renderModalContent()}
-
-                {/* CONFIRM Button */}
-                <div className="mt-6">
-                  <button
-                    onClick={handleConfirm}
-                    disabled={isLoading}
-                    className={`w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 transition-colors text-base flex items-center justify-center gap-2 ${
-                      isLoading ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Updating...
-                      </>
-                    ) : (
-                      "CONFIRM"
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {modalType === "payment" && (
-            <>
-              {/* Custom Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Pay With
-                </h2>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-3 pt-0">
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Select preferred payment method
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    You pay only after the service is completed.
-                  </p>
-                </div>
-
-                {/* Payment Options */}
-                <div className="space-y-4 mb-6">
-                  {/* Cash On Delivery */}
-                  <button
-                    onClick={() => setSelectedPayment("cod")}
-                    className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#01788e] rounded-full flex items-center justify-center">
-                        <CreditCard className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-gray-900 font-medium">
-                        Cash On Delivery
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-medium">
-                        +AED 5
-                      </div>
-                      <div className="w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center">
-                        {selectedPayment === "cod" && (
-                          <div className="w-3 h-3 bg-[#01788e] rounded-full"></div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Add New Card */}
-                  <button
-                    onClick={() => setSelectedPayment("card")}
-                    className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#01788e] rounded-full flex items-center justify-center">
-                        <Plus className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-gray-900 font-medium">
-                        Add New Card
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <ArrowLeft className="w-4 h-4 text-gray-400 transform rotate-180" />
-                      <div className="w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center">
-                        {selectedPayment === "card" && (
-                          <div className="w-3 h-3 bg-[#01788e] rounded-full"></div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                </div>
-
-                {/* SAVE Button */}
-                <button
-                  onClick={handleConfirm}
-                  disabled={isLoading}
-                  className={`w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 transition-colors text-base flex items-center justify-center gap-2 ${
-                    isLoading ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Updating...
-                    </>
-                  ) : (
-                    "SAVE"
-                  )}
-                </button>
-              </div>
-            </>
-          )}
-
+          
           {modalType === "cancel" && (
             <>
               {/* Custom Header */}
@@ -520,22 +308,17 @@ const ManageBooking: React.FC = () => {
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
-                      // Handle cancel anyway logic
-                      console.log("Cancelling booking...", bookingId);
-                      navigate("/user/bookings");
-                    }}
+                    onClick={() => performCancel()}
                     className="flex-1 px-4 py-3 border border-[#01788e] text-[#01788e] rounded-lg hover:bg-[#01788e] hover:text-white transition-colors"
+                    disabled={isLoading}
                   >
-                    YES, CANCEL ANYWAY
+                    {isLoading ? 'Cancelling...' : 'YES, CANCEL ANYWAY'}
                   </button>
                   <button
-                    onClick={() => {
-                      setModalType("date");
-                    }}
+                    onClick={() => setShowModal(false)}
                     className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                   >
-                    RESCHEDULE
+                    KEEP BOOKING
                   </button>
                 </div>
               </div>

@@ -3,11 +3,13 @@ import { buildApiUrl } from "@/config/api";
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, DollarSign, Phone, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, DollarSign, Phone, MessageCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import NewUserLayout from "./../NewUserLayout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface Appointment {
   id: number;
@@ -37,11 +39,25 @@ const MyBookings: React.FC = () => {
   const [historyBookings, setHistoryBookings] = useState<Appointment[]>([]);
   const [unpaidBookings, setUnpaidBookings] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchBookings();
+  }, []);
+
+  // Listen for booking changes from other parts of the app (e.g., ManageBooking)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      // Re-fetch bookings to reflect updated status
+      fetchBookings();
+    };
+
+    window.addEventListener('booking:changed', handler as EventListener);
+    return () => window.removeEventListener('booking:changed', handler as EventListener);
   }, []);
 
   const fetchBookings = async () => {
@@ -87,6 +103,45 @@ const MyBookings: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancelBooking = async (id: number) => {
+    try {
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      setIsCancelling(true);
+
+      await axios.put(buildApiUrl(`/api/user/appointments/${id}`), { status: 'cancelled' }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // After successful API call, re-fetch all bookings to get updated data
+      await fetchBookings();
+
+      toast({
+        title: 'Success',
+        description: 'Booking cancelled successfully'
+      });
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel booking',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const confirmCancel = async () => {
+    if (!cancellingId) return;
+    setShowCancelDialog(false);
+    await handleCancelBooking(cancellingId);
+    setCancellingId(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -203,9 +258,17 @@ const MyBookings: React.FC = () => {
                 </button>
               )}
               
-              {booking.status === 'pending' && (
-                <button className="bg-red-50 text-red-700 px-2 py-1 rounded text-xs border border-red-200 hover:bg-red-100">
-                  Cancel
+              {(booking.status || '').toLowerCase() !== 'cancelled' && (booking.status || '').toLowerCase() !== 'completed' && (
+                <button
+                  onClick={() => {
+                    setCancellingId(booking.id);
+                    setShowCancelDialog(true);
+                  }}
+                  className="bg-red-50 text-red-700 px-2 py-1 rounded text-xs border border-red-200 hover:bg-red-100 flex items-center"
+                  disabled={isCancelling}
+                >
+                  <XCircle className="w-3 h-3 mr-1" />
+                  {isCancelling && cancellingId === booking.id ? 'Cancelling...' : 'Cancel'}
                 </button>
               )}
               
@@ -323,6 +386,37 @@ const MyBookings: React.FC = () => {
           {renderTabContent()}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-sm text-gray-700">Are you sure you want to cancel this booking? This action cannot be undone.</p>
+          </div>
+          <DialogFooter>
+            <div className="flex gap-2 w-full">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCancelDialog(false)}
+                className="flex-1"
+                disabled={isCancelling}
+              >
+                No, Keep It
+              </Button>
+              <Button 
+                onClick={confirmCancel}
+                disabled={isCancelling}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </NewUserLayout>
   );
 };

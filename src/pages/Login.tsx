@@ -130,7 +130,7 @@ export default function Login() {
           } else if (data.user.role === 'admin') {
             navigate("/admin");
           } else {
-            navigate("/");
+            navigate("/service-item/Pest%20Control%20at%20Home");
           }
         }
       } else {
@@ -222,7 +222,7 @@ export default function Login() {
           } else if (data.user.role === 'admin') {
             navigate("/admin");
           } else {
-            navigate("/");
+            navigate("/service-item/Pest%20Control%20at%20Home");
           }
         }
       } else {
