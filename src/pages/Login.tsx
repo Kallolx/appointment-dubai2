@@ -47,7 +47,7 @@ export default function Login() {
     }
   }, []);
 
-  // Handle phone number verification
+  // Handle phone number verification - now always opens OTP modal
   const handleCheckPhone = async () => {
     if (!phone.trim()) {
       toast({
@@ -58,37 +58,8 @@ export default function Login() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch(buildApiUrl('/api/auth/check-phone'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone }),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        if (data.exists) {
-          setStep("password");
-        } else {
-          // User doesn't exist, show OTP login modal for new user
-          setLoginModalOpen(true);
-        }
-      } else {
-        throw new Error(data.message || 'Failed to check phone number');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to check phone number",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Open OTP modal with the entered phone number
+    setLoginModalOpen(true);
   };
 
   // Handle login

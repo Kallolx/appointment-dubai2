@@ -34,19 +34,36 @@ const StepFour = ({
   discountAmount = 0,
   onOfferChange = (offer, discount) => {},
 }) => {
+  // helper to make labels nicer
+  const formatLabel = (s) => {
+    if (!s) return '';
+    // replace dashes/underscores and collapse spaces
+    const cleaned = String(s).replace(/[-_]+/g, ' ').trim();
+    return cleaned
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showAddCardModal, setShowAddCardModal] = useState(false);
+  // Local cart items state to allow quantity changes in final step
+  const [localItems, setLocalItems] = useState(() => cartItems || []);
   
   // Offer code states (now received as props, keeping local state for validation)
   const [offerCode, setOfferCode] = useState("");
   const [isValidatingOffer, setIsValidatingOffer] = useState(false);
   const [offerError, setOfferError] = useState("");
-  const [finalAmount, setFinalAmount] = useState(subtotal - discountAmount);
+  const [finalAmount, setFinalAmount] = useState(0);
 
   const { user, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Local AED icon helper (uses public/aed.svg)
+  const AEDIcon = ({ className = "w-4 h-4 inline-block mr-1" }: { className?: string }) => (
+    <img src="/aed.svg" alt="AED" className={className} />
+  );
 
   // Google Maps refs and loader
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -57,10 +74,22 @@ const StepFour = ({
     null
   );
 
-  // Update final amount when subtotal or discount changes
+  // Sync prop changes into local items
   useEffect(() => {
-    setFinalAmount(Math.max(0, subtotal - discountAmount));
-  }, [subtotal, discountAmount]);
+    setLocalItems(cartItems || []);
+  }, [cartItems]);
+
+  // Compute local subtotal based on quantities
+  const localSubtotal = localItems.reduce((sum, it) => {
+    const price = typeof it.service.price === 'number' ? it.service.price : parseFloat(it.service.price) || 0;
+    const qty = it.count || 1;
+    return sum + price * qty;
+  }, 0);
+
+  // Update final amount when localSubtotal or discount changes
+  useEffect(() => {
+    setFinalAmount(Math.max(0, localSubtotal - discountAmount));
+  }, [localSubtotal, discountAmount]);
 
   // Offer code validation function
   const validateOfferCode = async () => {
@@ -80,8 +109,8 @@ const StepFour = ({
         },
         body: JSON.stringify({
           code: offerCode.trim(),
-          orderAmount: subtotal,
-          serviceIds: cartItems.map(item => item.id || item.serviceId)
+          orderAmount: localSubtotal,
+          serviceIds: localItems.map(item => item.id || item.serviceId || item.service?.id || item.service?.serviceId)
         })
       });
 
@@ -177,11 +206,11 @@ const StepFour = ({
     }
   }, [isLoaded, selectedAddress]);
 
-  // Calculate fees and totals
+  // Calculate fees and totals (use localSubtotal so changes reflect immediately)
   const extraPrice = Number(selectedDateTime?.extra_price) || 0;
   const codFee = selectedPayment === "cod" ? 5 : 0;
-  const vat = (subtotal + extraPrice + codFee) * 0.05;
-  const total = subtotal + extraPrice + codFee + vat;
+  const vat = (localSubtotal + extraPrice + codFee) * 0.05;
+  const total = localSubtotal + extraPrice + codFee + vat;
 
   const handleBookNow = async () => {
     if (!selectedPayment) {
@@ -225,45 +254,45 @@ const StepFour = ({
 
     try {
       // Extract room type and property type from cart items
-      const firstItem = cartItems[0];
-      const roomType = firstItem?.service?.roomType || firstItem?.service?.context?.selectedRoomType || 'Studio';
-      const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
-      const quantity = firstItem?.count || 1;
+  const firstItem = localItems[0];
+  const roomType = firstItem?.service?.roomType || firstItem?.service?.context?.selectedRoomType || 'Studio';
+  const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
+  const quantity = firstItem?.count || 1;
 
       // Calculate total including fees and VAT
       const codFee = selectedPayment === "cod" ? 5 : 0;
-      const extraPrice = Number(selectedDateTime.extra_price) || 0;
-      const total = subtotal + extraPrice + codFee + (subtotal + extraPrice + codFee) * 0.05;
+  const extraPrice = Number(selectedDateTime.extra_price) || 0;
+  const total = localSubtotal + extraPrice + codFee + (localSubtotal + extraPrice + codFee) * 0.05;
 
       // Note: Time format is now correctly sent from StepThree in database format (HH:MM:SS)
       // No conversion needed since StepThree.tsx now sends the actual start_time from database
 
-      // Extract service items category from cart items
-      const serviceItemsCategory = cartItems.length > 0 
-        ? cartItems[0].service.service_items_category || cartItems[0].service.category 
+      // Extract service items category from local items
+      const serviceItemsCategory = localItems.length > 0 
+        ? localItems[0].service.service_items_category || localItems[0].service.category 
         : null;
 
       // Prepare appointment data
       const appointmentData = {
-        service: cartItems
+        service: localItems
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", "),
         appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
         appointment_time: selectedDateTime.time, // Use database time format directly
         location: selectedAddress,
-        price: finalAmount, // Use final amount after discount
-        original_price: subtotal, // Keep original price for reference
+  price: finalAmount, // Use final amount after discount
+  original_price: localSubtotal, // Keep original price for reference
         discount_amount: discountAmount,
         extra_price: extraPrice,
         cod_fee: codFee,
         room_type: roomType,
         property_type: propertyType,
-        quantity: quantity,
+  quantity: quantity,
         service_category: firstItem?.service?.category || category || 'general',
         service_items_category: serviceItemsCategory,
         payment_method: getPaymentMethodName(selectedPayment),
         offer_code_id: appliedOffer?.id || null,
-        notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${cartItems
+        notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${localItems
           .map((item) => `${item.service.name} (x${item.count})`)
           .join(", ")}${appliedOffer ? `. Applied Offer: ${appliedOffer.name} (${appliedOffer.code})` : ''}`,
       };
@@ -321,7 +350,7 @@ const StepFour = ({
 
     if (response.ok) {
       // Apply offer code if one was used
-      if (appliedOffer && data.appointment?.id) {
+    if (appliedOffer && data.appointment?.id) {
         try {
           await fetch(buildApiUrl('/api/offer-codes/apply'), {
             method: 'POST',
@@ -330,10 +359,10 @@ const StepFour = ({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              offerId: appliedOffer.id,
-              orderAmount: subtotal,
-              appointmentId: data.appointment.id
-            })
+                offerId: appliedOffer.id,
+                orderAmount: localSubtotal,
+                appointmentId: data.appointment.id
+              })
           });
         } catch (offerError) {
           console.error('Failed to apply offer code:', offerError);
@@ -395,10 +424,10 @@ const StepFour = ({
         throw new Error("Appointment creation failed - missing appointment ID");
       }
 
-      // Calculate total with VAT
-      const codFee = 0; // No COD fee for Ziina
-      const extraPrice = Number(selectedDateTime.extra_price) || 0;
-      const total = subtotal + extraPrice + (subtotal + extraPrice) * 0.05;
+  // Calculate total with VAT
+  const codFee = 0; // No COD fee for Ziina
+  const extraPrice = Number(selectedDateTime.extra_price) || 0;
+  const total = localSubtotal + extraPrice + (localSubtotal + extraPrice) * 0.05;
 
       // Create Ziina payment
       const paymentData = {
@@ -441,11 +470,6 @@ const StepFour = ({
 
   const paymentMethods = [
     {
-      id: "card",
-      name: "Add New Card",
-      icon: <PlusCircle className="w-5 h-5" />,
-    },
-    {
       id: "ziina",
       name: "Pay with Credit/Debit Card",
       icon: <CreditCard className="w-5 h-5" />,
@@ -469,7 +493,7 @@ const StepFour = ({
         </div>
 
         <div className="space-y-3">
-          {cartItems.map((item) => {
+          {localItems.map((item) => {
             const isOpen = expandedItemId === item.service.id;
             const imgSrc =
               item.service.image_url ||
@@ -482,16 +506,23 @@ const StepFour = ({
                 key={item.service.id}
                 className="bg-white border-2 border-gray-200 mb-4 rounded-sm p-3"
               >
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                   <img
                     src={imgSrc || "/placeholder.svg"}
                     alt={item.service.serviceItem?.name || item.service.name}
                     className="w-10 h-10 object-cover rounded-full"
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div
+                          className="font-medium text-gray-900 overflow-hidden whitespace-nowrap truncate block max-w-full"
+                          title={
+                            item.service.context?.selectedServiceItem ||
+                            item.service.serviceItem?.name ||
+                            item.service.name || ''
+                          }
+                        >
                           {/* NEW: Show enhanced context if available */}
                           {item.service.context?.selectedServiceItem ||
                             item.service.serviceItem?.name ||
@@ -516,20 +547,94 @@ const StepFour = ({
 
                 {isOpen && (
                   <div className="mt-3 border-t border-gray-300 pt-3 text-sm text-gray-600 space-y-2">
-                    {/* Show data in the requested format: Room type - Property type x Quantity AED Price */}
-                    <div className="flex text-gray-500 text-sm justify-between items-center">
-                      <div>
-                        <span>
-                          {item.service.name} - {item.service.propertyType} x 1
+                    {/* Show data in the requested format: Room type - Service Items Category x Quantity AED Price */}
+                    <div className="flex text-gray-500 text-sm items-center">
+                      <div className="flex-1 min-w-0 mr-3">
+                        <span
+                          className="block text-sm text-gray-700 whitespace-normal break-words"
+                          title={`${formatLabel(item.service.context?.selectedRoomType || item.service.roomType || 'Studio')} - ${formatLabel(item.service.service_items_category || item.service.serviceItemCategory || item.service.category || 'General')} x ${item.count || 1}`}
+                        >
+                          {formatLabel(item.service.context?.selectedRoomType || item.service.roomType || 'Studio')} - {formatLabel(item.service.service_items_category || item.service.serviceItemCategory || item.service.category || 'General')} x {item.count || 1}
                         </span>
                       </div>
-                      <div>
-                        <span>
-                          AED{" "}
-                          {typeof item.service.price === "number"
-                            ? item.service.price.toFixed(2)
-                            : (parseFloat(item.service.price) || 0).toFixed(2)}
-                        </span>
+
+                      <div className="flex-none flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updated = localItems.map((li) => {
+                              if ((li.service.id || li.service.serviceId) === (item.service.id || item.service.serviceId)) {
+                                const newCount = Math.max(0, (li.count || 1) - 1);
+                                return { ...li, count: newCount };
+                              }
+                              return li;
+                            }).filter(li => (li.count || 1) > 0);
+                            setLocalItems(updated);
+                            try {
+                              localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
+                              localStorage.setItem('pendingCartItems', JSON.stringify(updated));
+                            } catch (err) {
+                              console.error('Failed to persist cart items', err);
+                            }
+                          }}
+                          className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded text-sm"
+                          title="Decrease quantity"
+                        >
+                          <span className="select-none">−</span>
+                        </button>
+                        <div className="w-6 text-center text-sm">{item.count || 1}</div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updated = localItems.map((li) => {
+                              if ((li.service.id || li.service.serviceId) === (item.service.id || item.service.serviceId)) {
+                                const newCount = (li.count || 1) + 1;
+                                return { ...li, count: newCount };
+                              }
+                              return li;
+                            });
+                            setLocalItems(updated);
+                            try {
+                              localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
+                              localStorage.setItem('pendingCartItems', JSON.stringify(updated));
+                            } catch (err) {
+                              console.error('Failed to persist cart items', err);
+                            }
+                          }}
+                          className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded text-sm"
+                          title="Increase quantity"
+                        >
+                          <span className="select-none">+</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updated = localItems.filter((li) => (li.service.id || li.service.serviceId) !== (item.service.id || item.service.serviceId));
+                            setLocalItems(updated);
+                            try {
+                              localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
+                              localStorage.setItem('pendingCartItems', JSON.stringify(updated));
+                            } catch (err) {
+                              console.error('Failed to persist cart items', err);
+                            }
+                          }}
+                          className="ml-1 w-7 h-7 p-0.5 text-red-500 hover:bg-red-50 rounded-full flex items-center justify-center"
+                          title="Remove item"
+                          aria-label="Remove item"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <div className="ml-2 text-right min-w-[64px]">
+                          <span className="text-sm">
+                            <AEDIcon className="w-4 h-4 inline-block mr-1" />
+                            {(
+                              (typeof item.service.price === 'number'
+                                ? item.service.price
+                                : parseFloat(item.service.price) || 0) * (item.count || 1)
+                            ).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -587,9 +692,8 @@ const StepFour = ({
       </div>
 
       {/* Offers Section */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Info className="w-5 h-5 text-blue-600" />
+      <div className="p-6 pt-0 mb-6">
+        <h2 className="text-xl font-medium text-gray-900 flex items-center gap-2 mb-4">
           Offers & Discounts
         </h2>
         
@@ -632,7 +736,7 @@ const StepFour = ({
                 <div>
                   <p className="font-medium text-green-800">{appliedOffer.name}</p>
                   <p className="text-sm text-green-600">Code: {appliedOffer.code}</p>
-                  <p className="text-sm text-green-600">You saved AED {discountAmount.toFixed(2)}</p>
+                  <p className="text-sm text-green-600">You saved <AEDIcon className="w-4 h-4 inline-block mr-1" />{discountAmount.toFixed(2)}</p>
                 </div>
               </div>
               <button
@@ -686,7 +790,7 @@ const StepFour = ({
                 <div className="flex items-center gap-2">
                   {method.id === "cod" && (
                     <div className="text-xs text-orange-600 font-semibold bg-orange-100 px-2 py-1 rounded-md">
-                      + AED 5
+                      + <AEDIcon className="w-3 h-3 inline-block mr-1" />5
                     </div>
                   )}
                   <div
@@ -715,14 +819,14 @@ const StepFour = ({
         <div className="space-y-3">
           <div className="flex justify-between">
             <span className="text-gray-600 text-sm">Service Charges</span>
-            <span className="font-medium text-sm">AED {subtotal.toFixed(2)}</span>
+            <span className="font-medium text-sm"><AEDIcon className="w-4 h-4 inline-block mr-1" />{localSubtotal.toFixed(2)}</span>
           </div>
 
           {extraPrice > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Time Slot Fee</span>
               <span className="font-medium text-orange-600 text-sm">
-                +{extraPrice.toFixed(2)} AED
+                +<AEDIcon className="w-4 h-4 inline-block mr-1" />{extraPrice.toFixed(2)}
               </span>
             </div>
           )}
@@ -731,7 +835,7 @@ const StepFour = ({
             <div className="flex justify-between">
               <span className="text-gray-600 text-sm">Cash on Delivery Fee</span>
               <span className="font-medium text-orange-600 text-sm">
-                +{codFee.toFixed(2)} AED
+                +<AEDIcon className="w-4 h-4 inline-block mr-1" />{codFee.toFixed(2)}
               </span>
             </div>
           )}
@@ -743,26 +847,26 @@ const StepFour = ({
                 Discount ({appliedOffer.code})
               </span>
               <span className="font-medium text-green-600 text-sm">
-                -{discountAmount.toFixed(2)} AED
+                -<AEDIcon className="w-4 h-4 inline-block mr-1" />{discountAmount.toFixed(2)}
               </span>
             </div>
           )}
 
           <div className="flex justify-between">
             <span className="text-gray-600 text-sm">VAT (5%)</span>
-            <span className="font-medium text-sm">AED {(finalAmount * 0.05).toFixed(2)}</span>
+            <span className="font-medium text-sm"><AEDIcon className="w-4 h-4 inline-block mr-1" />{(finalAmount * 0.05).toFixed(2)}</span>
           </div>
 
           <div className="border-t pt-3">
             <div className="flex justify-between">
               <span className="text-base font-semibold">Total to Pay</span>
               <span className="text-base font-bold text-gray-600">
-                AED {(finalAmount + (finalAmount * 0.05) + extraPrice + codFee).toFixed(2)}
+                <AEDIcon className="w-4 h-4 inline-block mr-1" />{(finalAmount + (finalAmount * 0.05) + extraPrice + codFee).toFixed(2)}
               </span>
             </div>
             {appliedOffer && (
               <div className="text-sm text-green-600 mt-1">
-                You saved AED {discountAmount.toFixed(2)}!
+                You saved <AEDIcon className="w-4 h-4 inline-block mr-1" />{discountAmount.toFixed(2)}!
               </div>
             )}
           </div>

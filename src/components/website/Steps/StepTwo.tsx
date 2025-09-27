@@ -12,7 +12,9 @@ import {
   ArrowLeft,
   Star,
   X,
+  Trash,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import GoogleMapPicker from "../../ui/GoogleMapPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
@@ -40,6 +42,7 @@ const StepTwo = ({
   onSelectionChange,
 }) => {
   const { token } = useAuth();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState("list"); // "list", "map", "form"
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [addressType, setAddressType] = useState("Apartment");
@@ -94,6 +97,35 @@ const StepTwo = ({
     } finally {
       setLoadingSavedAddresses(false);
       setInitialLoadComplete(true);
+    }
+  };
+
+  const handleDeleteAddress = async (address: any) => {
+    const confirmed = window.confirm("Are you sure you want to delete this address? This action cannot be undone.");
+    if (!confirmed) return;
+
+    // If this is a server-saved address and we have a token, call backend
+    if (address?.id && address?.user_id && token) {
+      try {
+        await axios.delete(buildApiUrl(`/api/user/addresses/${address.id}`), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast({ title: "Address deleted", description: "Address removed successfully.", variant: "default" });
+        // refresh saved addresses
+        await fetchSavedAddresses();
+
+        if (selectedAddress?.id === address.id) {
+          setSelectedAddress(null);
+        }
+      } catch (err) {
+        console.error("Failed to delete address:", err);
+        toast({ title: "Delete failed", description: "Could not delete the address. Please try again.", variant: "destructive" });
+      }
+    } else {
+      // Local address - remove from local state
+      setAddresses((prev) => prev.filter((a) => a.id !== address.id));
+      if (selectedAddress?.id === address.id) setSelectedAddress(null);
+      toast({ title: "Address removed", description: "Local address removed.", variant: "default" });
     }
   };
 
@@ -580,6 +612,16 @@ const StepTwo = ({
                         onChange={() => setSelectedAddress(address)}
                         className="w-4 h-4 text-teal-500 border-gray-300 focus:ring-teal-500"
                       />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteAddress(address);
+                        }}
+                        title="Delete address"
+                        className="ml-3 p-2 rounded hover:bg-red-50 text-red-500"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -627,6 +669,16 @@ const StepTwo = ({
                         onChange={() => setSelectedAddress(address)}
                         className="w-4 h-4 text-teal-500 border-gray-300 focus:ring-teal-500"
                       />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteAddress(address);
+                        }}
+                        title="Delete address"
+                        className="ml-3 p-2 rounded hover:bg-red-50 text-red-500"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))}

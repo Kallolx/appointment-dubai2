@@ -289,7 +289,7 @@ const MyBookings: React.FC = () => {
               )}
               
               <button 
-                onClick={() => navigate(`/order-confirmation`, { 
+                onClick={() => navigate(`/booking-details/${booking.id}`, { 
                   state: { orderData: booking } 
                 })}
                 className="text-xs bg-gray-50 text-gray-600 px-3 py-1 rounded border border-gray-200 hover:bg-gray-100"

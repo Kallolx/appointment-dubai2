@@ -268,6 +268,11 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
     };
   }, [isOpen]);
 
+  // Small reusable AED icon component (uses public/aed.svg)
+  const AEDIcon = ({ className = "inline-block w-4 h-4 mr-2" }: { className?: string }) => (
+    <img src="/aed.svg" alt="AED" className={className} />
+  );
+
   // Debug logging to track category changes
   useEffect(() => {
     if (isOpen) {
@@ -363,9 +368,9 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
   return (
   <>
   <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-end items-end md:items-center md:justify-center z-[60] p-0 md:p-4 overflow-y-auto">
-      <div className="bg-white rounded-t-lg md:rounded-sm max-w-md w-full max-h-[90vh] overflow-y-auto mt-0 md:mt-4 mb-0 md:mb-4 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 duration-300">
+    <div className="bg-white rounded-t-lg md:rounded-sm max-w-md w-full overflow-y-auto mt-0 md:mt-4 mb-0 md:mb-4 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 duration-300" style={{ maxHeight: 'calc(100vh - 8rem)', marginTop: '1rem' }}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-center p-4">
+  <div className="sticky top-0 z-10 bg-white border-b border-gray-200 flex items-center justify-center p-3">
           <h2 className="text-xl font-semibold text-gray-900 text-center flex-1">
             {propertyType}
           </h2>
@@ -374,15 +379,15 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
               onClose();
               document.body.style.overflow = 'unset';
             }}
-            className="absolute right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            style={{ top: '1rem' }}
+            className="absolute right-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            style={{ top: '0.75rem' }}
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+  <div className="p-3 space-y-3">
           {isLoading || serviceItemsLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#01788e] mx-auto mb-3"></div>
@@ -420,21 +425,21 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                     <p className="text-sm text-gray-600 mb-2">{option.description}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        {option.discount_price ? (
+                            {option.discount_price ? (
                           <>
                             <button
                               type="button"
                               onClick={() => { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
                               className="font-semibold text-green-600 text-left"
                             >
-                              AED {option.discount_price}
+                              <span className="flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{option.discount_price}</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => { setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
                               className="text-sm text-gray-500 line-through"
                             >
-                              AED {option.price}
+                              <span className="flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{option.price}</span>
                             </button>
                           </>
                         ) : (
@@ -443,7 +448,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
                             onClick={(e) => { e.stopPropagation(); setDetailOption(option); setDetailQuantity(1); setDetailModalOpen(true); }}
                             className="font-semibold text-gray-900 text-left"
                           >
-                            AED {option.price}
+                            <span className="flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{option.price}</span>
                           </button>
                         )}
                       </div>
@@ -490,7 +495,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 p-4 bg-white">
+  <div className="sticky bottom-0 p-3 bg-white">
           <Button
             onClick={handleContinue}
             className="w-full bg-primary rounded-none text-white py-3"
@@ -505,13 +510,13 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
     {/* Detail modal for a single price/option */}
     {detailModalOpen && detailOption && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-        <div className="bg-white rounded-sm max-w-lg w-full max-h-[85vh] flex flex-col">
+  <div className="bg-white rounded-sm max-w-lg w-full flex flex-col" style={{ maxHeight: 'calc(100vh - 8rem)' }}>
           {/* Header with image */}
           <div className="relative flex-shrink-0">
             <img 
               src={detailOption.image} 
               alt={detailOption.name} 
-              className="w-full h-48 object-cover"
+              className="w-full h-40 object-cover"
             />
             <button 
               onClick={() => setDetailModalOpen(false)} 
@@ -522,17 +527,17 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4">
             {/* Title and Price */}
             <div className="flex items-start justify-between mb-2">
               <h3 className="text-lg font-medium text-gray-900">{detailOption.name}</h3>
               <div className="text-right">
-                <div className="text-base font-semibold text-gray-900">
-                  AED {detailOption.discount_price ?? detailOption.price}
+                <div className="text-base font-semibold text-gray-900 flex items-center">
+                  <AEDIcon className="inline-block w-4 h-4 mr-2" />{detailOption.discount_price ?? detailOption.price}
                 </div>
                 {detailOption.discount_price && (
                   <div className="text-sm text-gray-500 line-through">
-                    AED {detailOption.price}
+                    <span className="flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{detailOption.price}</span>
                   </div>
                 )}
               </div>
@@ -560,7 +565,7 @@ const ServiceOptionsModal: React.FC<ServiceOptionsModalProps> = ({
           </div>
 
           {/* Fixed bottom section with quantity and button */}
-          <div className="flex-shrink-0 border-t border-gray-200 p-6 bg-white">
+          <div className="flex-shrink-0 border-t border-gray-200 p-4 bg-white">
             {/* Quantity selector */}
             <div className="flex items-center justify-center gap-4 mb-4">
               <button

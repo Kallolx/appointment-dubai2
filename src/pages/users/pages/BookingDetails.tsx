@@ -18,6 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 import { buildApiUrl } from "@/config/api";
+import EditDateTimeModal from "@/components/website/modals/EditDateTimeModal";
+import EditAddressModal from "@/components/website/modals/EditAddressModal2";
+import EditPaymentModal from "@/components/website/modals/EditPaymentModal";
 
 interface OrderData {
   id: number;
@@ -44,6 +47,16 @@ const BookingDetails: React.FC = () => {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(true);
 
+  // Local AED icon helper (uses public/aed.svg)
+  const AEDIcon = ({ className = "w-4 h-4 inline-block mr-1" }: { className?: string }) => (
+    <img src="/aed.svg" alt="AED" className={className} />
+  );
+  
+  // Modal states
+  const [isDateTimeModalOpen, setIsDateTimeModalOpen] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
@@ -56,6 +69,26 @@ const BookingDetails: React.FC = () => {
       if (order) {
         setOrderData(order);
       }
+    }
+
+    // Check for payment success/failure parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentSuccess = urlParams.get('payment_success');
+    const paymentCancelled = urlParams.get('payment_cancelled');
+
+    if (paymentSuccess === 'true') {
+      // Handle successful payment
+      handlePaymentSuccess();
+    } else if (paymentCancelled === 'true') {
+      // Handle cancelled payment
+      toast({
+        title: "Payment Cancelled",
+        description: "Your payment was cancelled. You can try again anytime.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // Show toast if redirected from ManageBooking with updates
@@ -136,6 +169,96 @@ const BookingDetails: React.FC = () => {
       );
     }
   }, [orderData]);
+
+  const handleEditClick = (section: string) => {
+    switch (section) {
+      case 'date':
+      case 'time':
+        setIsDateTimeModalOpen(true);
+        break;
+      case 'address':
+        setIsAddressModalOpen(true);
+        break;
+      case 'payment':
+        setIsPaymentModalOpen(true);
+        break;
+      default:
+        // Fallback to original manage booking page for other sections
+        if (orderData) {
+          navigate(`/manage-booking/${orderData.id}`, {
+            state: { orderData, editSection: section },
+          });
+        }
+        break;
+    }
+  };
+
+  const handleBookingUpdate = (updatedData: any) => {
+    setOrderData(updatedData);
+    // Optionally refetch from backend to ensure consistency
+    if (bookingId) {
+      fetchBookingDetails();
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token || !bookingId) return;
+
+      // Update appointment with successful payment info
+      const response = await fetch(
+        buildApiUrl(`/api/user/appointments/${bookingId}`),
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            payment_method: 'Pay with Credit/Debit Card',
+            status: 'confirmed'
+          })
+        }
+      );
+
+      if (response.ok) {
+        // Refresh booking data
+        await fetchBookingDetails();
+        
+        // Show success toast
+        toast({
+          title: "Payment Successful!",
+          description: "Your payment has been processed successfully. Your booking is now confirmed.",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast({
+        title: "Payment Processed",
+        description: "Your payment was successful, but there was an issue updating your booking status. Please contact support if needed.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
+
+  const getPaymentMethod = () => {
+    if (!orderData) return "";
+    if (orderData.payment_method) return orderData.payment_method;
+    const notes = (orderData.notes || "").toString();
+    const match = notes.match(/Payment Method:\s*([^\.\n]+)/i);
+    if (match) return match[1].trim();
+    // fallback check for common words
+    if (notes.toLowerCase().includes("cash on delivery"))
+      return "Cash on Delivery";
+    if (notes.toLowerCase().includes("ziina")) return "Ziina";
+    return "";
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -267,6 +390,16 @@ const BookingDetails: React.FC = () => {
       default:
         return "/icons/cleaning.webp"; // Default fallback
     }
+  };
+
+  const formatLabel = (s?: string) => {
+    if (!s) return "";
+    return String(s)
+      .replace(/[-_]+/g, " ")
+      .trim()
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   };
 
   const getStatusBadge = (status: string) => {
@@ -479,61 +612,109 @@ const BookingDetails: React.FC = () => {
             <div className="p-2">
               {/* Service Item Details */}
               <div className="border-2 border-gray-200 rounded-md p-3">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                     <img
-                      src={getServiceCategoryIcon(orderData.service_category)}
-                      alt="Service"
-                      className="w-5 h-5 object-contain"
+                      src={
+                        (orderData.service_image as string) ||
+                        (orderData.image as string) ||
+                        getServiceCategoryIcon(orderData.service_category)
+                      }
+                      alt={orderData.service}
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-base mt-2 font-medium text-gray-900">
-                        {orderData.service}
-                      </h3>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="md:truncate">
+                        <h3 className="text-base font-medium text-gray-900" title={formatLabel(orderData.service_items_category || orderData.service_category || orderData.service)}>
+                          {formatLabel(orderData.service_category)}
+                        </h3>
+                        <div className="text-sm text-gray-600 md:truncate break-words whitespace-normal" title={`${formatLabel(orderData.room_type)} - ${formatLabel(orderData.service_items_category || orderData.service_category || orderData.service)} x ${orderData.quantity || 1}`}>
+                          {formatLabel(orderData.room_type)} - {formatLabel(orderData.service_items_category || orderData.service_category || orderData.service)} x {orderData.quantity || 1}
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  <div className="flex-none ml-4 text-right w-28">
+                    <div className="text-sm font-medium"><AEDIcon className="w-4 h-4 inline-block mr-1" />{formatPrice(orderData.price)}</div>
+                  </div>
                 </div>
-                <div className="w-full h-[2px] bg-gray-200 my-2"></div>
-                <div className="flex justify-between items-center text-sm text-gray-700 font-medium">
-                  <span>
-                    {orderData.room_type} - {orderData.property_type} x{" "}
-                    {orderData.quantity || 1}
-                  </span>
-                  <span>AED {formatPrice(orderData.price)}</span>
-                </div>
+
                 <div className="flex justify-between items-center mt-2">
-                  <span className="text-sm font-semibold text-gray-900">
-                    Reference ID:
-                  </span>
-                  <span className="text-sm font-mono text-gray-700">
-                    {referenceId}
-                  </span>
+                  <span className="text-sm font-semibold text-gray-900">Reference ID:</span>
+                  <span className="text-sm font-mono text-gray-700">{referenceId}</span>
                 </div>
               </div>
 
               {/* Date/Time/Location Info */}
               <div className="mt-4 space-y-3">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Booking Details
                 </h2>
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-gray-600" />
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-gray-700 flex-1">
                     {formatDate(orderData.appointment_date)}
+                  </div>
+                  <div className="flex-shrink-0">
+                    <button
+                      onClick={() => handleEditClick("date")}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Edit
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-4 h-4 text-gray-600" />
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-gray-700 flex-1">
                     {formatTime(orderData.appointment_time)}
+                  </div>
+                  <div className="flex-shrink-0">
+                    <button
+                      onClick={() => handleEditClick("time")}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Edit
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <MapPin className="w-4 h-4 text-gray-600" />
                   <div className="text-sm text-gray-700 break-words w-full">
                     {getLocationDisplay(orderData.location)}
+                  </div>
+                  <div className="flex-shrink-0 ml-2">
+                    <button
+                      onClick={() => handleEditClick("address")}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pay With Section */}
+              <div className="mt-4 space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Pay with
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    <CreditCard className="w-4 h-4 inline-block mr-2 text-gray-600" />
+                    {getPaymentMethod() || "N/A"}
+                  </div>
+                  <div>
+                    <button
+                      onClick={() => handleEditClick("payment")}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Edit
+                    </button>
                   </div>
                 </div>
               </div>
@@ -546,9 +727,7 @@ const BookingDetails: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-700">Service Charges</span>
-                    <span className="text-gray-900">
-                      AED {formatPrice(serviceCharges)}
-                    </span>
+                    <span className="text-gray-900"><AEDIcon className="w-4 h-4 inline-block mr-1" />{formatPrice(serviceCharges)}</span>
                   </div>
                   {codFee > 0 && (
                     <div className="flex items-center justify-between text-sm">
@@ -556,15 +735,13 @@ const BookingDetails: React.FC = () => {
                         Cash on Delivery Fee
                       </span>
                       <span className="text-orange-600 font-medium">
-                        +{formatPrice(codFee)} AED
-                      </span>
+                          +<AEDIcon className="w-4 h-4 inline-block mr-1" />{formatPrice(codFee)}
+                        </span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-700">VAT (5%)</span>
-                    <span className="text-gray-900">
-                      AED {formatPrice(vatAmount)}
-                    </span>
+                    <span className="text-gray-900"><AEDIcon className="w-4 h-4 inline-block mr-1" />{formatPrice(vatAmount)}</span>
                   </div>
                   <div className="h-px bg-gray-200" />
                   <div className="flex items-center justify-between">
@@ -572,7 +749,7 @@ const BookingDetails: React.FC = () => {
                       Total to Pay
                     </span>
                     <span className="text-gray-900 font-semibold">
-                      AED {formatPrice(totalPrice)}
+                      <AEDIcon className="w-4 h-4 inline-block mr-1" />{formatPrice(totalPrice)}
                     </span>
                   </div>
                 </div>
@@ -589,12 +766,36 @@ const BookingDetails: React.FC = () => {
                 state: { orderData },
               })
             }
-            className="w-fit px-12 items-center bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-sm transition-colors text-base"
+            className="w-fit px-12 items-center bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 transition-colors text-base"
           >
             MANAGE BOOKING
           </button>
         </div>
       </div>
+      
+      {/* Edit Modals */}
+      {orderData && (
+        <>
+          <EditDateTimeModal
+            isOpen={isDateTimeModalOpen}
+            onClose={() => setIsDateTimeModalOpen(false)}
+            orderData={orderData}
+            onUpdate={handleBookingUpdate}
+          />
+          <EditAddressModal
+            isOpen={isAddressModalOpen}
+            onClose={() => setIsAddressModalOpen(false)}
+            orderData={orderData}
+            onUpdate={handleBookingUpdate}
+          />
+          <EditPaymentModal
+            isOpen={isPaymentModalOpen}
+            onClose={() => setIsPaymentModalOpen(false)}
+            orderData={orderData}
+            onUpdate={handleBookingUpdate}
+          />
+        </>
+      )}
     </div>
   );
 };

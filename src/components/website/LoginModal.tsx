@@ -144,62 +144,40 @@ const LoginModal = ({ setLoginModalOpen, initialPhone, redirectTo }: {
     setIsLoading(true);
     
     try {
-      // First check if phone number exists in database
-      const checkResponse = await fetch(buildApiUrl('/api/auth/check-phone'), {
+      // Send OTP directly without checking if user exists
+      const response = await fetch(buildApiUrl('/api/auth/send-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: fullPhoneNumber })
       });
       
-      const checkData = await checkResponse.json();
+      const data = await response.json();
       
-      if (checkResponse.ok) {
-        if (checkData.exists) {
-          // User exists - redirect to login page with password flow
-          setLoginModalOpen(false);
-          const redirectParam = redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : '';
-          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}${redirectParam}`;
-          return;
-        } else {
-          // User doesn't exist - proceed with OTP for new user registration
-          // Send OTP to phone number
-          const response = await fetch(buildApiUrl('/api/auth/send-otp'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: fullPhoneNumber })
+      if (response.ok && data.success) {
+        setStep("otp");
+        startResendTimer();
+        
+        // Show different messages for test mode vs production
+        if (data.testMode) {
+          toast({
+            title: "Test OTP Sent",
+            description: `Test code: ${data.testOtp} (Development Mode)`,
+            duration: 10000 // Show longer for test mode
           });
-          
-          const data = await response.json();
-          
-          if (response.ok && data.success) {
-            setStep("otp");
-            startResendTimer();
-            
-            // Show different messages for test mode vs production
-            if (data.testMode) {
-              toast({
-                title: "Test OTP Sent",
-                description: `Test code: ${data.testOtp} (Development Mode)`,
-                duration: 10000 // Show longer for test mode
-              });
-              // Pre-fill OTP in test mode for easier testing
-              setOtp(data.testOtp);
-            } else {
-              toast({
-                title: "OTP Sent",
-                description: `Verification code sent to ${fullPhoneNumber}`,
-              });
-            }
-          } else {
-            toast({
-              title: "Error",
-              description: data.message || "Failed to send OTP. Please try again.",
-              variant: "destructive"
-            });
-          }
+          // Pre-fill OTP in test mode for easier testing
+          setOtp(data.testOtp);
+        } else {
+          toast({
+            title: "OTP Sent",
+            description: `Verification code sent to ${fullPhoneNumber}`,
+          });
         }
       } else {
-        throw new Error(checkData.message || 'Failed to check phone number');
+        toast({
+          title: "Error",
+          description: data.message || "Failed to send OTP. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error:', error);
@@ -227,7 +205,7 @@ const LoginModal = ({ setLoginModalOpen, initialPhone, redirectTo }: {
     setIsLoading(true);
     
     try {
-      // Verify OTP
+      // Verify OTP - backend will automatically create user if needed
       const response = await fetch(buildApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,22 +214,24 @@ const LoginModal = ({ setLoginModalOpen, initialPhone, redirectTo }: {
       
       const data = await response.json();
       
-      if (response.ok && data.success) {
+      if (response.ok && data.token) {
+        // Login successful (works for both new and existing users)
+        login(data.user, data.token);
+        setLoginModalOpen(false);
+        
+        // Show success message for new users
         if (data.isNewUser) {
-          // New user - redirect to registration
-          const redirectParam = redirectTo ? `&redirect=${encodeURIComponent(redirectTo)}` : '';
-          window.location.href = `/login?phone=${encodeURIComponent(fullPhoneNumber)}&new=true&verified=true${redirectParam}`;
+          toast({
+            title: "Welcome!",
+            description: "Your account has been created successfully.",
+          });
+        }
+        
+        // Redirect to specific page if provided, otherwise go to home
+        if (redirectTo) {
+          window.location.href = redirectTo;
         } else {
-          // Existing user - login successful
-          login(data.user, data.token);
-          setLoginModalOpen(false);
-          
-          // Redirect to specific page if provided, otherwise go to home
-          if (redirectTo) {
-            window.location.href = redirectTo;
-          } else {
-            window.location.href = "/";
-          }
+          window.location.href = "/";
         }
       } else {
         toast({
@@ -304,8 +284,8 @@ const LoginModal = ({ setLoginModalOpen, initialPhone, redirectTo }: {
         <div className="p-5">
             <div className="flex items-start justify-between mb-2">
             <div>
-              <h2 className="font-bold text-lg text-gray-800">Log in or sign up</h2>
-              <p className="text-sm text-gray-500">Please enter your mobile number to proceed.</p>
+              <h2 className="font-bold text-lg text-gray-800">Login with OTP</h2>
+              <p className="text-sm text-gray-500">We'll send a verification code to your phone number.</p>
             </div>
             <button
               onClick={() => setLoginModalOpen(false)}

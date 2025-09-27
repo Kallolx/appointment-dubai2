@@ -12,6 +12,11 @@ import { useEffect, useRef, useState } from "react";
 import ServiceOptionsModal from "@/components/website/ServiceOptionsModal";
 import { buildApiUrl } from "@/config/api";
 
+// Small reusable AED icon component (uses public/aed.svg)
+const AEDIcon = ({ className = "inline-block w-4 h-4 mr-2" }: { className?: string }) => (
+  <img src="/aed.svg" alt="AED" className={className} />
+);
+
 // No fallback data - force database usage only
 
 const StepOne = ({
@@ -376,12 +381,12 @@ const StepOne = ({
             {property.description}
           </p>
           <div className="flex justify-between items-center">
-            <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+              <div className="flex flex-col md:flex-row md:items-center md:gap-2">
               <span className="text-xs md:text-sm text-gray-500 font-normal">
                 Starting from
               </span>
-              <span className="text-sm md:text-md text-gray-600 font-semibold">
-                AED {property.base_price || property.price}
+              <span className="text-sm md:text-md text-gray-600 font-semibold flex items-center">
+                <AEDIcon className="inline-block w-4 h-4 mr-2" />{property.base_price || property.price}
               </span>
             </div>
             <div className="flex text-[#01788e] items-center gap-1 p-2 text-xs border border-[#01788e]">
@@ -508,8 +513,8 @@ const StepOne = ({
                 {service.description}
               </p>
               <div className="flex justify-between items-center">
-                <span className="font-bold text-blue-600">
-                  AED {service.currentPrice}
+                <span className="font-bold text-blue-600 flex items-center">
+                  <AEDIcon className="inline-block w-4 h-4 mr-2" />{service.currentPrice}
                 </span>
                 {(cartItems[service.id]?.count || 0) === 0 ? (
                   <button
@@ -655,7 +660,7 @@ const StepOne = ({
                           <div className="flex-1">
                             <h4 className="font-semibold text-gray-800">{p.room_type_name}</h4>
                             <p className="text-sm text-gray-600 mt-1 line-clamp-2">{p.room_description || ''}</p>
-                            <div className="text-sm text-gray-700 mt-2">AED {p.discount_price ?? p.price}</div>
+                            <div className="text-sm text-gray-700 mt-2 flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{p.discount_price ?? p.price}</div>
                           </div>
                           <div className="flex flex-col items-end justify-between">
                             {qty > 0 ? (
@@ -844,7 +849,7 @@ const StepOne = ({
                       <div className="flex-1">
                         <h4 className="font-semibold text-sm text-gray-800">{p.room_type_name}</h4>
                         <div className="text-xs text-gray-600 line-clamp-2">{p.room_description || ''}</div>
-                        <div className="text-sm text-gray-700 mt-1">AED {p.discount_price ?? p.price}</div>
+                        <div className="text-sm text-gray-700 mt-1 flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{p.discount_price ?? p.price}</div>
                       </div>
                       <div className="flex flex-col items-end justify-center">
                         {qty > 0 ? (

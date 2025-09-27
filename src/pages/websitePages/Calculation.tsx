@@ -1,6 +1,11 @@
 import { ArrowRight, ChevronDown, ChevronUp, Info, X } from "lucide-react";
 import React, { useState } from "react";
 
+// Small reusable AED icon component (uses public/aed.svg)
+const AEDIcon = ({ className = "inline-block w-4 h-4 mr-2" }: { className?: string }) => (
+  <img src="/aed.svg" alt="AED" className={className} />
+);
+
 interface ServiceItem {
   id: string;
   title?: string;
@@ -136,7 +141,7 @@ const Calculation: React.FC<CalculationProps> = ({
           <h2 className="font-bold text-sm pb-3">Payment Summary</h2>
           <div className="flex justify-between">
             <p className="w-1/2">Total</p>
-            <p className="w-1/2">AED {finalTotal.toFixed(2)}</p>
+            <p className="w-1/2 flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{finalTotal.toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -183,8 +188,8 @@ const Calculation: React.FC<CalculationProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-800 text-sm">
-                        AED {getServicePrice(item).toFixed(2)}
+                      <span className="font-semibold text-gray-800 text-sm flex items-center">
+                        <AEDIcon className="inline-block w-4 h-4 mr-2" />{getServicePrice(item).toFixed(2)}
                       </span>
                       <button
                         type="button"
@@ -217,19 +222,17 @@ const Calculation: React.FC<CalculationProps> = ({
                 <div className="border-t border-gray-200 my-2"></div>
 
                 {/* Service Charges */}
-                <div className="flex justify-between items-center mb-1.5">
+                  <div className="flex justify-between items-center mb-1.5">
                   <span className="text-gray-600 text-sm">Service Charges</span>
-                  <span className="text-gray-800 text-sm">
-                    AED {finalTotal.toFixed(2)}
-                  </span>
+                  <span className="text-gray-800 text-sm flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{finalTotal.toFixed(2)}</span>
                 </div>
 
                 {/* Discount (if any) */}
                 {extraPrice > 0 && (
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-gray-600 text-sm">Time Slot Fee</span>
-                    <span className="text-orange-600 text-sm">
-                      + AED {extraPrice.toFixed(2)}
+                    <span className="text-orange-600 text-sm flex items-center">
+                      + <AEDIcon className="inline-block w-4 h-4 mr-2" />{extraPrice.toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -238,8 +241,8 @@ const Calculation: React.FC<CalculationProps> = ({
                 {codFee > 0 && (
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-gray-600 text-sm">Cash on Delivery Fee</span>
-                    <span className="text-orange-600 text-sm">
-                      + AED {codFee.toFixed(2)}
+                    <span className="text-orange-600 text-sm flex items-center">
+                      + <AEDIcon className="inline-block w-4 h-4 mr-2" />{codFee.toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -247,8 +250,8 @@ const Calculation: React.FC<CalculationProps> = ({
                 {/* Sub Total */}
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-gray-600 text-sm">Sub Total</span>
-                  <span className="font-semibold text-gray-800 text-sm">
-                    AED {(totalPrice + extraPrice).toFixed(2)}
+                  <span className="font-semibold text-gray-800 text-sm flex items-center">
+                    <AEDIcon className="inline-block w-4 h-4 mr-2" />{(totalPrice + extraPrice).toFixed(2)}
                   </span>
                 </div>
 
@@ -259,7 +262,7 @@ const Calculation: React.FC<CalculationProps> = ({
                       {appliedOffer.discountType === 'percentage' ? `${appliedOffer.discountValue}%` : `AED ${appliedOffer.discountValue}`} Off ({appliedOffer.code})
                     </span>
                     <span className="text-green-600 text-sm font-semibold">
-                      -AED {discountAmount.toFixed(2)}
+                      -<AEDIcon className="inline-block w-4 h-4 mr-2" />{discountAmount.toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -268,26 +271,22 @@ const Calculation: React.FC<CalculationProps> = ({
                 {codFee > 0 && (
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-gray-600 text-sm">COD Fee</span>
-                    <span className="text-gray-800 text-sm">
-                      AED {codFee.toFixed(2)}
-                    </span>
+                    <span className="text-gray-800 text-sm flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{codFee.toFixed(2)}</span>
                   </div>
                 )}
 
                 {/* VAT */}
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-gray-600 text-sm">VAT (5%)</span>
-                  <span className="text-gray-800 text-sm">
-                    AED {((finalTotal + codFee) * 0.05).toFixed(2)}
-                  </span>
+                  <span className="text-gray-800 text-sm flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{((finalTotal + codFee) * 0.05).toFixed(2)}</span>
                 </div>
 
                 {/* Total to Pay */}
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-base font-semibold text-gray-900">Total to Pay</span>
-                    <span className="text-base font-bold text-gray-800">
-                      AED {(finalTotal + codFee + (finalTotal + codFee) * 0.05).toFixed(2)}
+                    <span className="text-base font-bold text-gray-800 flex items-center">
+                      <AEDIcon className="inline-block w-4 h-4 mr-2" />{(finalTotal + codFee + (finalTotal + codFee) * 0.05).toFixed(2)}
                     </span>
                   </div>
                 </div>

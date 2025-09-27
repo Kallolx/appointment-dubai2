@@ -13,6 +13,11 @@ import Calculation from "./Calculation";
 import { ziinaService } from "@/services/ziinaService";
 import { useToast } from "@/hooks/use-toast";
 
+// Small reusable AED icon component (uses public/aed.svg)
+const AEDIcon = ({ className = "inline-block w-4 h-4 mr-2" }: { className?: string }) => (
+  <img src="/aed.svg" alt="AED" className={className} />
+);
+
 interface Service {
   id: string;
   name: string;
@@ -762,8 +767,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
-                                AED {(item.service.price * item.count).toFixed(2)}
+                              <span className="text-sm font-medium flex items-center">
+                                <AEDIcon className="inline-block w-4 h-4 mr-2" />{(item.service.price * item.count).toFixed(2)}
                               </span>
                               <button
                                 onClick={() => handleRemoveItemClick(item.service.id)}
@@ -868,9 +873,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                             <span className="text-sm text-gray-600">
                               Service Charges
                             </span>
-                            <span className="text-sm">
-                              AED {subtotal.toFixed(2)}
-                            </span>
+                            <span className="text-sm flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{subtotal.toFixed(2)}</span>
                           </div>
 
                           {appliedOffer && calculatedDiscount > 0 && (
@@ -878,9 +881,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                               <span className="text-sm text-green-600">
                                 Discount ({appliedOffer.code})
                               </span>
-                              <span className="text-sm text-green-600">
-                                -AED {calculatedDiscount.toFixed(2)}
-                              </span>
+                              <span className="text-sm text-green-600 flex items-center">-<AEDIcon className="inline-block w-4 h-4 mr-2" />{calculatedDiscount.toFixed(2)}</span>
                             </div>
                           )}
 
