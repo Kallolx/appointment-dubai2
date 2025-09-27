@@ -77,133 +77,387 @@ const App = () => (
           <BrowserRouter>
             <ImpersonationBanner />
             <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Login />} />
-          
-          {/* Public Shared Appointment Route - No authentication required */}
-          <Route path="/shared-appointment/:token" element={<SharedAppointmentView />} />
-          
-          {/* frontend Routes */}
-          <Route path="/" element={<MainLayout />}>
-            <Route path="" element={<Home />} />
-            <Route
-              path="single-category/:category"
-              element={<SingleCategory />}
-            />
-            <Route path="blog-page" element={<BlogPage />} />
-            <Route path="privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="terms" element={<Terms />} />
-            <Route path="faq" element={<FaqPage />} />
-            <Route path="careers" element={<Careers />} />
-            <Route path="sitemap" element={<Sitemap />} />
-          </Route>
-          
-          {/* Order Confirmation - Standalone page with navbar */}
-          <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
-          <Route path="/booking-details/:bookingId" element={<ProtectedRoute><BookingDetails /></ProtectedRoute>} />
-          <Route path="/manage-booking/:bookingId" element={<ProtectedRoute><ManageBooking /></ProtectedRoute>} />
-          <Route path="/customer-support" element={<ProtectedRoute><CustomerSupport /></ProtectedRoute>} />
-          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
-          
-          <Route
-            path="/service/:category"
-            element={<ServiceLayout></ServiceLayout>}
-          />
-          <Route
-            path="/service-item/:serviceSlug"
-            element={<ServiceLayout></ServiceLayout>}
-          />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Login />} />
 
-          {/* Role-based Dashboard Routes */}
-          <Route path="/admin" element={<AdminProtectedRoute><NewAdminDashboard /></AdminProtectedRoute>} />
-          <Route path="/admin/appointments" element={<AdminProtectedRoute><AdminAppointments /></AdminProtectedRoute>} />
-          <Route path="/admin/available-dates" element={<AdminProtectedRoute><AdminAvailableDates /></AdminProtectedRoute>} />
-          <Route path="/admin/time-slots" element={<AdminProtectedRoute><AdminTimeSlots /></AdminProtectedRoute>} />
-          <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
-          <Route path="/admin/managers" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
-          <Route path="/admin/tickets" element={<AppointmentManagement />} />
-          <Route path="/admin/reports" element={<AdminProtectedRoute><AdminReports /></AdminProtectedRoute>} />
-          <Route path="/admin/support" element={<AdminProtectedRoute><AdminSupport /></AdminProtectedRoute>} />
-          <Route path="/admin/profile" element={<AdminProtectedRoute><AdminProfile /></AdminProtectedRoute>} />
-          <Route path="/admin/service-categories" element={<AdminProtectedRoute><ServiceCategoriesManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/service-items" element={<AdminProtectedRoute><ServiceItems /></AdminProtectedRoute>} />
-          <Route path="/admin/service-items-category" element={<AdminProtectedRoute><ServiceItemsCategory /></AdminProtectedRoute>} />
-          <Route path="/admin/property-types" element={<AdminProtectedRoute><PropertyTypesManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/room-types" element={<AdminProtectedRoute><RoomTypesManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/service-pricing" element={<AdminProtectedRoute><ServicePricingManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/content" element={<AdminProtectedRoute><ContentManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/offer-codes" element={<AdminProtectedRoute><OfferCodesManagement /></AdminProtectedRoute>} />
-          <Route path="/administrator/website" element={<SuperAdminProtectedRoute><WebsiteSettings /></SuperAdminProtectedRoute>} />
+              {/* Public Shared Appointment Route - No authentication required */}
+              <Route
+                path="/shared-appointment/:token"
+                element={<SharedAppointmentView />}
+              />
 
-          {/* Admin Dashboard - Redirect to role-based */}
+              {/* frontend Routes */}
+              <Route path="/" element={<MainLayout />}>
+                <Route path="" element={<RedirectToPestControl />} />
+                <Route
+                  path="single-category/:category"
+                  element={<SingleCategory />}
+                />
+                <Route path="blog-page" element={<BlogPage />} />
+                <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="terms" element={<Terms />} />
+                <Route path="faq" element={<FaqPage />} />
+                <Route path="careers" element={<Careers />} />
+                <Route path="sitemap" element={<Sitemap />} />
+              </Route>
 
-          {/* Super Admin Routes */}
-          <Route path="/administrator" element={<SuperAdminProtectedRoute><SuperAdminDashboard /></SuperAdminProtectedRoute>} />
-          <Route path="/administrator/apis" element={<SuperAdminProtectedRoute><SuperAdminApiConfig /></SuperAdminProtectedRoute>} />
-          <Route path="/administrator/users" element={<SuperAdminProtectedRoute><SuperAdminUserManagement /></SuperAdminProtectedRoute>} />
-          <Route path="/administrator/profile" element={<SuperAdminProtectedRoute><SuperAdminProfile /></SuperAdminProtectedRoute>} />
+              {/* Order Confirmation - Standalone page with navbar */}
+              <Route
+                path="/order-confirmation"
+                element={
+                  <ProtectedRoute>
+                    <OrderConfirmation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/booking-details/:bookingId"
+                element={
+                  <ProtectedRoute>
+                    <BookingDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/manage-booking/:bookingId"
+                element={
+                  <ProtectedRoute>
+                    <ManageBooking />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/customer-support"
+                element={
+                  <ProtectedRoute>
+                    <CustomerSupport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/payment-cancelled" element={<PaymentCancelled />} />
 
-          <Route path="/manager" element={<ManagerDashboard />} />
-          <Route
-            path="/manager/appointments"
-            element={<AppointmentManagement />}
-          />
-          <Route path="/manager/services" element={<ServiceAreas />} />
-          <Route path="/manager/tickets" element={<AppointmentManagement />} />
-          <Route path="/manager/reports" element={<Dashboard />} />
-          <Route path="/manager/profile" element={<ProfileSettings />} />
+              <Route
+                path="/service/:category"
+                element={<ServiceLayout></ServiceLayout>}
+              />
+              <Route
+                path="/service-item/:serviceSlug"
+                element={<ServiceLayout></ServiceLayout>}
+              />
 
-          <Route path="/user" element={<ProtectedRoute><NewUserDashboard /></ProtectedRoute>} />
-          <Route path="/user/bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-          <Route path="/user/locations" element={<ProtectedRoute><UserLocations /></ProtectedRoute>} />
-          <Route path="/user/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
-          <Route path="/user/addresses" element={<ProtectedRoute><MyAddresses /></ProtectedRoute>} />
-          <Route path="/user/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-          <Route path="/user/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              {/* Role-based Dashboard Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminProtectedRoute>
+                    <NewAdminDashboard />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/appointments"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminAppointments />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/available-dates"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminAvailableDates />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/time-slots"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminTimeSlots />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminUsers />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/managers"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminUsers />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/tickets"
+                element={<AppointmentManagement />}
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminReports />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/support"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminSupport />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/profile"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminProfile />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/service-categories"
+                element={
+                  <AdminProtectedRoute>
+                    <ServiceCategoriesManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/service-items"
+                element={
+                  <AdminProtectedRoute>
+                    <ServiceItems />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/service-items-category"
+                element={
+                  <AdminProtectedRoute>
+                    <ServiceItemsCategory />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/property-types"
+                element={
+                  <AdminProtectedRoute>
+                    <PropertyTypesManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/room-types"
+                element={
+                  <AdminProtectedRoute>
+                    <RoomTypesManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/service-pricing"
+                element={
+                  <AdminProtectedRoute>
+                    <ServicePricingManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/content"
+                element={
+                  <AdminProtectedRoute>
+                    <ContentManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/offer-codes"
+                element={
+                  <AdminProtectedRoute>
+                    <OfferCodesManagement />
+                  </AdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/administrator/website"
+                element={
+                  <SuperAdminProtectedRoute>
+                    <WebsiteSettings />
+                  </SuperAdminProtectedRoute>
+                }
+              />
 
-          {/* Legacy Dashboard Routes - Redirect to role-based */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route
-            path="/dashboard/appointments"
-            element={<AppointmentManagement />}
-          />
-          <Route
-            path="/dashboard/my-appointments"
-            element={<AppointmentManagement />}
-          />
-          <Route path="/dashboard/addresses" element={<ProfileSettings />} />
-          <Route
-            path="/dashboard/support"
-            element={<AppointmentManagement />}
-          />
-          <Route path="/dashboard/profile" element={<ProfileSettings />} />
-          <Route path="/dashboard/services" element={<ServiceAreas />} />
-          <Route
-            path="/dashboard/tickets"
-            element={<AppointmentManagement />}
-          />
-          <Route path="/dashboard/reports" element={<Dashboard />} />
-          <Route path="/dashboard/slots" element={<AppointmentManagement />} />
+              {/* Admin Dashboard - Redirect to role-based */}
 
-          {/* Super Admin Routes */}
-          <Route path="/dashboard/roles" element={<RoleManagement />} />
-          <Route
-            path="/dashboard/website-settings"
-          />
-          <Route
-            path="/dashboard/api-credentials"
-            element={<ApiCredentials />}
-          />
-          <Route path="/dashboard/service-areas" element={<ServiceAreas />} />
-          <Route path="/dashboard/system" element={<SystemSettings />} />
+              {/* Super Admin Routes */}
+              <Route
+                path="/administrator"
+                element={
+                  <SuperAdminProtectedRoute>
+                    <SuperAdminDashboard />
+                  </SuperAdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/administrator/apis"
+                element={
+                  <SuperAdminProtectedRoute>
+                    <SuperAdminApiConfig />
+                  </SuperAdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/administrator/users"
+                element={
+                  <SuperAdminProtectedRoute>
+                    <SuperAdminUserManagement />
+                  </SuperAdminProtectedRoute>
+                }
+              />
+              <Route
+                path="/administrator/profile"
+                element={
+                  <SuperAdminProtectedRoute>
+                    <SuperAdminProfile />
+                  </SuperAdminProtectedRoute>
+                }
+              />
 
-          {/* Fallback Admin Route */}
-          <Route path="/administrator" element={<AdminProtectedRoute><NewAdminDashboard /></AdminProtectedRoute>} />
+              <Route path="/manager" element={<ManagerDashboard />} />
+              <Route
+                path="/manager/appointments"
+                element={<AppointmentManagement />}
+              />
+              <Route path="/manager/services" element={<ServiceAreas />} />
+              <Route
+                path="/manager/tickets"
+                element={<AppointmentManagement />}
+              />
+              <Route path="/manager/reports" element={<Dashboard />} />
+              <Route path="/manager/profile" element={<ProfileSettings />} />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+              <Route
+                path="/user"
+                element={
+                  <ProtectedRoute>
+                    <NewUserDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/bookings"
+                element={
+                  <ProtectedRoute>
+                    <MyBookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/locations"
+                element={
+                  <ProtectedRoute>
+                    <UserLocations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/appointments"
+                element={
+                  <ProtectedRoute>
+                    <MyAppointments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/addresses"
+                element={
+                  <ProtectedRoute>
+                    <MyAddresses />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/support"
+                element={
+                  <ProtectedRoute>
+                    <Support />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Legacy Dashboard Routes - Redirect to role-based */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route
+                path="/dashboard/appointments"
+                element={<AppointmentManagement />}
+              />
+              <Route
+                path="/dashboard/my-appointments"
+                element={<AppointmentManagement />}
+              />
+              <Route
+                path="/dashboard/addresses"
+                element={<ProfileSettings />}
+              />
+              <Route
+                path="/dashboard/support"
+                element={<AppointmentManagement />}
+              />
+              <Route path="/dashboard/profile" element={<ProfileSettings />} />
+              <Route path="/dashboard/services" element={<ServiceAreas />} />
+              <Route
+                path="/dashboard/tickets"
+                element={<AppointmentManagement />}
+              />
+              <Route path="/dashboard/reports" element={<Dashboard />} />
+              <Route
+                path="/dashboard/slots"
+                element={<AppointmentManagement />}
+              />
+
+              {/* Super Admin Routes */}
+              <Route path="/dashboard/roles" element={<RoleManagement />} />
+              <Route path="/dashboard/website-settings" />
+              <Route
+                path="/dashboard/api-credentials"
+                element={<ApiCredentials />}
+              />
+              <Route
+                path="/dashboard/service-areas"
+                element={<ServiceAreas />}
+              />
+              <Route path="/dashboard/system" element={<SystemSettings />} />
+
+              {/* Fallback Admin Route */}
+              <Route
+                path="/administrator"
+                element={
+                  <AdminProtectedRoute>
+                    <NewAdminDashboard />
+                  </AdminProtectedRoute>
+                }
+              />
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
         </TooltipProvider>
       </GoogleMapsProvider>
     </AuthProvider>

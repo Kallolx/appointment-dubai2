@@ -123,20 +123,22 @@ const Navbar: React.FC = () => {
   };
 
   const MobileDrawer = () => {
-    const [expandedServices, setExpandedServices] = useState<{ [key: string]: boolean }>({});
+    const [expandedServices, setExpandedServices] = useState<{
+      [key: string]: boolean;
+    }>({});
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     const toggleService = (category: string) => {
-      setExpandedServices(prev => ({
+      setExpandedServices((prev) => ({
         ...prev,
-        [category]: !prev[category]
+        [category]: !prev[category],
       }));
     };
 
     return (
       <>
         {/* Dark overlay background */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -144,22 +146,22 @@ const Navbar: React.FC = () => {
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
-        
+
         {/* Mobile menu drawer - 80% width */}
-        <motion.div 
+        <motion.div
           initial={{ x: "-100%" }}
           animate={{ x: 0 }}
           exit={{ x: "-100%" }}
-          transition={{ 
-            type: "spring", 
-            damping: 25, 
+          transition={{
+            type: "spring",
+            damping: 25,
             stiffness: 200,
-            duration: 0.4
+            duration: 0.4,
           }}
           className="fixed left-0 top-0 h-full w-4/5 bg-white z-50 lg:hidden shadow-2xl"
         >
           {/* Close button positioned absolutely at top-right corner */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(false)}
             className="absolute top-0 right-0 w-6 h-6 bg-red-500 flex items-center justify-center z-10"
           >
@@ -170,8 +172,8 @@ const Navbar: React.FC = () => {
           <div className="flex flex-col">
             {/* Home */}
             <div className="border-b border-gray-200">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
               >
@@ -201,124 +203,169 @@ const Navbar: React.FC = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center justify-between w-full px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors"
                 >
-                  <span className="font-semibold text-sm">{user?.fullName?.split(" ")[0] || "User"}</span>
-                  <motion.div
-                    animate={{ rotate: isUserMenuOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <span className="font-semibold text-sm">
+                    {user?.fullName?.split(" ")[0] || "User"}
+                  </span>
+                  <div>
                     <ChevronDown className="w-4 h-4" />
-                  </motion.div>
+                  </div>
                 </button>
-                
-                <AnimatePresence>
-                  {isUserMenuOpen && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-gray-50 overflow-hidden"
-                    >
-                      <Link
-                        to="/user/bookings"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
-                      >
-                        My Bookings
-                      </Link>
-                      <Link
-                        to="/user/profile"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
-                      >
-                        My Profile
-                      </Link>
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="block w-full text-left px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
-                      >
-                        Logout
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             )}
 
-                        {/* Service Categories */}
-            {services.flat().map((service, index) => (
-              <div key={index} className="border-b border-gray-200">
-                <button
-                  onClick={() => toggleService(service.category)}
-                  className="flex items-center justify-between w-full px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors"
+            {/* Mobile: show user-related links instead of service categories */}
+            {isAuthenticated ? (
+              <div className="border-b border-gray-200">
+                <Link
+                  to="/user/bookings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
                 >
-                  <span className="text-sm">{service.category}</span>
-                  <motion.div
-                    animate={{ rotate: expandedServices[service.category] ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.div>
+                  My Bookings
+                </Link>
+                <Link
+                  to="/user/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  My Profile
+                </Link>
+                <Link
+                  to="/user/bookings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Outstanding payments
+                </Link>
+                <Link
+                  to="/user/locations"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Saved Locations
+                </Link>
+                <Link
+                  to="/user/bookings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Payment Methods
+                </Link>
+                <Link
+                  to="/user/support"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Support
+                </Link>
+                <Link
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-5 py-3 text-red-600 hover:bg-gray-50 transition-colors text-sm"
+                  to={""}
+                >
+                  Delete Account
+                </Link>
+
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Logout
                 </button>
-                
-                <AnimatePresence>
-                  {expandedServices[service.category] && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-gray-50 overflow-hidden"
-                    >
-                      {service.items.map((item, itemIndex) => (
-                        <Link
-                          key={itemIndex}
-                          to={`/services/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block px-8 py-2.5 text-gray-700 hover:bg-gray-100 transition-colors text-xs"
-                        >
-                          {item}
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
-            ))}
-        </div>
-      </motion.div>
-    </>
-  );
-};
+            ) : // keep original behaviour for unauthenticated users; no categories shown on mobile
+            null}
+          </div>
+        </motion.div>
+      </>
+    );
+  };
 
   return (
-    <div className="border-b border-[#01788e] md:border-gray-200 md:shadow-md bg-white sticky top-0 z-40">
+    <div className="sticky top-0 border-b border-[#01788e] md:border-gray-200 md:shadow-md bg-white z-40">
       <div className="container mx-auto px-4 2xl:max-w-[1600px]">
         <header className="w-full py-3 flex items-center justify-between">
-          <div className="flex items-center gap-8 lg:hidden">
+          <div className="flex items-center gap-4 lg:hidden w-full relative">
             <button onClick={() => setMobileMenuOpen(true)}>
               <Menu className="w-5 h-5 text-gray-600" />
             </button>
+
             <Link to="/">
-              <img 
-                src={settings.logo_url} 
-                alt={settings.site_name} 
+              <img
+                src={settings.logo_url}
+                alt={settings.site_name}
                 className="h-8"
                 onError={(e) => {
                   e.currentTarget.src = "/logo.svg";
                 }}
               />
             </Link>
+
+            {/* Always-visible login/profile on small screens */}
+            <div className="ml-auto">
+              {isAuthenticated ? (
+                <div className="relative inline-block">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="rounded-sm px-3 py-1 flex items-center gap-2 h-9 border border-gray-400 bg-white hover:bg-gray-100 transition-colors text-sm text-[#047a8f]"
+                    title={user?.fullName || "Account"}
+                  >
+                    <span className="text-sm font-medium max-w-20 truncate">
+                      {user?.fullName?.split(" ")[0] || "User"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-[#047a8f]" />
+                  </button>
+
+                  {/* Mobile profile dropdown (restored) */}
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <div className="py-2">
+                        <Link
+                          to="/user/bookings"
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          My Bookings
+                        </Link>
+                        <Link
+                          to="/user/profile"
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          My Profile
+                        </Link>
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsProfileOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setLoginModalOpen(true)}
+                  className="px-3 py-1 rounded-sm text-sm font-semibold"
+                >
+                  Login
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
             <Link to="/">
-              <img 
-                src={settings.logo_url} 
-                alt={settings.site_name} 
+              <img
+                src={settings.logo_url}
+                alt={settings.site_name}
                 className="h-9"
                 onError={(e) => {
                   e.currentTarget.src = "/logo.svg";
@@ -326,7 +373,7 @@ const Navbar: React.FC = () => {
               />
             </Link>
 
-            <div className="relative">
+            <div className="ml-auto">
               <button
                 onClick={() => setIsServicesOpen(!isServicesOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -350,14 +397,17 @@ const Navbar: React.FC = () => {
                   >
                     <X className="w-3 h-3 text-white" />
                   </button>
-                  
+
                   {/* Content with padding to avoid close button */}
                   <div className="pt-8 px-6 pb-6 pr-12">
                     <div className="grid grid-cols-4 gap-0">
                       {services.map((column, columnIndex) => (
                         <div key={columnIndex} className="px-3">
                           {column.map((serviceGroup, groupIndex) => (
-                            <div key={groupIndex} className={groupIndex > 0 ? "mt-4" : ""}>
+                            <div
+                              key={groupIndex}
+                              className={groupIndex > 0 ? "mt-4" : ""}
+                            >
                               <h4 className="font-bold text-gray-600 mb-1 text-sm">
                                 {serviceGroup.category}
                               </h4>
@@ -400,7 +450,6 @@ const Navbar: React.FC = () => {
                     </span>
                     <ChevronDown className="w-4 h-4 text-[#047a8f]" />
                   </button>
-
                   {isProfileOpen && (
                     <div className="absolute right-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
                       <div className="py-2">
@@ -432,7 +481,7 @@ const Navbar: React.FC = () => {
                   )}
                 </div>
 
-                <div className="hidden lg:flex items-center ml-3">
+                <div className="flex items-center ml-3">
                   <div className="h-9 w-0.5 bg-gray-300" />
                   <div className="flex items-center px-3 py-1 rounded-md text-orange-600 text-sm">
                     <div className="flex-shrink-0 mr-3 flex items-center">
@@ -451,7 +500,7 @@ const Navbar: React.FC = () => {
               <div>
                 <button
                   onClick={() => setLoginModalOpen(true)}
-                  className="hidden md:block px-5 py-1 shadow-sm rounded-sm text-md font-semibold"
+                  className="px-5 py-1 shadow-sm rounded-sm text-md font-semibold"
                 >
                   Login
                 </button>
@@ -461,9 +510,7 @@ const Navbar: React.FC = () => {
         </header>
       </div>
 
-      <AnimatePresence>
-        {mobileMenuOpen && <MobileDrawer />}
-      </AnimatePresence>
+      <AnimatePresence>{mobileMenuOpen && <MobileDrawer />}</AnimatePresence>
       {isLoginModalOpen && <LoginModal setLoginModalOpen={setLoginModalOpen} />}
     </div>
   );

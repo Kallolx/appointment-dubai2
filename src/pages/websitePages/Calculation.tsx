@@ -38,10 +38,9 @@ const Calculation: React.FC<CalculationProps> = ({
   selectedDateTime,
   nextStep,
   hasItems = false,
-  handleAddItemsClick,
-  handleRemoveItemClick,
   selectedPayment,
   handleBookNow,
+  handleRemoveItemClick,
   currentStep,
   discountAmount = 0,
   appliedOffer = null,
@@ -146,7 +145,7 @@ const Calculation: React.FC<CalculationProps> = ({
       <div className="md:hidden w-full">
         {/* Slide-Up Drawer */}
         <div
-          className={`fixed bottom-12 left-0 right-0 bg-white transition-transform duration-300 transform max-h-[70vh] overflow-y-auto rounded-t-xl shadow-lg z-[60] ${
+          className={`fixed bottom-12 left-0 right-0 bg-white transition-transform duration-300 transform max-h-[70vh] overflow-y-auto rounded-t-xl shadow-lg ${
             showDrawer ? "translate-y-0" : "translate-y-full"
           }`}
           style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.1)" }}
@@ -172,17 +171,45 @@ const Calculation: React.FC<CalculationProps> = ({
             {Object.values(cartItems).length > 0 ? (
               <>
                 {/* Main Items */}
-                {Object.values(cartItems).map((item, index) => (
+                {Object.values(cartItems).map((item) => (
                   <div
-                    key={index}
+                    key={item.id}
                     className="flex justify-between items-center mb-2"
                   >
-                    <span className="text-gray-800 text-sm">
-                      {item.title || item.name} x {item.count}
-                    </span>
-                    <span className="font-semibold text-gray-800 text-sm">
-                      AED {getServicePrice(item).toFixed(2)}
-                    </span>
+                    <div className="flex-1">
+                      <span className="text-gray-800 text-sm">
+                        {item.title || item.name} x {item.count}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-800 text-sm">
+                        AED {getServicePrice(item).toFixed(2)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // call parent handler to decrement/remove
+                          handleRemoveItemClick && handleRemoveItemClick(item.id);
+                          // if this was the last item in the cart, also clear persisted storage and close the drawer
+                          const keys = Object.keys(cartItems);
+                          if (keys.length === 1 && item.count === 1) {
+                            try {
+                              localStorage.removeItem('checkout_cart_items');
+                              localStorage.removeItem('pendingCartItems');
+                              localStorage.setItem('checkout_cart_cleared', String(Date.now()));
+                            } catch (e) {
+                              // ignore
+                            }
+                            setShowDrawer(false);
+                          }
+                        }}
+                        className="p-1.5 rounded hover:bg-gray-100 text-red-600"
+                        title="Remove item"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
 
@@ -273,30 +300,9 @@ const Calculation: React.FC<CalculationProps> = ({
           </div>
         </div>
 
-        {/* Tabby Installment Info - Behind Summary Section */}
-        <div className="fixed bottom-[65px] left-0 right-0 bg-white px-6 py-5 border-t border-gray-200 z-[59]">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-700 font-medium text-sm">
-              AED{" "}
-              {(
-                (finalTotal + codFee + (finalTotal + codFee) * 0.05) /
-                4
-              ).toFixed(2)}
-              /month{" "}
-              <span className="text-gray-500 font-normal">
-                for 4 months with
-              </span>
-            </span>
-            <span className="flex items-center gap-1">
-              <img src="/icons/tabby.svg" alt="Tabby" className="h-5" />
-              <Info className="w-4 h-4 text-gray-600" />
-            </span>
-          </div>
-        </div>
-
         {/* Bottom Total Bar */}
         <div
-          className="fixed bottom-0 left-0 right-0 bg-white px-4 py-3 flex items-center justify-between z-[70]"
+          className="fixed bottom-0 left-0 right-0 bg-white px-4 py-3 flex items-center justify-between"
           style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.1)" }}
         >
           <div

@@ -154,6 +154,27 @@ const StepOne = ({
     },
   });
 
+  // Fetch all service pricing (used for search panel showing room types/pricing)
+  const {
+    data: allPricing = [],
+    isLoading: allPricingLoading,
+    error: allPricingError,
+  } = useQuery({
+    queryKey: ["service-pricing-all"],
+    queryFn: async () => {
+      try {
+        const resp = await fetch(buildApiUrl('/api/service-pricing'));
+        if (!resp.ok) throw new Error('Failed to fetch pricing');
+        const data = await resp.json();
+        return data;
+      } catch (e) {
+        console.warn('service-pricing-all error', e);
+        return [];
+      }
+    },
+    enabled: true,
+  });
+
   // No initial selection - let user choose
   // useEffect(() => {
   //   if (categories.length > 0 && !selected) {
@@ -593,10 +614,81 @@ const StepOne = ({
                 placeholder="Search services..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setSearchOpen(true)}
-                onBlur={() => setSearchOpen(false)}
+                onClick={() => setSearchOpen(true)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+
+              {/* Inline pricing/search panel (appears when search is opened) */}
+              {searchOpen && (
+                <div className="absolute left-0 right-0 mt-2 bg-white border border-[#cddcdc] rounded shadow-lg z-40 max-h-[420px] overflow-y-auto">
+                  <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                    <div className="text-sm text-gray-700">Select room type</div>
+                    <button onClick={() => setSearchOpen(false)} className="text-gray-500 hover:text-gray-800">Close</button>
+                  </div>
+
+                  {allPricing.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">No room types available</div>
+                  ) : (
+                    allPricing.map((p) => {
+                      // Build a consistent service id key similar to the modal output
+                      const serviceId = `${(p.property_type_slug || 'property')}-${p.room_type_slug}-${(p.category_slug || '').replace(/\s+/g, '')}`;
+                      const qty = (cartItems && cartItems[serviceId] && cartItems[serviceId].count) || 0;
+                      const serviceObj = {
+                        id: serviceId,
+                        title: p.room_type_name,
+                        name: p.room_type_name,
+                        description: p.room_description || '',
+                        price: p.price,
+                        discount_price: p.discount_price ?? null,
+                        image: p.room_image || '',
+                        room_type_id: p.room_type_id,
+                        room_type_slug: p.room_type_slug,
+                        category: p.category_name || category || '',
+                        category_slug: p.category_slug || '',
+                      };
+
+                      return (
+                        <div key={p.id} className="flex gap-4 items-start p-3 border-b last:border-b-0">
+                          <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                            <img src={p.room_image || '/steps/apart/1.png'} alt={p.room_type_name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-800">{p.room_type_name}</h4>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{p.room_description || ''}</p>
+                            <div className="text-sm text-gray-700 mt-2">AED {p.discount_price ?? p.price}</div>
+                          </div>
+                          <div className="flex flex-col items-end justify-between">
+                            {qty > 0 ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleRemoveItemClick && handleRemoveItemClick(serviceId)}
+                                  className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
+                                >
+                                  −
+                                </button>
+                                <span className="min-w-[24px] text-center">{qty}</span>
+                                <button
+                                  onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                                  className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                                className="px-3 py-1.5 border border-[#01788e] text-[#01788e] rounded text-sm"
+                              >
+                                ADD +
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           </div>
           {serviceItemLoading ? (
@@ -613,11 +705,11 @@ const StepOne = ({
                   className="w-full h-full object-cover"
                 />
                 {/* Mobile Header Icons - Overlay on Hero Image */}
-                <div className="md:hidden absolute top-4 left-4 right-4 flex items-center justify-between">
+                  <div className="md:hidden absolute top-4 left-4 right-4 flex items-center justify-between">
                   <button className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
                     <ChevronLeft className="w-5 h-5 text-black" />
                   </button>
-                  <button className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                  <button onClick={() => setSearchOpen(true)} className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
                     <Search className="w-5 h-5 text-black" />
                   </button>
                 </div>
@@ -660,7 +752,7 @@ const StepOne = ({
                   <button className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
                     <ChevronLeft className="w-5 h-5 text-white" />
                   </button>
-                  <button className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                  <button onClick={() => setSearchOpen(true)} className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
                     <Search className="w-5 h-5 text-white" />
                   </button>
                 </div>
@@ -690,6 +782,101 @@ const StepOne = ({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Mobile compact bottom-sheet search results (appears on mobile and sits above bottom bar) */}
+      {searchOpen && (
+        <div className="md:hidden fixed left-3 right-3 bottom-[72px] z-50 bg-white rounded-t-lg shadow-lg max-h-[55vh] overflow-y-auto">
+          <div className="p-3 border-b flex items-center gap-3">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search room types..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
+            />
+            <button
+              onClick={() => setSearchOpen(false)}
+              className="px-3 py-2 text-sm text-gray-600"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="p-2">
+            {allPricing.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">No room types available</div>
+            ) : (
+              allPricing
+                .filter((p) => {
+                  if (!searchTerm) return true;
+                  const q = searchTerm.toLowerCase();
+                  return (
+                    (p.room_type_name || "").toLowerCase().includes(q) ||
+                    (p.room_description || "").toLowerCase().includes(q) ||
+                    (p.category_name || "").toLowerCase().includes(q)
+                  );
+                })
+                .map((p) => {
+                  const serviceId = `${(p.property_type_slug || 'property')}-${p.room_type_slug}-${(p.category_slug || '').replace(/\s+/g, '')}`;
+                  const qty = (cartItems && cartItems[serviceId] && cartItems[serviceId].count) || 0;
+                  const serviceObj = {
+                    id: serviceId,
+                    title: p.room_type_name,
+                    name: p.room_type_name,
+                    description: p.room_description || '',
+                    price: p.price,
+                    discount_price: p.discount_price ?? null,
+                    image: p.room_image || '',
+                    room_type_id: p.room_type_id,
+                    room_type_slug: p.room_type_slug,
+                    category: p.category_name || category || '',
+                    category_slug: p.category_slug || '',
+                  };
+
+                  return (
+                    <div key={p.id} className="flex gap-3 items-start p-2 border-b last:border-b-0">
+                      <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                        <img src={p.room_image || '/steps/apart/1.png'} alt={p.room_type_name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm text-gray-800">{p.room_type_name}</h4>
+                        <div className="text-xs text-gray-600 line-clamp-2">{p.room_description || ''}</div>
+                        <div className="text-sm text-gray-700 mt-1">AED {p.discount_price ?? p.price}</div>
+                      </div>
+                      <div className="flex flex-col items-end justify-center">
+                        {qty > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleRemoveItemClick && handleRemoveItemClick(serviceId)}
+                              className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
+                            >
+                              −
+                            </button>
+                            <span className="min-w-[24px] text-center">{qty}</span>
+                            <button
+                              onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                              className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                            className="px-3 py-1.5 border border-[#01788e] text-[#01788e] rounded text-sm"
+                          >
+                            ADD +
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+            )}
+          </div>
         </div>
       )}
 

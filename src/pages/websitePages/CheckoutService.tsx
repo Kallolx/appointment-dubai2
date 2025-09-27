@@ -198,6 +198,12 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
       // Clear localStorage
       localStorage.removeItem('checkout_cart_items');
       localStorage.removeItem('pendingCartItems');
+      // Mark that the user intentionally cleared the cart so a refresh won't restore it
+      try {
+        localStorage.setItem('checkout_cart_cleared', String(Date.now()));
+      } catch (e) {
+        // ignore
+      }
       // Clear React state immediately
       setCartItems({});
       // Also clear any applied offers
@@ -216,6 +222,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
   const saveCartToStorage = (cartData: Record<string, CartItem>) => {
     try {
       localStorage.setItem('checkout_cart_items', JSON.stringify(cartData));
+      // If we're saving a new cart, remove the cleared flag so future loads can restore
+      localStorage.removeItem('checkout_cart_cleared');
       console.log('Cart saved to localStorage');
     } catch (error) {
       console.error('Failed to save cart:', error);
@@ -224,6 +232,19 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
 
   const loadCartFromStorage = (): Record<string, CartItem> => {
     try {
+      // If user recently cleared the cart, don't restore anything
+      const cleared = localStorage.getItem('checkout_cart_cleared');
+      if (cleared) {
+        try {
+          localStorage.removeItem('checkout_cart_items');
+          localStorage.removeItem('pendingCartItems');
+        } catch (e) {}
+        // remove the flag so it doesn't block future legitimate restores
+        try {
+          localStorage.removeItem('checkout_cart_cleared');
+        } catch (e) {}
+        return {};
+      }
       const saved = localStorage.getItem('checkout_cart_items');
       const pending = localStorage.getItem('pendingCartItems');
       
@@ -256,8 +277,19 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
 
   // Save cart to localStorage whenever cartItems changes (but not after booking completion)
   useEffect(() => {
-    if (Object.keys(cartItems).length > 0 && !bookingCompleted) {
-      saveCartToStorage(cartItems);
+    if (!bookingCompleted) {
+      if (Object.keys(cartItems).length > 0) {
+        saveCartToStorage(cartItems);
+      } else {
+        // Cart is empty -> remove persisted keys so refresh won't restore old data
+        try {
+          localStorage.removeItem('checkout_cart_items');
+          localStorage.removeItem('pendingCartItems');
+          localStorage.setItem('checkout_cart_cleared', String(Date.now()));
+        } catch (e) {
+          // ignore
+        }
+      }
     }
   }, [cartItems, bookingCompleted]);
 
@@ -734,9 +766,9 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                                 AED {(item.service.price * item.count).toFixed(2)}
                               </span>
                               <button
-                                onClick={() => handleRemoveItemCompletely(item.service.id)}
+                                onClick={() => handleRemoveItemClick(item.service.id)}
                                 className="hover:bg-gray-100 border border-gray-300 rounded"
-                                title="Remove item"
+                                title="Remove 1"
                               >
                                 <X className="w-3 h-3 text-black hover:text-red-600" />
                               </button>
@@ -914,8 +946,6 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
                       </div>
                     </div>
                   </div>
-
-                  {/* Tabby Installment Info removed as per request */}
                 </div>
               </div>
             </div>
@@ -950,6 +980,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
             nextStep={nextStep}
             hasItems={hasItems}
             selectedPayment={selectedPayment}
+            handleRemoveItemClick={handleRemoveItemClick}
             handleBookNow={handleBookNow}
             currentStep={step}
             discountAmount={calculatedDiscount}
