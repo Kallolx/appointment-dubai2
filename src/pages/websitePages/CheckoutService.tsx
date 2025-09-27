@@ -75,6 +75,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [showOfferInput, setShowOfferInput] = useState(false);
   const [bookingCompleted, setBookingCompleted] = useState(false);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
   
   const auth = useAuth();
   const { toast } = useToast();
@@ -505,25 +506,38 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     }
   };
 
+  // Callback to handle cart items update from StepFour
+  const handleCartItemsUpdate = (updatedItems) => {
+    setCartItems(updatedItems);
+    // Also update localStorage to maintain persistence
+    localStorage.setItem("cartItems", JSON.stringify(updatedItems));
+  };
+
   const handleBookNow = async () => {
+    setIsBookingLoading(true);
+    
     if (!selectedPayment) {
       console.log("Please select a payment method");
+      setIsBookingLoading(false);
       return;
     }
 
     if (!auth.isAuthenticated) {
       console.log("Please log in to book an appointment");
       setLoginModalOpen(true);
+      setIsBookingLoading(false);
       return;
     }
 
     if (!selectedDateTime.date || !selectedDateTime.time) {
       console.log("Please select date and time for your appointment");
+      setIsBookingLoading(false);
       return;
     }
 
     if (!selectedAddress) {
       console.log("Please select a service address");
+      setIsBookingLoading(false);
       return;
     }
 
@@ -626,6 +640,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
     } catch (error) {
       console.error("Error creating appointment:", error);
       console.log("Failed to create appointment. Please try again.");
+    } finally {
+      setIsBookingLoading(false);
     }
   };
 
@@ -669,6 +685,8 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
               setAppliedOffer(offer);
               setDiscountAmount(discount);
             }}
+            onCartItemsChange={handleCartItemsUpdate}
+            isBookingLoading={isBookingLoading}
           />
         );
       default:
@@ -986,6 +1004,7 @@ const CheckoutService = ({ category, serviceSlug }: CheckoutServiceProps) => {
             currentStep={step}
             discountAmount={calculatedDiscount}
             appliedOffer={appliedOffer}
+            isBookingLoading={isBookingLoading}
           />
         </div>
       </div>

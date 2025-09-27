@@ -36,6 +36,7 @@ interface CalculationProps {
   currentStep?: number; // Add current step number
   discountAmount?: number; // Add discount amount prop
   appliedOffer?: any; // Add applied offer prop
+  isBookingLoading?: boolean; // Add loading state for booking process
 }
 
 const Calculation: React.FC<CalculationProps> = ({
@@ -49,6 +50,7 @@ const Calculation: React.FC<CalculationProps> = ({
   currentStep,
   discountAmount = 0,
   appliedOffer = null,
+  isBookingLoading = false,
 }) => {
   const { professional, date, time } = selectedDateTime || {};
   const [showDrawer, setShowDrawer] = useState(false);
@@ -323,15 +325,23 @@ const Calculation: React.FC<CalculationProps> = ({
 
           <button
             onClick={currentStep === 4 ? handleBookNow : nextStep}
-            disabled={!hasItems || (currentStep === 4 && !selectedPayment)}
+            disabled={!hasItems || (currentStep === 4 && !selectedPayment) || (currentStep === 4 && isBookingLoading)}
             className={`ml-4 px-12 py-2 flex items-center justify-center gap-2 text-white text-lg font-semibold ${
-              hasItems && (currentStep !== 4 || selectedPayment)
+              hasItems && (currentStep !== 4 || selectedPayment) && !(currentStep === 4 && isBookingLoading)
                 ? "bg-primary hover:bg-orange-600"
                 : "bg-primary opacity-50 cursor-not-allowed"
             }`}
           >
-            NEXT
-            <ArrowRight className="w-5 h-5" />
+            {currentStep === 4 && isBookingLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </>
+            ) : (
+              <>
+                NEXT
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
           </button>
         </div>
       </div>

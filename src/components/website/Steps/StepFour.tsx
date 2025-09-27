@@ -33,6 +33,8 @@ const StepFour = ({
   appliedOffer = null,
   discountAmount = 0,
   onOfferChange = (offer, discount) => {},
+  onCartItemsChange = (items) => {},
+  isBookingLoading = false,
 }) => {
   // helper to make labels nicer
   const formatLabel = (s) => {
@@ -570,6 +572,7 @@ const StepFour = ({
                               return li;
                             }).filter(li => (li.count || 1) > 0);
                             setLocalItems(updated);
+                            onCartItemsChange(updated);
                             try {
                               localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
                               localStorage.setItem('pendingCartItems', JSON.stringify(updated));
@@ -595,6 +598,7 @@ const StepFour = ({
                               return li;
                             });
                             setLocalItems(updated);
+                            onCartItemsChange(updated);
                             try {
                               localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
                               localStorage.setItem('pendingCartItems', JSON.stringify(updated));
@@ -612,6 +616,7 @@ const StepFour = ({
                             e.stopPropagation();
                             const updated = localItems.filter((li) => (li.service.id || li.service.serviceId) !== (item.service.id || item.service.serviceId));
                             setLocalItems(updated);
+                            onCartItemsChange(updated);
                             try {
                               localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
                               localStorage.setItem('pendingCartItems', JSON.stringify(updated));
