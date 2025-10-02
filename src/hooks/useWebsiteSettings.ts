@@ -42,7 +42,7 @@ export const useWebsiteSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        // Always use buildApiUrl, which is set to https://vewadmin.com
+        // Always use buildApiUrl, which is set to https://backend.mpcpest.ae
         const response = await fetch(buildApiUrl('/api/website-settings'));
         if (!response.ok) {
           throw new Error('Failed to fetch website settings');

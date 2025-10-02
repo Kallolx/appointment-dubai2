@@ -29,26 +29,55 @@ const StepThree = ({ onSelectionChange, category }) => {
             if (foundCategory) {
               categoryId = foundCategory.id;
             }
+            console.log('🔍 StepThree - Available categories:', categoriesData.map(c => ({id: c.id, name: c.name, slug: c.slug})));
+            console.log('🔍 StepThree - Found category for slug "' + category + '":', foundCategory);
+          } else {
+            console.error('Failed to fetch categories, status:', categoriesResponse.status);
           }
         } catch (error) {
           console.error('Error fetching categories for ID lookup:', error);
         }
       }
       
-      // Fetch available dates using the API endpoint with category filter
+      // Use the admin endpoint for consistency
       const datesUrl = categoryId 
-        ? buildApiUrl(`/api/available-dates?categoryId=${categoryId}`)
-        : buildApiUrl('/api/available-dates');
+        ? buildApiUrl(`/api/admin/available-dates?categoryId=${categoryId}`)
+        : buildApiUrl('/api/admin/available-dates');
       
-      const datesResponse = await fetch(datesUrl);
+      console.log('🔍 StepThree - Fetching dates from URL:', datesUrl);
+      
+      // Add auth headers if token exists (for admin endpoints)
+      const headers = {};
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      let datesResponse = await fetch(datesUrl, { headers });
+      
+      // If admin endpoint fails and we don't have auth, try public endpoint
+      if (!datesResponse.ok && !token) {
+        console.log('🔍 StepThree - Admin endpoint failed, trying public endpoint');
+        const publicUrl = categoryId 
+          ? buildApiUrl(`/api/available-dates?categoryId=${categoryId}`)
+          : buildApiUrl('/api/available-dates');
+        datesResponse = await fetch(publicUrl);
+      }
+      
       if (!datesResponse.ok) {
-        throw new Error('Failed to fetch available dates');
+        const errorText = await datesResponse.text();
+        console.error('Date fetch failed with status:', datesResponse.status, errorText);
+        throw new Error(`Failed to fetch available dates (${datesResponse.status})`);
       }
       const datesData = await datesResponse.json();
       
       console.log('🔍 StepThree - Raw dates from API:', datesData);
       console.log('🔍 StepThree - Category:', category, 'Category ID:', categoryId);
-      console.log('🔍 StepThree - Dates URL used:', datesUrl);
+      
+      if (!Array.isArray(datesData)) {
+        console.error('Expected array of dates, got:', typeof datesData, datesData);
+        throw new Error('Invalid dates data format');
+      }
       
       if (datesData.length === 0) {
         console.log('⚠️ StepThree - No dates returned from API for category:', category);
@@ -103,6 +132,7 @@ const StepThree = ({ onSelectionChange, category }) => {
       setError("");
 
       if (!dbDate) {
+        console.log('🔍 StepThree - No dbDate provided, clearing time slots');
         setTimeSlots([]);
         return;
       }
@@ -124,25 +154,62 @@ const StepThree = ({ onSelectionChange, category }) => {
         }
       }
 
-      // Build URL with both date and category filter
-      let url = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
+      // Use admin endpoint for consistency with AdminTimeSlots
+      let url = buildApiUrl(`/api/admin/available-time-slots?date=${encodeURIComponent(dbDate)}`);
       if (categoryId) {
         url += `&categoryId=${categoryId}`;
       }
       
-      console.debug('[StepThree] fetching time slots from', url);
-      console.debug('[StepThree] category:', category, 'categoryId:', categoryId);
+      console.log('🔍 StepThree - Fetching time slots from URL:', url);
+      console.log('🔍 StepThree - Date:', dbDate, 'Category:', category, 'CategoryId:', categoryId);
       
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error('Failed to fetch time slots for date');
+      // Add auth headers if token exists (for admin endpoints)
+      const headers = {};
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
+      
+      let res = await fetch(url, { headers });
+      
+      // If admin endpoint fails and we don't have auth, try public endpoint
+      if (!res.ok && !token) {
+        console.log('🔍 StepThree - Admin time slots endpoint failed, trying public endpoint');
+        const publicUrl = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
+        const publicUrlWithCategory = categoryId ? `${publicUrl}&categoryId=${categoryId}` : publicUrl;
+        res = await fetch(publicUrlWithCategory);
+      }
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Time slots fetch failed:', res.status, errorText);
+        throw new Error(`Failed to fetch time slots for date (${res.status})`);
+      }
+      
       const data = await res.json();
-      console.debug('[StepThree] fetched', Array.isArray(data) ? data.length : 'non-array', 'time slots', data);
+      console.log('🔍 StepThree - Raw time slots from API:', data);
+      console.log('🔍 StepThree - Time slots count:', Array.isArray(data) ? data.length : 'not an array');
+      
+      if (!Array.isArray(data)) {
+        console.error('Expected array of time slots, got:', typeof data, data);
+        throw new Error('Invalid time slots data format');
+      }
       
       if (data.length === 0) {
         console.log('⚠️ StepThree - No time slots returned from API for date:', dbDate, 'category:', category);
-      }      const formattedTimeSlots = data.map((slot) => {
+        setTimeSlots([]);
+        return;
+      }      // Filter only available time slots
+      const availableSlots = data.filter(slot => slot.is_available === true || slot.is_available === 1);
+      console.log('🔍 StepThree - Available slots after filtering:', availableSlots.length, 'out of', data.length);
+      
+      if (availableSlots.length === 0) {
+        console.log('⚠️ StepThree - No available time slots for date:', dbDate);
+        setTimeSlots([]);
+        return;
+      }
+
+      const formattedTimeSlots = availableSlots.map((slot) => {
         const startTime = formatTime12Hour(slot.start_time);
         const endTime = formatTime12Hour(slot.end_time);
         return {
@@ -150,14 +217,16 @@ const StepThree = ({ onSelectionChange, category }) => {
           start_time: slot.start_time,
           end_time: slot.end_time,
           displayTime: `${startTime} - ${endTime}`,
-          extra_price: slot.extra_price || 0
+          extra_price: slot.extra_price || 0,
+          is_available: slot.is_available
         };
       });
 
+      console.log('🔍 StepThree - Formatted time slots:', formattedTimeSlots);
       setTimeSlots(formattedTimeSlots);
     } catch (err) {
-      console.error('Error fetching time slots for date:', err);
-      setError('Failed to load time slots for the selected date.');
+      console.error('Error fetching time slots for date:', dbDate, err);
+      setError(`Failed to load time slots for the selected date: ${err.message}`);
       setTimeSlots([]);
     } finally {
       setLoading(false);
@@ -335,9 +404,12 @@ const StepThree = ({ onSelectionChange, category }) => {
               <div className="p-6 text-center">
                 <p className="text-yellow-800">
                   {category ? 
-                    `No available time slots for this service category on the selected date. Please try a different date or contact us for assistance.` :
-                    'No available time slots at the moment. Please check back later.'
+                    `No available time slots for this service category on ${selectedDate}. Please try a different date or contact us for assistance.` :
+                    `No available time slots for ${selectedDate}. Please try a different date or check back later.`
                   }
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Time slots may be fully booked or not yet scheduled for this date.
                 </p>
               </div>
             ) : (

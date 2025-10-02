@@ -68,6 +68,12 @@ const AdminTimeSlots: React.FC = () => {
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [filteredDates, setFilteredDates] = useState<AvailableDateOption[]>([]);
+  
+  // Time slot application mode
+  const [applicationMode, setApplicationMode] = useState<'all' | 'single'>('all'); // Default to 'all dates'
+  const [isApplyingBulk, setIsApplyingBulk] = useState(false);
+  const [selectedDatesForBulk, setSelectedDatesForBulk] = useState<string[]>([]); // Selected date IDs for bulk application
+  const [showDatePicker, setShowDatePicker] = useState(false); // Show/hide available dates dropdown
 
   const fetchTimeSlots = async () => {
     try {
@@ -197,6 +203,10 @@ const AdminTimeSlots: React.FC = () => {
       if (!selectedDate && dates.length > 0) {
         setSelectedDate(dates[0].date);
       }
+      // Auto-select all dates for bulk application in 'all' mode
+      if (applicationMode === 'all') {
+        setSelectedDatesForBulk(dates.map(d => d.date));
+      }
     } else {
       // Filter dates by category - show dates for this category or dates with no category
       const filtered = dates.filter(date => 
@@ -210,10 +220,21 @@ const AdminTimeSlots: React.FC = () => {
       } else if (!selectedDate && filtered.length > 0) {
         setSelectedDate(filtered[0].date);
       }
+      
+      // Auto-select all filtered dates for bulk application in 'all' mode
+      if (applicationMode === 'all') {
+        setSelectedDatesForBulk(filtered.map(d => d.date));
+      }
     }
   };
 
   const addTimeSlot = async () => {
+    if (applicationMode === 'all') {
+      await addTimeSlotToAllDates();
+      return;
+    }
+
+    // Single date mode (original functionality)
     try {
       const token = localStorage.getItem('token');
       if (!selectedDate) {
@@ -243,7 +264,7 @@ const AdminTimeSlots: React.FC = () => {
         body: JSON.stringify({ 
           ...newSlot, 
           date: selectedDate,
-          service_category_id: selectedCategory // Use the selected category
+          service_category_id: selectedCategory
         })
       });
 
@@ -268,6 +289,79 @@ const AdminTimeSlots: React.FC = () => {
         description: err instanceof Error ? err.message : 'Unable to add time slot. Please try again.',
         variant: "destructive",
       });
+    }
+  };
+
+  const addTimeSlotToAllDates = async () => {
+    try {
+      setIsApplyingBulk(true);
+      const token = localStorage.getItem('token');
+      
+      if (selectedDatesForBulk.length === 0) {
+        toast({
+          title: "No Dates Selected",
+          description: "Please select at least one date to apply the time slot.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!newSlot.start_time || !newSlot.end_time) {
+        toast({
+          title: "Missing Time",
+          description: "Please enter both start and end times.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create time slots for selected dates only
+      const selectedDateObjects = filteredDates.filter(date => selectedDatesForBulk.includes(date.date));
+      const promises = selectedDateObjects.map(date => 
+        fetch(buildApiUrl('/api/admin/available-time-slots'), {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            ...newSlot, 
+            date: date.date,
+            service_category_id: selectedCategory
+          })
+        })
+      );
+
+      const responses = await Promise.all(promises);
+      const failedRequests = responses.filter(response => !response.ok);
+      
+      if (failedRequests.length > 0) {
+        toast({
+          title: "Partial Success",
+          description: `Time slot applied to ${responses.length - failedRequests.length} out of ${responses.length} dates.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Time slot applied to ${selectedDatesForBulk.length} selected dates successfully!`,
+        });
+      }
+
+      // Reset form and refresh
+      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: selectedCategory });
+      setIsAddingSlot(false);
+      fetchTimeSlots();
+      
+    } catch (err) {
+      console.error('Error adding time slots to selected dates:', err);
+      toast({
+        title: "Error",
+        description: 'Unable to create time slots for selected dates. Please try again.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplyingBulk(false);
     }
   };
 
@@ -413,10 +507,38 @@ const AdminTimeSlots: React.FC = () => {
     fetchAvailableDates();
   }, []);
 
+  // Helper functions for date selection
+  const handleDateToggle = (dateId: string) => {
+    setSelectedDatesForBulk(prev => 
+      prev.includes(dateId) 
+        ? prev.filter(id => id !== dateId)
+        : [...prev, dateId]
+    );
+  };
+
+  const handleSelectAllDates = () => {
+    setSelectedDatesForBulk(filteredDates.map(d => d.date));
+  };
+
+  const handleDeselectAllDates = () => {
+    setSelectedDatesForBulk([]);
+  };
+
   useEffect(() => {
     // When selected category changes, filter the dates
     filterDatesByCategory(availableDates, selectedCategory);
   }, [selectedCategory, availableDates]);
+
+  useEffect(() => {
+    // When application mode changes, reset date selection
+    if (applicationMode === 'all') {
+      setSelectedDatesForBulk(filteredDates.map(d => d.date));
+    } else {
+      setSelectedDatesForBulk([]);
+    }
+    // Close date picker when mode changes
+    setShowDatePicker(false);
+  }, [applicationMode, filteredDates]);
 
   useEffect(() => {
     // whenever selectedDate or selectedCategory changes, re-fetch time slots
@@ -540,28 +662,156 @@ const AdminTimeSlots: React.FC = () => {
               <Button
                 onClick={() => setIsAddingSlot(!isAddingSlot)}
                 variant={isAddingSlot ? "outline" : "default"}
-                disabled={!selectedDate}
+                disabled={applicationMode === 'single' ? !selectedDate : filteredDates.length === 0}
               >
                 {isAddingSlot ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                {isAddingSlot ? 'Cancel' : 'Add Slot'}
+                {isAddingSlot ? 'Cancel' : 'Add Time Slot'}
               </Button>
             </CardTitle>
           </CardHeader>
           {isAddingSlot && (
             <CardContent>
-              {/* Category and Date Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <div className="text-sm text-blue-800">
-                  <strong>Creating time slot for:</strong>
-                  <div className="mt-1">
-                    📅 Date: {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              {/* Application Mode Selection */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-900">Time Slot Application</h4>
+                  <div className="flex bg-white rounded-lg border border-gray-300 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setApplicationMode('all')}
+                      className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                        applicationMode === 'all'
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      Select Dates ({applicationMode === 'all' ? selectedDatesForBulk.length : filteredDates.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setApplicationMode('single')}
+                      className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                        applicationMode === 'single'
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      Single Date
+                    </button>
                   </div>
-                  <div>
-                    🏷️ Category: {selectedCategory ? 
-                      serviceCategories.find(c => c.id === selectedCategory)?.name : 
-                      'All Categories (General)'
-                    }
+                </div>
+                
+                <div className="text-sm text-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <strong>🏷️ Category:</strong> {selectedCategory ? 
+                        serviceCategories.find(c => c.id === selectedCategory)?.name : 
+                        'All Categories (General)'
+                      }
+                    </div>
+                    <div>
+                      <strong>📅 Target:</strong> {
+                        applicationMode === 'all' 
+                          ? `${selectedDatesForBulk.length} selected dates (${filteredDates.length} available)`
+                          : selectedDate 
+                            ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                            : 'No date selected'
+                      }
+                    </div>
                   </div>
+                  
+                  {applicationMode === 'all' && filteredDates.length > 0 && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-blue-800 text-sm font-medium">Selected dates for time slot application:</p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleSelectAllDates}
+                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Select All ({filteredDates.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDeselectAllDates}
+                            className="text-xs text-red-600 hover:text-red-800 underline"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Selected Dates as Tags */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {selectedDatesForBulk.map((dateId) => {
+                          const dateObj = filteredDates.find(d => d.date === dateId);
+                          if (!dateObj) return null;
+                          
+                          return (
+                            <div
+                              key={dateObj.id}
+                              className="inline-flex items-center gap-2 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium"
+                            >
+                              <span>{dateObj.day_short} {dateObj.month_short} {dateObj.day_number}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDateToggle(dateObj.date)}
+                                className="hover:bg-blue-600 rounded-full p-0.5 transition-colors ml-1"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Add Date Button */}
+                        {selectedDatesForBulk.length < filteredDates.length && (
+                          <button
+                            type="button"
+                            onClick={() => setShowDatePicker(!showDatePicker)}
+                            className="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-300 transition-colors border-2 border-dashed border-gray-400"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add Date
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Available Dates Dropdown */}
+                      {showDatePicker && (
+                        <div className="mb-3 p-2 bg-white rounded border border-gray-300 shadow-sm">
+                          <p className="text-xs text-gray-600 mb-2">Available dates to add:</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-32 overflow-y-auto">
+                            {filteredDates
+                              .filter(date => !selectedDatesForBulk.includes(date.date))
+                              .map((date) => (
+                                <button
+                                  key={date.id}
+                                  type="button"
+                                  onClick={() => {
+                                    handleDateToggle(date.date);
+                                    // Auto-close if all dates are selected
+                                    if (selectedDatesForBulk.length + 1 >= filteredDates.length) {
+                                      setShowDatePicker(false);
+                                    }
+                                  }}
+                                  className="flex items-center justify-center p-2 bg-gray-50 hover:bg-blue-100 border border-gray-200 hover:border-blue-300 rounded text-xs font-medium text-gray-700 hover:text-blue-700 transition-colors"
+                                >
+                                  {date.day_short} {date.month_short} {date.day_number}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="pt-2 border-t border-blue-200">
+                        <p className="text-xs text-blue-700">
+                          <strong>{selectedDatesForBulk.length}</strong> of <strong>{filteredDates.length}</strong> dates selected
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -620,12 +870,41 @@ const AdminTimeSlots: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button onClick={addTimeSlot} disabled={!validateTimeSlot()}>
-                  <Check className="w-4 h-4 mr-2" />
-                  Add Time Slot
+                <Button 
+                  onClick={addTimeSlot} 
+                  disabled={
+                    !validateTimeSlot() || 
+                    isApplyingBulk ||
+                    (applicationMode === 'single' && !selectedDate) ||
+                    (applicationMode === 'all' && selectedDatesForBulk.length === 0)
+                  }
+                >
+                  {isApplyingBulk ? (
+                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Check className="w-4 h-4 mr-2" />
+                  )}
+                  {applicationMode === 'all' 
+                    ? `Apply to ${selectedDatesForBulk.length} Selected Dates`
+                    : 'Add to Selected Date'
+                  }
                 </Button>
+                
                 {!validateTimeSlot() && newSlot.start_time && newSlot.end_time && (
                   <p className="text-sm text-red-500 self-center">End time must be after start time</p>
+                )}
+                
+                {applicationMode === 'single' && !selectedDate && validateTimeSlot() && (
+                  <p className="text-sm text-orange-500 self-center">Please select a date</p>
+                )}
+                
+                {applicationMode === 'all' && selectedDatesForBulk.length === 0 && (
+                  <p className="text-sm text-orange-500 self-center">
+                    {filteredDates.length === 0 
+                      ? 'No dates available in this category' 
+                      : 'Please select at least one date'
+                    }
+                  </p>
                 )}
               </div>
             </CardContent>
@@ -766,26 +1045,6 @@ const AdminTimeSlots: React.FC = () => {
                         </div>
                         
                         <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateSlotAvailability(slot.id, !slot.is_available)}
-                            className={`p-2 ${
-                              slot.is_available 
-                                ? 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100' 
-                                : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                            }`}
-                          >
-                            {slot.is_available ? <X className="w-3 h-3" /> : <Check className="w-3 h-3" />}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => editTimeSlot(slot)}
-                            className="p-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
