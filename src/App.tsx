@@ -2,7 +2,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GoogleMapsProvider } from "@/contexts/GoogleMapsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -74,7 +74,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <HashRouter>
             <ImpersonationBanner />
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -88,7 +88,7 @@ const App = () => (
 
               {/* frontend Routes */}
               <Route path="/" element={<MainLayout />}>
-                <Route path="" element={<RedirectToPestControl />} />
+                <Route path="" element={<Home />} />
                 <Route
                   path="single-category/:category"
                   element={<SingleCategory />}
@@ -401,49 +401,6 @@ const App = () => (
                 }
               />
 
-              {/* Legacy Dashboard Routes - Redirect to role-based */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route
-                path="/dashboard/appointments"
-                element={<AppointmentManagement />}
-              />
-              <Route
-                path="/dashboard/my-appointments"
-                element={<AppointmentManagement />}
-              />
-              <Route
-                path="/dashboard/addresses"
-                element={<ProfileSettings />}
-              />
-              <Route
-                path="/dashboard/support"
-                element={<AppointmentManagement />}
-              />
-              <Route path="/dashboard/profile" element={<ProfileSettings />} />
-              <Route path="/dashboard/services" element={<ServiceAreas />} />
-              <Route
-                path="/dashboard/tickets"
-                element={<AppointmentManagement />}
-              />
-              <Route path="/dashboard/reports" element={<Dashboard />} />
-              <Route
-                path="/dashboard/slots"
-                element={<AppointmentManagement />}
-              />
-
-              {/* Super Admin Routes */}
-              <Route path="/dashboard/roles" element={<RoleManagement />} />
-              <Route path="/dashboard/website-settings" />
-              <Route
-                path="/dashboard/api-credentials"
-                element={<ApiCredentials />}
-              />
-              <Route
-                path="/dashboard/service-areas"
-                element={<ServiceAreas />}
-              />
-              <Route path="/dashboard/system" element={<SystemSettings />} />
-
               {/* Fallback Admin Route */}
               <Route
                 path="/administrator"
@@ -457,7 +414,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
+          </HashRouter>
         </TooltipProvider>
       </GoogleMapsProvider>
     </AuthProvider>

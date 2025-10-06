@@ -39,30 +39,14 @@ const StepThree = ({ onSelectionChange, category }) => {
         }
       }
       
-      // Use the admin endpoint for consistency
+      // Use the public endpoint for regular users
       const datesUrl = categoryId 
-        ? buildApiUrl(`/api/admin/available-dates?categoryId=${categoryId}`)
-        : buildApiUrl('/api/admin/available-dates');
+        ? buildApiUrl(`/api/available-dates?categoryId=${categoryId}`)
+        : buildApiUrl('/api/available-dates');
       
       console.log('🔍 StepThree - Fetching dates from URL:', datesUrl);
       
-      // Add auth headers if token exists (for admin endpoints)
-      const headers = {};
-      const token = localStorage.getItem('token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      let datesResponse = await fetch(datesUrl, { headers });
-      
-      // If admin endpoint fails and we don't have auth, try public endpoint
-      if (!datesResponse.ok && !token) {
-        console.log('🔍 StepThree - Admin endpoint failed, trying public endpoint');
-        const publicUrl = categoryId 
-          ? buildApiUrl(`/api/available-dates?categoryId=${categoryId}`)
-          : buildApiUrl('/api/available-dates');
-        datesResponse = await fetch(publicUrl);
-      }
+      const datesResponse = await fetch(datesUrl);
       
       if (!datesResponse.ok) {
         const errorText = await datesResponse.text();
@@ -154,8 +138,8 @@ const StepThree = ({ onSelectionChange, category }) => {
         }
       }
 
-      // Use admin endpoint for consistency with AdminTimeSlots
-      let url = buildApiUrl(`/api/admin/available-time-slots?date=${encodeURIComponent(dbDate)}`);
+      // Use public endpoint for regular users
+      let url = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
       if (categoryId) {
         url += `&categoryId=${categoryId}`;
       }
@@ -163,22 +147,7 @@ const StepThree = ({ onSelectionChange, category }) => {
       console.log('🔍 StepThree - Fetching time slots from URL:', url);
       console.log('🔍 StepThree - Date:', dbDate, 'Category:', category, 'CategoryId:', categoryId);
       
-      // Add auth headers if token exists (for admin endpoints)
-      const headers = {};
-      const token = localStorage.getItem('token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      let res = await fetch(url, { headers });
-      
-      // If admin endpoint fails and we don't have auth, try public endpoint
-      if (!res.ok && !token) {
-        console.log('🔍 StepThree - Admin time slots endpoint failed, trying public endpoint');
-        const publicUrl = buildApiUrl(`/api/available-time-slots?date=${encodeURIComponent(dbDate)}`);
-        const publicUrlWithCategory = categoryId ? `${publicUrl}&categoryId=${categoryId}` : publicUrl;
-        res = await fetch(publicUrlWithCategory);
-      }
+      const res = await fetch(url);
       
       if (!res.ok) {
         const errorText = await res.text();
@@ -199,17 +168,10 @@ const StepThree = ({ onSelectionChange, category }) => {
         console.log('⚠️ StepThree - No time slots returned from API for date:', dbDate, 'category:', category);
         setTimeSlots([]);
         return;
-      }      // Filter only available time slots
-      const availableSlots = data.filter(slot => slot.is_available === true || slot.is_available === 1);
-      console.log('🔍 StepThree - Available slots after filtering:', availableSlots.length, 'out of', data.length);
-      
-      if (availableSlots.length === 0) {
-        console.log('⚠️ StepThree - No available time slots for date:', dbDate);
-        setTimeSlots([]);
-        return;
       }
 
-      const formattedTimeSlots = availableSlots.map((slot) => {
+      // No need to filter since public endpoint already filters by is_available = 1
+      const formattedTimeSlots = data.map((slot) => {
         const startTime = formatTime12Hour(slot.start_time);
         const endTime = formatTime12Hour(slot.end_time);
         return {
