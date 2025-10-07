@@ -35,6 +35,7 @@ const AdminAvailableDates: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAddingDate, setIsAddingDate] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<number[]>([]);
   const [newDate, setNewDate] = useState({
     date: '',
     is_available: true,
@@ -180,6 +181,58 @@ const AdminAvailableDates: React.FC = () => {
     }
   };
 
+  const bulkDeleteDates = async () => {
+    if (selectedDates.length === 0) {
+      alert('Please select dates to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedDates.length} selected date(s)?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Delete all selected dates
+      const deletePromises = selectedDates.map(dateId =>
+        fetch(buildApiUrl(`/api/admin/available-dates/${dateId}`), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      );
+
+      await Promise.all(deletePromises);
+
+      // Clear selection and refresh
+      setSelectedDates([]);
+      fetchAvailableDates();
+      alert(`Successfully deleted ${selectedDates.length} date(s)`);
+    } catch (err) {
+      console.error('Error deleting dates:', err);
+      alert('Failed to delete some dates');
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedDates.length === dates.length) {
+      setSelectedDates([]);
+    } else {
+      setSelectedDates(dates.map(d => d.id));
+    }
+  };
+
+  const toggleSelectDate = (dateId: number) => {
+    if (selectedDates.includes(dateId)) {
+      setSelectedDates(selectedDates.filter(id => id !== dateId));
+    } else {
+      setSelectedDates([...selectedDates, dateId]);
+    }
+  };
+
   useEffect(() => {
     fetchAvailableDates();
     fetchServiceCategories();
@@ -321,10 +374,38 @@ const AdminAvailableDates: React.FC = () => {
         {/* Available Dates List */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Available Dates ({dates.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Available Dates ({dates.length})
+                {selectedDates.length > 0 && (
+                  <span className="text-sm font-normal text-blue-600">
+                    ({selectedDates.length} selected)
+                  </span>
+                )}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {dates.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSelectAll}
+                  >
+                    {selectedDates.length === dates.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                )}
+                {selectedDates.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={bulkDeleteDates}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Selected ({selectedDates.length})
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {dates.length === 0 ? (
@@ -338,15 +419,25 @@ const AdminAvailableDates: React.FC = () => {
                 {dates.map((dateItem) => (
                   <div
                     key={dateItem.id}
-                    className={`border rounded-lg p-4 ${
+                    className={`border rounded-lg p-4 relative ${
                       isDatePast(dateItem.date) 
                         ? 'bg-gray-50 border-gray-200' 
                         : dateItem.is_available 
                           ? 'bg-green-50 border-green-200' 
                           : 'bg-yellow-50 border-yellow-200'
+                    } ${
+                      selectedDates.includes(dateItem.id) ? 'ring-2 ring-blue-500' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="absolute top-2 left-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedDates.includes(dateItem.id)}
+                        onChange={() => toggleSelectDate(dateItem.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mb-3 ml-6">
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
                           isDatePast(dateItem.date) 

@@ -12,6 +12,7 @@ interface TimeSlotData {
   end_time: string;
   is_available: boolean;
   extra_price?: number; // Extra price in AED
+  max_appointments?: number; // Maximum appointments for this time slot
   created_at: string;
   date?: string; // ISO date (YYYY-MM-DD) - optional if backend provides it
   service_category_id?: number | null;
@@ -54,6 +55,7 @@ const AdminTimeSlots: React.FC = () => {
     end_time: '',
     is_available: true,
     extra_price: 0,
+    max_appointments: 1,
     service_category_id: null as number | null
   });
   const [editSlot, setEditSlot] = useState({
@@ -61,6 +63,7 @@ const AdminTimeSlots: React.FC = () => {
     end_time: '',
     is_available: true,
     extra_price: 0,
+    max_appointments: 1,
     service_category_id: null as number | null
   });
   const [availableDates, setAvailableDates] = useState<AvailableDateOption[]>([]);
@@ -274,7 +277,7 @@ const AdminTimeSlots: React.FC = () => {
       }
 
       // Reset form and refresh slots
-      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: selectedCategory });
+      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, max_appointments: 1, service_category_id: selectedCategory });
       setIsAddingSlot(false);
       fetchTimeSlots();
       
@@ -349,7 +352,7 @@ const AdminTimeSlots: React.FC = () => {
       }
 
       // Reset form and refresh
-      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: selectedCategory });
+      setNewSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, max_appointments: 1, service_category_id: selectedCategory });
       setIsAddingSlot(false);
       fetchTimeSlots();
       
@@ -372,6 +375,7 @@ const AdminTimeSlots: React.FC = () => {
       end_time: slot.end_time,
       is_available: slot.is_available,
       extra_price: slot.extra_price || 0,
+      max_appointments: slot.max_appointments || 1,
       service_category_id: slot.service_category_id || null
     });
     setIsEditingSlot(true);
@@ -407,7 +411,7 @@ const AdminTimeSlots: React.FC = () => {
 
       // Reset edit form and refresh slots
       setEditingSlotId(null);
-      setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: null });
+      setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, max_appointments: 1, service_category_id: null });
       setIsEditingSlot(false);
       fetchTimeSlots();
       
@@ -427,7 +431,7 @@ const AdminTimeSlots: React.FC = () => {
 
   const cancelEdit = () => {
     setEditingSlotId(null);
-    setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, service_category_id: null });
+    setEditSlot({ start_time: '', end_time: '', is_available: true, extra_price: 0, max_appointments: 1, service_category_id: null });
     setIsEditingSlot(false);
   };
 
@@ -868,6 +872,21 @@ const AdminTimeSlots: React.FC = () => {
                   />
                   <p className="text-xs text-gray-500 mt-1">Optional additional charge</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Appointments
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={newSlot.max_appointments}
+                    onChange={(e) => setNewSlot({ ...newSlot, max_appointments: parseInt(e.target.value) || 1 })}
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Maximum bookings for this slot</p>
+                </div>
               </div>
               <div className="mt-4 flex gap-2">
                 <Button 
@@ -983,6 +1002,21 @@ const AdminTimeSlots: React.FC = () => {
                   />
                   <p className="text-xs text-gray-500 mt-1">Optional additional charge</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Appointments
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={editSlot.max_appointments}
+                    onChange={(e) => setEditSlot({ ...editSlot, max_appointments: parseInt(e.target.value) || 1 })}
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Maximum bookings for this slot</p>
+                </div>
               </div>
               <div className="mt-4 flex gap-2">
                 <Button onClick={updateTimeSlot} disabled={!validateTimeSlot()}>
@@ -1073,6 +1107,12 @@ const AdminTimeSlots: React.FC = () => {
                             </span>
                           </div>
                         )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Max Appointments:</span>
+                          <span className="font-medium text-purple-600">
+                            {slot.max_appointments || 1}
+                          </span>
+                        </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Category:</span>
                           <span className="font-medium text-blue-600">
