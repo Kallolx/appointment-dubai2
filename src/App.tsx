@@ -7,16 +7,13 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { GoogleMapsProvider } from "@/contexts/GoogleMapsContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
-import ApiCredentials from "./pages/dashboard/ApiCredentials";
 import AppointmentManagement from "./pages/dashboard/AppointmentManagement";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Login from "./pages/Login";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import NotFound from "./pages/NotFound";
 import ProfileSettings from "./pages/ProfileSettings";
-import RoleManagement from "./pages/dashboard/RoleManagement";
 import ServiceAreas from "./pages/dashboard/ServiceAreas";
-import SystemSettings from "./pages/dashboard/SystemSettings";
 import NewUserDashboard from "@/pages/users/NewUserDashboard";
 import MyAppointments from "./pages/MyAppointments";
 import MyBookings from "./pages/users/pages/MyBookings";
@@ -24,9 +21,8 @@ import UserLocations from "./pages/users/pages/UserLocations";
 import MyAddresses from "./pages/MyAddresses";
 import Support from "./pages/users/pages/Support";
 import Profile from "./pages/users/pages/Profile";
-import BlogPage from "./pages/websitePages/BlogPage";
+import OutstandingPayments from "./pages/users/pages/OutstandingPayments";
 import FaqPage from "./pages/websitePages/FaqPage";
-import Home from "./pages/websitePages/Home";
 import MainLayout from "./pages/websitePages/MainLayout";
 import PrivacyPolicy from "./pages/websitePages/PrivacyPolicy";
 import ServiceLayout from "./pages/websitePages/ServiceLayout";
@@ -88,12 +84,11 @@ const App = () => (
 
               {/* frontend Routes */}
               <Route path="/" element={<MainLayout />}>
-                <Route path="" element={<Home />} />
+                <Route path="" element={<RedirectToPestControl />} />
                 <Route
                   path="single-category/:category"
                   element={<SingleCategory />}
                 />
-                <Route path="blog-page" element={<BlogPage />} />
                 <Route path="privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="terms" element={<Terms />} />
                 <Route path="faq" element={<FaqPage />} />
@@ -365,6 +360,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <UserLocations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/outstanding-payments"
+                element={
+                  <ProtectedRoute>
+                    <OutstandingPayments />
                   </ProtectedRoute>
                 }
               />

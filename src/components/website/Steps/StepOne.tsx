@@ -888,7 +888,7 @@ const StepOne = ({
       {/* Main Content Container with Padding */}
       <div>
         {/* Sticky Tabs */}
-        <div className="sticky top-0 -mx-4 border-b border-gray-200 z-30 mb-4 bg-white">
+        <div className="sticky top-0 -mx-4 border-b border-gray-200 z-30 mb-4">
           {/* Categories Section */}
           <div className="p-3 bg-white">
             <div className="relative">

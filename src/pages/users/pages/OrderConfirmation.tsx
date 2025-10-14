@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams, Link } from "react-router-dom";
 import {
   Check,
   ChevronDown,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/website/Navbar";
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import Footer from "@/components/website/Footer";
 
 interface OrderData {
@@ -29,6 +30,33 @@ interface OrderData {
 }
 
 const OrderConfirmation: React.FC = () => {
+  const { settings } = useWebsiteSettings();
+
+  const WebsiteLogo: React.FC = () => {
+    const [hasError, setHasError] = React.useState(false);
+    const logoUrl = settings?.logo_url || "/icons/check.svg";
+
+    if (hasError || !logoUrl) {
+      return (
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
+            <Check className="w-6 h-6 text-green-600" />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <img
+          src={logoUrl}
+          alt={settings?.site_name || 'logo'}
+          className="max-h-20 object-contain"
+          onError={() => setHasError(true)}
+        />
+      </div>
+    );
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -246,121 +274,11 @@ const OrderConfirmation: React.FC = () => {
     <div>
       <Navbar />
 
-      {/* Search Bar - Mobile Only */}
-      <div className="md:hidden bg-gray-50 py-6 border-b border-gray-200">
-        <div className="max-w-2xl mx-auto px-4">
-          <form onSubmit={handleSearch} className="w-full">
-            <div className="relative flex items-center bg-white rounded-sm py-1.5 px-3 shadow-lg border border-gray-200">
-              {/* City selector on the left inside the bar */}
-              <div className="relative flex items-center">
-                <button
-                  type="button"
-                  onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-                  className="flex items-center justify-center gap-1 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-50 transition-colors text-sm h-9 min-w-[110px]"
-                >
-                  <span className="text-xs font-semibold leading-none">
-                    {cities.find((city) => city.value === selectedCity)?.name}
-                  </span>
-                  <svg
-                    className={`w-4 h-4 text-black transition-transform ml-1 ${
-                      isCityDropdownOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-
-                {/* City Dropdown */}
-                {isCityDropdownOpen && (
-                  <div className="absolute top-full -left-3 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[140px]">
-                    {cities.map((city) => (
-                      <button
-                        key={city.value}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCity(city.value);
-                          setIsCityDropdownOpen(false);
-                        }}
-                        className={`w-full text-left text-sm text-[#01788e] px-4 py-2 hover:bg-gray-50 ${
-                          selectedCity === city.value ? "bg-gray-50" : ""
-                        }`}
-                      >
-                        {city.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Vertical divider */}
-              <div className="h-9 w-px bg-gray-300" />
-
-              {/* Main search input */}
-              <div className="flex-1 flex items-center">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setIsSuggestionsOpen(true);
-                  }}
-                  placeholder="Start typing to find a service"
-                  className="w-full bg-transparent placeholder:text-xs placeholder:text-gray-400 outline-none text-gray-800 px-2 py-1 text-sm"
-                />
-              </div>
-
-              {/* Search icon on the right */}
-              <button
-                type="submit"
-                className="p-2 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Suggestions dropdown */}
-            {isSuggestionsOpen && searchQuery.trim() && (
-              <div className="relative mt-2">
-                <div className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {filteredServices.length > 0 ? (
-                    filteredServices.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(s);
-                          setIsSuggestionsOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-gray-800"
-                      >
-                        {renderHighlighted(s, searchQuery)}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500">No results</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </form>
-        </div>
-      </div>
-
       <div className="min-h-screen bg-gray-50 py-6">
         <div className="max-w-2xl mx-auto px-4">
           {/* Success Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <img src="/icons/check.svg" alt="check" />
-            </div>
+            <WebsiteLogo />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               {orderData.payment_success
                 ? "Payment Successful!"
@@ -510,9 +428,15 @@ const OrderConfirmation: React.FC = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
-                  You can cancel for free up to 6 hours before the service start
-                  time. Cancellation charges apply for cancellations within 6
-                  hours of the service start time (Cancellation policy).
+                  <div className="text-sm text-gray-600">
+                    You can cancel for free up to 6 hours before the service start
+                    time. Cancellation charges apply for cancellations within 6
+                    hours of the service start time.{' '}
+                    <Link to="/privacy-policy" className="text-blue-900 underline">
+                      (Cancellation policy)
+                    </Link>
+                    .
+                  </div>
                 </li>
               </ul>
             </CardContent>

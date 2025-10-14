@@ -338,17 +338,17 @@ const UserLocations: React.FC = () => {
       title="Saved Locations"
       subtitle="Manage your saved addresses"
     >
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header with Add Button */}
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-gray-600">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="w-full sm:w-auto">
+            <p className="text-sm md:text-base text-gray-600">
               Add and manage your frequently used addresses for faster booking
             </p>
           </div>
           <Button 
             onClick={() => setIsAddDialogOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto flex-shrink-0"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Location
@@ -358,15 +358,15 @@ const UserLocations: React.FC = () => {
         {/* Addresses List */}
         {addresses.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-8 h-8 text-gray-400" />
+            <CardContent className="text-center py-8 md:py-12 px-4">
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                <MapPin className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No saved locations</h3>
-              <p className="text-gray-500 mb-6">Add your frequently used addresses to make booking faster and easier</p>
+              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">No saved locations</h3>
+              <p className="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Add your frequently used addresses to make booking faster and easier</p>
               <Button 
                 onClick={() => setIsAddDialogOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Location
@@ -374,51 +374,52 @@ const UserLocations: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3 md:gap-4">
             {addresses.map((address) => (
               <Card key={address.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center">
-                        {getAddressTypeIcon(address.address_type)}
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex flex-row flex-wrap items-start gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      {getAddressTypeIcon(address.address_type)}
+                    </div>
+                    
+                    {/* Address Details */}
+                    <div className="flex-1 min-w-0 w-full">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-sm md:text-base text-gray-900">{address.address_type}</h3>
+                        <Badge className={`${getAddressTypeColor(address.address_type)} text-xs`}>
+                          {address.address_type}
+                        </Badge>
+                        {address.is_default && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs">
+                            <Star className="h-3 w-3 mr-1" />
+                            Default
+                          </Badge>
+                        )}
                       </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-900">{address.address_type}</h3>
-                          <Badge className={getAddressTypeColor(address.address_type)}>
-                            {address.address_type}
-                          </Badge>
-                          {address.is_default && (
-                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                              <Star className="h-3 w-3 mr-1" />
-                              Default
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-gray-700 font-medium">{address.address_line1}</p>
-                          {address.address_line2 && (
-                            <p className="text-gray-600">{address.address_line2}</p>
-                          )}
-                          <p className="text-gray-600">
-                            {address.city}, {address.state} {address.postal_code}
-                          </p>
-                          <p className="text-gray-600">{address.country}</p>
-                        </div>
+                      <div className="space-y-1">
+                        <p className="text-sm md:text-base text-gray-700 font-medium break-words">{address.address_line1}</p>
+                        {address.address_line2 && (
+                          <p className="text-sm md:text-base text-gray-600 break-words">{address.address_line2}</p>
+                        )}
+                        <p className="text-sm md:text-base text-gray-600">
+                          {address.city}, {address.state} {address.postal_code}
+                        </p>
+                        <p className="text-sm md:text-base text-gray-600">{address.country}</p>
                       </div>
                     </div>
                     
-                    <div className="flex gap-2 ml-4">
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 w-full sm:w-auto sm:ml-4 mt-3 sm:mt-0">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEditAddress(address)}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 flex-1 sm:flex-none"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 sm:mr-0" />
+                        <span className="sm:hidden ml-2">Edit</span>
                       </Button>
                       <Button
                         size="sm"
@@ -427,9 +428,10 @@ const UserLocations: React.FC = () => {
                           setCurrentAddressId(address.id);
                           setIsDeleteDialogOpen(true);
                         }}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        className="text-red-600 border-red-200 hover:bg-red-50 flex-1 sm:flex-none"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 sm:mr-0" />
+                        <span className="sm:hidden ml-2">Delete</span>
                       </Button>
                     </div>
                   </div>
@@ -441,20 +443,20 @@ const UserLocations: React.FC = () => {
 
         {/* Add Address Dialog - Hide when map picker is open */}
         <Dialog open={isAddDialogOpen && !showMapPicker} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
             <DialogHeader>
-              <DialogTitle>Add New Location</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg md:text-xl">Add New Location</DialogTitle>
+              <DialogDescription className="text-sm md:text-base">
                 Add a new address to your saved locations for faster booking.
               </DialogDescription>
             </DialogHeader>
             
             {currentStep === "form" && (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address_type">Location Type</Label>
+                  <Label htmlFor="address_type" className="text-sm">Location Type</Label>
                   <Select value={formData.address_type} onValueChange={(value) => handleSelectChange('address_type', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Select location type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -467,7 +469,7 @@ const UserLocations: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address_line1">Address Line 1 *</Label>
+                  <Label htmlFor="address_line1" className="text-sm">Address Line 1 *</Label>
                   <div className="flex gap-2">
                     <Input 
                       id="address_line1" 
@@ -475,13 +477,14 @@ const UserLocations: React.FC = () => {
                       value={formData.address_line1} 
                       onChange={handleInputChange}
                       placeholder="Street address, building name"
-                      className="flex-1"
+                      className="flex-1 h-10 text-sm"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setShowMapPicker(true)}
-                      className="px-3"
+                      className="px-3 h-10"
+                      title="Pick from map"
                     >
                       <Navigation className="h-4 w-4" />
                     </Button>
@@ -489,54 +492,58 @@ const UserLocations: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address_line2">Address Line 2</Label>
+                  <Label htmlFor="address_line2" className="text-sm">Address Line 2</Label>
                   <Input 
                     id="address_line2" 
                     name="address_line2" 
                     value={formData.address_line2} 
                     onChange={handleInputChange}
                     placeholder="Apartment, suite, unit (optional)"
+                    className="h-10 text-sm"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city" className="text-sm">City *</Label>
                     <Input 
                       id="city" 
                       name="city" 
                       value={formData.city} 
                       onChange={handleInputChange}
                       placeholder="City"
+                      className="h-10 text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State/Area *</Label>
+                    <Label htmlFor="state" className="text-sm">State/Area *</Label>
                     <Input 
                       id="state" 
                       name="state" 
                       value={formData.state} 
                       onChange={handleInputChange}
                       placeholder="State or Area"
+                      className="h-10 text-sm"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="postal_code">Postal Code *</Label>
+                    <Label htmlFor="postal_code" className="text-sm">Postal Code *</Label>
                     <Input 
                       id="postal_code" 
                       name="postal_code" 
                       value={formData.postal_code} 
                       onChange={handleInputChange}
                       placeholder="Postal/ZIP code"
+                      className="h-10 text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country" className="text-sm">Country</Label>
                     <Select value={formData.country} onValueChange={(value) => handleSelectChange('country', value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -551,23 +558,23 @@ const UserLocations: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 pt-2">
                   <input
                     type="checkbox"
                     id="is_default"
                     name="is_default"
                     checked={formData.is_default}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300"
+                    className="rounded border-gray-300 h-4 w-4"
                   />
-                  <Label htmlFor="is_default" className="text-sm">
+                  <Label htmlFor="is_default" className="text-sm font-normal">
                     Set as default address
                   </Label>
                 </div>
               </div>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -575,13 +582,14 @@ const UserLocations: React.FC = () => {
                   resetForm();
                 }}
                 disabled={saveLoading}
+                className="w-full sm:w-auto order-2 sm:order-1"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleAddAddress}
                 disabled={saveLoading}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto order-1 sm:order-2"
               >
                 {saveLoading ? "Saving..." : "Save Location"}
               </Button>
@@ -591,19 +599,19 @@ const UserLocations: React.FC = () => {
 
         {/* Edit Address Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
             <DialogHeader>
-              <DialogTitle>Edit Location</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg md:text-xl">Edit Location</DialogTitle>
+              <DialogDescription className="text-sm md:text-base">
                 Update your saved location details.
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_address_type">Location Type</Label>
+                <Label htmlFor="edit_address_type" className="text-sm">Location Type</Label>
                 <Select value={formData.address_type} onValueChange={(value) => handleSelectChange('address_type', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -616,7 +624,7 @@ const UserLocations: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit_address_line1">Address Line 1 *</Label>
+                <Label htmlFor="edit_address_line1" className="text-sm">Address Line 1 *</Label>
                 <div className="flex gap-2">
                   <Input 
                     id="edit_address_line1" 
@@ -624,13 +632,14 @@ const UserLocations: React.FC = () => {
                     value={formData.address_line1} 
                     onChange={handleInputChange}
                     placeholder="Street address, building name"
-                    className="flex-1"
+                    className="flex-1 h-10 text-sm"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setShowMapPicker(true)}
-                    className="px-3"
+                    className="px-3 h-10"
+                    title="Pick from map"
                   >
                     <Navigation className="h-4 w-4" />
                   </Button>
@@ -638,54 +647,58 @@ const UserLocations: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit_address_line2">Address Line 2</Label>
+                <Label htmlFor="edit_address_line2" className="text-sm">Address Line 2</Label>
                 <Input 
                   id="edit_address_line2" 
                   name="address_line2" 
                   value={formData.address_line2} 
                   onChange={handleInputChange}
                   placeholder="Apartment, suite, unit (optional)"
+                  className="h-10 text-sm"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_city">City *</Label>
+                  <Label htmlFor="edit_city" className="text-sm">City *</Label>
                   <Input 
                     id="edit_city" 
                     name="city" 
                     value={formData.city} 
                     onChange={handleInputChange}
                     placeholder="City"
+                    className="h-10 text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit_state">State/Area *</Label>
+                  <Label htmlFor="edit_state" className="text-sm">State/Area *</Label>
                   <Input 
                     id="edit_state" 
                     name="state" 
                     value={formData.state} 
                     onChange={handleInputChange}
                     placeholder="State or Area"
+                    className="h-10 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_postal_code">Postal Code *</Label>
+                  <Label htmlFor="edit_postal_code" className="text-sm">Postal Code *</Label>
                   <Input 
                     id="edit_postal_code" 
                     name="postal_code" 
                     value={formData.postal_code} 
                     onChange={handleInputChange}
                     placeholder="Postal/ZIP code"
+                    className="h-10 text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit_country">Country</Label>
+                  <Label htmlFor="edit_country" className="text-sm">Country</Label>
                   <Select value={formData.country} onValueChange={(value) => handleSelectChange('country', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -700,22 +713,22 @@ const UserLocations: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 pt-2">
                 <input
                   type="checkbox"
                   id="edit_is_default"
                   name="is_default"
                   checked={formData.is_default}
                   onChange={handleInputChange}
-                  className="rounded border-gray-300"
+                  className="rounded border-gray-300 h-4 w-4"
                 />
-                <Label htmlFor="edit_is_default" className="text-sm">
+                <Label htmlFor="edit_is_default" className="text-sm font-normal">
                   Set as default address
                 </Label>
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -723,13 +736,14 @@ const UserLocations: React.FC = () => {
                   resetForm();
                 }}
                 disabled={saveLoading}
+                className="w-full sm:w-auto order-2 sm:order-1"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleUpdateAddress}
                 disabled={saveLoading}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto order-1 sm:order-2"
               >
                 {saveLoading ? "Updating..." : "Update Location"}
               </Button>
@@ -738,7 +752,6 @@ const UserLocations: React.FC = () => {
         </Dialog>
 
         {/* Google Map Picker */}
-        {/* Google Map Picker - Use the standalone component */}
         {showMapPicker && GOOGLE_MAPS_API_KEY && (
           <GoogleMapPicker
             onLocationSelect={handleLocationSelect}

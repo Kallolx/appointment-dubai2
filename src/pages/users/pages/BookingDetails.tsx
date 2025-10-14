@@ -56,6 +56,7 @@ const BookingDetails: React.FC = () => {
   const [isDateTimeModalOpen, setIsDateTimeModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [categoryHeroImage, setCategoryHeroImage] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -111,6 +112,37 @@ const BookingDetails: React.FC = () => {
       });
     }
   }, [location.state, navigate, bookingId, toast]);
+
+  // When we have orderData, try to fetch the service-items-category to get the hero image
+  useEffect(() => {
+    const fetchCategoryHero = async () => {
+      try {
+        const catSlug = (orderData?.service_items_category || orderData?.service_category || "").toString();
+        if (!catSlug) return;
+
+        // Use the public API used in StepOne: filter by parentCategorySlug
+        const url = buildApiUrl(`/api/service-items-category?parentCategorySlug=${encodeURIComponent(catSlug)}`);
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          console.debug("No category hero image found, status:", resp.status);
+          return;
+        }
+        const data = await resp.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const first = data[0];
+          if (first && (first.hero_image_url || first.hero_image)) {
+            setCategoryHeroImage(first.hero_image_url || first.hero_image || null);
+            console.log("BookingDetails - using category hero image:", first.hero_image_url || first.hero_image);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Error fetching category hero image:", e);
+      }
+    };
+
+    if (orderData) fetchCategoryHero();
+  }, [orderData]);
 
   const fetchBookingDetails = async () => {
     try {
@@ -494,7 +526,10 @@ const BookingDetails: React.FC = () => {
           {/* Hero image based on service category */}
           <div className="overflow-hidden rounded-lg mb-4">
             <img
-              src={getServiceCategoryImage(orderData.service_category)}
+              src={
+                categoryHeroImage ||
+                getServiceCategoryImage(orderData.service_category)
+              }
               alt="Booking"
               className="w-full h-36 md:h-48 object-cover"
             />
