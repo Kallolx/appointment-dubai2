@@ -40,6 +40,12 @@ const AdminReports: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30days');
   const [reportType, setReportType] = useState('overview');
 
+  const AEDIcon = ({
+  className = "inline-block w-4 h-4 mr-2",
+}: {
+  className?: string;
+}) => <img src="/aed.svg" alt="AED" className={className} />;
+
   useEffect(() => {
     fetchReportData();
   }, [selectedPeriod, reportType]);
@@ -267,10 +273,10 @@ const AdminReports: React.FC = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                   <AEDIcon className="inline-block w-4 h-4" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${reportData.totalRevenue.toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{reportData.totalRevenue.toFixed(2)}</div>
                   <p className="text-xs text-muted-foreground">
                     From completed appointments
                   </p>

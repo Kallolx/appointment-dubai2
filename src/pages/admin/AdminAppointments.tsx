@@ -169,6 +169,17 @@ const AdminAppointments: React.FC = () => {
     });
   };
 
+  const formatDateTime = (dateTimeString: string) => {
+    return new Date(dateTimeString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   const formatLocation = (location: any) => {
     try {
       // Parse JSON string if needed
@@ -465,7 +476,8 @@ const AdminAppointments: React.FC = () => {
                       <TableHead>ID</TableHead>
                       <TableHead>Customer</TableHead>
                       <TableHead>Service Details</TableHead>
-                      <TableHead>Date & Time</TableHead>
+                      <TableHead>Appointment Date</TableHead>
+                      <TableHead>Booked At</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Actions</TableHead>
@@ -545,6 +557,14 @@ const AdminAppointments: React.FC = () => {
                                 <Clock className="w-3 h-3" />
                                 <span>{formatTime(appointment.appointment_time)}</span>
                               </div>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="text-xs text-gray-600">
+                                {formatDateTime(appointment.created_at)}
+                              </p>
                             </div>
                           </TableCell>
                           
@@ -815,7 +835,7 @@ const AdminAppointments: React.FC = () => {
                   <div className="border rounded p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="w-4 h-4 text-green-600" />
-                      <span className="font-medium text-sm">Schedule</span>
+                      <span className="font-medium text-sm">Appointment Schedule</span>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-gray-900">{formatDate(selectedAppointment.appointment_date)}</p>
@@ -823,6 +843,12 @@ const AdminAppointments: React.FC = () => {
                         <Clock className="w-3 h-3 text-gray-500" />
                         <p className="text-xs text-gray-600">{formatTime(selectedAppointment.appointment_time)}</p>
                       </div>
+                    </div>
+                    
+                    {/* Booking Time */}
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-500 mb-1">Booked At</p>
+                      <p className="text-xs text-gray-700 font-medium">{formatDateTime(selectedAppointment.created_at)}</p>
                     </div>
                   </div>
 
@@ -931,12 +957,7 @@ const AdminAppointments: React.FC = () => {
           isOpen={shareModalOpen}
           onClose={closeShareModal}
           appointmentId={appointmentToShare?.id || 0}
-          appointmentData={appointmentToShare ? {
-            customer_name: appointmentToShare.customer_name,
-            service: appointmentToShare.service,
-            appointment_date: appointmentToShare.appointment_date,
-            appointment_time: appointmentToShare.appointment_time
-          } : undefined}
+          appointmentData={appointmentToShare as any}
         />
       </div>
     </NewAdminLayout>

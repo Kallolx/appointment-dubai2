@@ -53,11 +53,11 @@ const NewAdminSidebar: React.FC<NewAdminSidebarProps> = ({
       icon: Layers,
       label: "Services",
       children: [
-        { icon: Tag, label: "Categories", path: "/admin/service-categories" },
-        { icon: Menu, label: "Service Items", path: "/admin/service-items" },
+        { icon: Tag, label: "Sections", path: "/admin/service-categories" },
+        { icon: Menu, label: "Services", path: "/admin/service-items" },
                 {
           icon: List,
-          label: "Items Category",
+          label: "Service Categories",
           path: "/admin/service-items-category",
         },
         {

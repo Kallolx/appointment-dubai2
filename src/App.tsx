@@ -60,6 +60,7 @@ import Sitemap from "./pages/websitePages/Sitemap";
 import WebsiteSettings from "./pages/superadmin/WebsiteSettings";
 import SharedAppointmentView from "./pages/SharedAppointmentView";
 import RedirectToPestControl from "./components/RedirectToPestControl";
+import Home from "./pages/websitePages/Home";
 
 const queryClient = new QueryClient();
 
@@ -84,7 +85,7 @@ const App = () => (
 
               {/* frontend Routes */}
               <Route path="/" element={<MainLayout />}>
-                <Route path="" element={<RedirectToPestControl />} />
+                <Route path="" element={<Home />} />
                 <Route
                   path="single-category/:category"
                   element={<SingleCategory />}

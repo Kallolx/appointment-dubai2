@@ -56,6 +56,8 @@ const StepFour = ({
   const [offerCode, setOfferCode] = useState("");
   const [isValidatingOffer, setIsValidatingOffer] = useState(false);
   const [offerError, setOfferError] = useState("");
+  const [showOffersModal, setShowOffersModal] = useState(false);
+  const [availableOffers, setAvailableOffers] = useState([]);
   const [finalAmount, setFinalAmount] = useState(0);
 
   const { user, isAuthenticated, token } = useAuth();
@@ -214,6 +216,23 @@ const StepFour = ({
   const vat = (localSubtotal + extraPrice + codFee) * 0.05;
   const total = localSubtotal + extraPrice + codFee + vat;
 
+  // Fetch available offers from database
+  useEffect(() => {
+    const fetchAvailableOffers = async () => {
+      try {
+        const response = await fetch(buildApiUrl('/api/offers/active'));
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableOffers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching available offers:', error);
+      }
+    };
+
+    fetchAvailableOffers();
+  }, []);
+
   const handleBookNow = async () => {
     if (!selectedPayment) {
       toast({
@@ -255,66 +274,68 @@ const StepFour = ({
     setIsLoading(true);
 
     try {
-      // Extract room type and property type from cart items
-  const firstItem = localItems[0];
-  const roomType = firstItem?.service?.roomType || firstItem?.service?.context?.selectedRoomType || 'Studio';
-  const propertyType = firstItem?.service?.propertyType || firstItem?.service?.context?.selectedPropertyType || 'Apartment';
-  const quantity = firstItem?.count || 1;
-
-      // Calculate total including fees and VAT
+      // Calculate fees (will be distributed across appointments)
       const codFee = selectedPayment === "cod" ? 5 : 0;
-  const extraPrice = Number(selectedDateTime.extra_price) || 0;
-  const total = localSubtotal + extraPrice + codFee + (localSubtotal + extraPrice + codFee) * 0.05;
+      const extraPrice = Number(selectedDateTime.extra_price) || 0;
+      
+      // Calculate per-item discount if offer is applied
+      const perItemDiscount = discountAmount / localItems.length;
+      
+      // Distribute COD fee and extra price across items proportionally
+      const totalItemsPrice = localSubtotal;
+      
+      // Create separate appointments for each cart item
+      const appointmentPromises = localItems.map(async (item, index) => {
+        const itemPrice = typeof item.service.price === 'number' 
+          ? item.service.price 
+          : parseFloat(item.service.price) || 0;
+        
+        const itemTotal = itemPrice * (item.count || 1);
+        const itemProportion = itemTotal / totalItemsPrice;
+        
+        // Distribute fees proportionally
+        const itemCodFee = index === 0 ? codFee : 0; // Add COD fee to first item only
+        const itemExtraPrice = Math.round(extraPrice * itemProportion * 100) / 100;
+        const itemDiscountAmount = Math.round(perItemDiscount * 100) / 100;
+        
+        const roomType = item.service?.roomType || item.service?.context?.selectedRoomType || 'Studio';
+        const propertyType = item.service?.propertyType || item.service?.context?.selectedPropertyType || 'Apartment';
+        
+        const appointmentData = {
+          service: `${item.service.name} (x${item.count || 1})`,
+          appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
+          appointment_time: selectedDateTime.time,
+          location: selectedAddress,
+          price: itemTotal - itemDiscountAmount, // Item price after discount
+          original_price: itemTotal,
+          discount_amount: itemDiscountAmount,
+          extra_price: itemExtraPrice,
+          cod_fee: itemCodFee,
+          room_type: roomType,
+          property_type: propertyType,
+          quantity: item.count || 1,
+          service_category: item.service?.category || category || 'general',
+          service_items_category: item.service.service_items_category || item.service.category,
+          payment_method: getPaymentMethodName(selectedPayment),
+          offer_code_id: index === 0 ? (appliedOffer?.id || null) : null, // Apply offer to first item only
+          notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}${appliedOffer && index === 0 ? `. Applied Offer: ${appliedOffer.name} (${appliedOffer.code})` : ''}${localItems.length > 1 ? `. Part of multi-service booking (${index + 1}/${localItems.length})` : ''}`,
+        };
 
-      // Note: Time format is now correctly sent from StepThree in database format (HH:MM:SS)
-      // No conversion needed since StepThree.tsx now sends the actual start_time from database
+        return appointmentData;
+      });
 
-      // Extract service items category from local items
-      const serviceItemsCategory = localItems.length > 0 
-        ? localItems[0].service.service_items_category || localItems[0].service.category 
-        : null;
+      const appointmentsData = await Promise.all(appointmentPromises);
 
-      // Prepare appointment data
-      const appointmentData = {
-        service: localItems
-          .map((item) => `${item.service.name} (x${item.count})`)
-          .join(", "),
-        appointment_date: selectedDateTime.dbDate || selectedDateTime.date,
-        appointment_time: selectedDateTime.time, // Use database time format directly
-        location: selectedAddress,
-  price: finalAmount, // Use final amount after discount
-  original_price: localSubtotal, // Keep original price for reference
-        discount_amount: discountAmount,
-        extra_price: extraPrice,
-        cod_fee: codFee,
-        room_type: roomType,
-        property_type: propertyType,
-  quantity: quantity,
-        service_category: firstItem?.service?.category || category || 'general',
-        service_items_category: serviceItemsCategory,
-        payment_method: getPaymentMethodName(selectedPayment),
-        offer_code_id: appliedOffer?.id || null,
-        notes: `Payment Method: ${getPaymentMethodName(selectedPayment)}. Items: ${localItems
-          .map((item) => `${item.service.name} (x${item.count})`)
-          .join(", ")}${appliedOffer ? `. Applied Offer: ${appliedOffer.name} (${appliedOffer.code})` : ''}`,
-      };
-
-      // Debug: Log the appointment data being sent
-      console.log('StepFour - selectedDateTime object:', selectedDateTime);
-      console.log('StepFour - database time format:', selectedDateTime.time);
-      console.log('StepFour - appointment_date being sent:', selectedDateTime.dbDate || selectedDateTime.date);
-      console.log('StepFour - Appointment data being sent:', appointmentData);
-      console.log('StepFour - First item details:', firstItem);
-      console.log('StepFour - Category:', category);
+      console.log('StepFour - Creating separate appointments:', appointmentsData);
 
       // Handle different payment methods
       if (selectedPayment === "ziina") {
-        await handleZiinaPayment(appointmentData);
+        await handleZiinaPayment(appointmentsData);
       } else {
-        await handleRegularPayment(appointmentData);
+        await handleRegularPayment(appointmentsData);
       }
     } catch (error) {
-      console.error("Error creating appointment:", error);
+      console.error("Error creating appointments:", error);
       toast({
         title: "Booking Failed",
         description: error.message || "Something went wrong. Please try again.",
@@ -338,80 +359,18 @@ const StepFour = ({
     }
   };
 
-  const handleRegularPayment = async (appointmentData: any) => {
-    const response = await fetch(buildApiUrl("/api/user/appointments"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(appointmentData),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      // Apply offer code if one was used
-    if (appliedOffer && data.appointment?.id) {
-        try {
-          await fetch(buildApiUrl('/api/offer-codes/apply'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                offerId: appliedOffer.id,
-                orderAmount: localSubtotal,
-                appointmentId: data.appointment.id
-              })
-          });
-        } catch (offerError) {
-          console.error('Failed to apply offer code:', offerError);
-          // Don't block the booking process if offer application fails
-        }
-      }
-      
-      // Clear all cart data after successful booking
-      try {
-        localStorage.removeItem('checkout_cart_items');
-        localStorage.removeItem('pendingCartItems');
-      } catch (error) {
-        console.error('Failed to clear cart data:', error);
-      }
-      
-      // Navigate to order confirmation page with order data
-      navigate("/order-confirmation", {
-        state: {
-          orderData: {
-            ...data.appointment,
-            ...appointmentData,
-          },
-        },
-      });
-      toast({
-        title: "Booking Confirmed!",
-        description: "Your appointment has been successfully booked.",
-      });
-    } else {
-      throw new Error(data.message || "Failed to create appointment");
-    }
-  };
-
-  const handleZiinaPayment = async (appointmentData: any) => {
-    try {
-      // First create the appointment with pending payment status
+  const handleRegularPayment = async (appointmentsData: any[]) => {
+    // Create all appointments
+    const createdAppointments = [];
+    
+    for (const appointmentData of appointmentsData) {
       const response = await fetch(buildApiUrl("/api/user/appointments"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...appointmentData,
-          status: "pending",
-          payment_method: "Ziina",
-        }),
+        body: JSON.stringify(appointmentData),
       });
 
       const data = await response.json();
@@ -420,27 +379,109 @@ const StepFour = ({
         throw new Error(data.message || "Failed to create appointment");
       }
 
-      // Check if appointment data exists
-      if (!data.appointment_id) {
-        console.error("Missing appointment data:", data);
-        throw new Error("Appointment creation failed - missing appointment ID");
+      createdAppointments.push(data.appointment);
+    }
+
+    // Apply offer code to the first appointment if one was used
+    if (appliedOffer && createdAppointments[0]?.id) {
+      try {
+        await fetch(buildApiUrl('/api/offer-codes/apply'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            offerId: appliedOffer.id,
+            orderAmount: localSubtotal,
+            appointmentId: createdAppointments[0].id
+          })
+        });
+      } catch (offerError) {
+        console.error('Failed to apply offer code:', offerError);
+        // Don't block the booking process if offer application fails
+      }
+    }
+    
+    // Clear all cart data after successful booking
+    try {
+      localStorage.removeItem('checkout_cart_items');
+      localStorage.removeItem('pendingCartItems');
+    } catch (error) {
+      console.error('Failed to clear cart data:', error);
+    }
+    
+    // Navigate to order confirmation page with all appointments data
+    navigate("/order-confirmation", {
+      state: {
+        orderData: createdAppointments.length === 1 
+          ? createdAppointments[0]
+          : {
+              appointments: createdAppointments,
+              isMultipleBookings: true,
+              totalBookings: createdAppointments.length
+            },
+      },
+    });
+    
+    toast({
+      title: "Booking Confirmed!",
+      description: `${createdAppointments.length} appointment${createdAppointments.length > 1 ? 's have' : ' has'} been successfully booked.`,
+    });
+  };
+
+  const handleZiinaPayment = async (appointmentsData: any[]) => {
+    try {
+      // Create all appointments with pending payment status
+      const createdAppointments = [];
+      
+      for (const appointmentData of appointmentsData) {
+        const response = await fetch(buildApiUrl("/api/user/appointments"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...appointmentData,
+            status: "pending",
+            payment_method: "Ziina",
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to create appointment");
+        }
+
+        // Check if appointment data exists
+        if (!data.appointment_id) {
+          console.error("Missing appointment data:", data);
+          throw new Error("Appointment creation failed - missing appointment ID");
+        }
+
+        createdAppointments.push(data.appointment_id);
       }
 
-  // Calculate total with VAT
-  const codFee = 0; // No COD fee for Ziina
-  const extraPrice = Number(selectedDateTime.extra_price) || 0;
-  const total = localSubtotal + extraPrice + (localSubtotal + extraPrice) * 0.05;
+      // Calculate total with VAT for all appointments
+      const codFee = 0; // No COD fee for Ziina
+      const extraPrice = Number(selectedDateTime.extra_price) || 0;
+      const total = localSubtotal + extraPrice + (localSubtotal + extraPrice) * 0.05;
 
-      // Create Ziina payment
+      // Create single Ziina payment for all appointments
+      const appointmentIds = createdAppointments.join(',');
+      const serviceDescription = appointmentsData.map(a => a.service).join(', ');
+      
       const paymentData = {
         amount: total,
         currency: "AED",
-        description: `Payment for ${appointmentData.service}`,
-        order_id: `appointment_${data.appointment_id}`,
+        description: `Payment for ${appointmentsData.length} service${appointmentsData.length > 1 ? 's' : ''}: ${serviceDescription}`,
+        order_id: `appointments_${appointmentIds}`,
         customer_email: user?.email,
         customer_phone: user?.phone,
-        return_url: `${window.location.origin}/order-confirmation?appointment_id=${data.appointment_id}&payment_success=true`,
-        cancel_url: `${window.location.origin}/payment-cancelled?appointment_id=${data.appointment_id}`,
+        return_url: `${window.location.origin}/order-confirmation?appointment_ids=${appointmentIds}&payment_success=true`,
+        cancel_url: `${window.location.origin}/payment-cancelled?appointment_ids=${appointmentIds}`,
       };
 
       const paymentResponse = await ziinaService.createPaymentViaBackend(paymentData);
@@ -495,85 +536,89 @@ const StepFour = ({
         </div>
 
         <div className="space-y-3">
-          {localItems.map((item) => {
-            const isOpen = expandedItemId === item.service.id;
-            const imgSrc =
-              item.service.image_url ||
-              item.service.image ||
-              item.service.imageUrl ||
-              item.service.thumbnail ||
-              "";
-            return (
-              <div
-                key={item.service.id}
-                className="bg-white border-2 border-gray-200 mb-4 rounded-sm p-3"
-              >
+          {(() => {
+            // Group items by category
+            type CartItem = typeof localItems[0];
+            const grouped = localItems.reduce((acc, item) => {
+              const cat = item.service.category || 'uncategorized';
+              if (!acc[cat]) acc[cat] = [];
+              acc[cat].push(item);
+              return acc;
+            }, {} as Record<string, CartItem[]>);
+
+            return Object.entries(grouped).map(([category, items]: [string, CartItem[]]) => {
+              const firstItem = items[0];
+              const isOpen = expandedItemId === category;
+              // Use any item's image from this category
+              const imgSrc =
+                firstItem.service.image_url ||
+                firstItem.service.image ||
+                firstItem.service.imageUrl ||
+                firstItem.service.thumbnail ||
+                "";
+              
+              return (
+                <div
+                  key={category}
+                  className="bg-white border-2 border-gray-200 mb-4 rounded-sm p-3"
+                >
                   <div className="flex items-center gap-3">
-                  <img
-                    src={imgSrc || "/placeholder.svg"}
-                    alt={item.service.serviceItem?.name || item.service.name}
-                    className="w-10 h-10 object-cover rounded-full"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div
-                          className="font-medium text-gray-900 overflow-hidden whitespace-nowrap truncate block max-w-full"
-                          title={
-                            item.service.context?.selectedServiceItem ||
-                            item.service.serviceItem?.name ||
-                            item.service.name || ''
-                          }
-                        >
-                          {/* NEW: Show enhanced context if available */}
-                          {item.service.context?.selectedServiceItem ||
-                            item.service.serviceItem?.name ||
-                            item.service.name}
+                    <img
+                      src={imgSrc || "/placeholder.svg"}
+                      alt={category}
+                      className="w-10 h-10 object-cover rounded-full"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {formatLabel(category)}
+                          </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedItemId(isOpen ? null : category)
+                          }
+                          aria-expanded={isOpen}
+                          className={`p-2 rounded-full transform transition-transform ${
+                            isOpen ? "rotate-180" : "rotate-0"
+                          }`}
+                        >
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedItemId(isOpen ? null : item.service.id)
-                        }
-                        aria-expanded={isOpen}
-                        className={`p-2 rounded-full transform transition-transform ${
-                          isOpen ? "rotate-180" : "rotate-0"
-                        }`}
-                      >
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                {isOpen && (
-                  <div className="mt-3 border-t border-gray-300 pt-3 text-sm text-gray-600 space-y-2">
-                    {/* Show data in the requested format: Room type - Service Items Category x Quantity AED Price */}
-                    <div className="flex text-gray-500 text-sm items-center">
-                      <div className="flex-1 min-w-0 mr-3">
-                        <span
-                          className="block text-sm text-gray-700 whitespace-normal break-words"
-                          title={`${formatLabel(item.service.context?.selectedRoomType || item.service.roomType || 'Studio')} - ${formatLabel(item.service.service_items_category || item.service.serviceItemCategory || item.service.category || 'General')} x ${item.count || 1}`}
-                        >
-                          {formatLabel(item.service.context?.selectedRoomType || item.service.roomType || 'Studio')} - {formatLabel(item.service.service_items_category || item.service.serviceItemCategory || item.service.category || 'General')} x {item.count || 1}
-                        </span>
-                      </div>
+                  {isOpen && (
+                    <div className="mt-3 border-t border-gray-300 pt-3 text-sm text-gray-600 space-y-2">
+                      {/* Show all items in this category */}
+                      {items.map((item) => (
+                        <div key={item.service.id} className="flex text-gray-500 text-sm items-center py-1">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <span
+                              className="block text-sm text-gray-700 whitespace-normal break-words"
+                              title={`${formatLabel(item.service.context?.selectedRoomType || item.service.roomType || 'Studio')} - ${formatLabel(item.service.service_items_category || item.service.serviceItemCategory || item.service.category || 'General')} x ${item.count || 1}`}
+                            >
+                              {formatLabel(item.service.context?.selectedRoomType || item.service.roomType || 'Studio')} - {formatLabel(item.service.service_items_category || item.service.serviceItemCategory || item.service.category || 'General')} x {item.count || 1}
+                            </span>
+                          </div>
 
-                      <div className="flex-none flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const updated = localItems.map((li) => {
-                              if ((li.service.id || li.service.serviceId) === (item.service.id || item.service.serviceId)) {
-                                const newCount = Math.max(0, (li.count || 1) - 1);
-                                return { ...li, count: newCount };
-                              }
-                              return li;
-                            }).filter(li => (li.count || 1) > 0);
-                            setLocalItems(updated);
-                            onCartItemsChange(updated);
-                            try {
+                          <div className="flex-none flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = localItems.map((li) => {
+                                  if ((li.service.id || li.service.serviceId) === (item.service.id || item.service.serviceId)) {
+                                    const newCount = Math.max(0, (li.count || 1) - 1);
+                                    return { ...li, count: newCount };
+                                  }
+                                  return li;
+                                }).filter(li => (li.count || 1) > 0);
+                                setLocalItems(updated);
+                                onCartItemsChange(updated);
+                                try {
                               localStorage.setItem('checkout_cart_items', JSON.stringify(updated));
                               localStorage.setItem('pendingCartItems', JSON.stringify(updated));
                             } catch (err) {
@@ -642,11 +687,13 @@ const StepFour = ({
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })()}
 
           {/* stacked date/time/location */}
           <div className="mt-4 p-2 mb-4">
@@ -697,63 +744,20 @@ const StepFour = ({
       </div>
 
       {/* Offers Section */}
-      <div className="p-6 pt-0 mb-6">
-        <h2 className="text-xl font-medium text-gray-900 flex items-center gap-2 mb-4">
-          Offers & Discounts
-        </h2>
-        
-        {!appliedOffer ? (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  placeholder="Enter promo code"
-                  value={offerCode}
-                  onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={isValidatingOffer}
-                />
-                {offerError && (
-                  <p className="text-red-500 text-sm mt-1">{offerError}</p>
-                )}
-              </div>
-              <button
-                onClick={validateOfferCode}
-                disabled={isValidatingOffer || !offerCode.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 min-w-[100px] justify-center"
-              >
-                {isValidatingOffer ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Apply"
-                )}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Check className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-green-800">{appliedOffer.name}</p>
-                  <p className="text-sm text-green-600">Code: {appliedOffer.code}</p>
-                  <p className="text-sm text-green-600">You saved <AEDIcon className="w-4 h-4 inline-block mr-1" />{discountAmount.toFixed(2)}</p>
-                </div>
-              </div>
-              <button
-                onClick={removeOffer}
-                className="text-red-500 hover:text-red-700 p-1"
-                title="Remove offer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="p-6 pt-0">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-medium text-gray-900 flex items-center gap-2">
+            Offers & Discounts
+          </h2>
+          {!appliedOffer && (
+            <button
+              onClick={() => setShowOffersModal(true)}
+              className="text-blue-600 underline text-sm font-medium hover:text-blue-700"
+            >
+              Apply
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Payment Methods */}
@@ -1033,6 +1037,133 @@ const StepFour = ({
             >
               View My Orders
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Offers Modal */}
+      {showOffersModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50">
+          <div className="bg-white rounded-t-xl md:rounded-lg w-full md:max-w-lg max-h-[90vh] overflow-y-auto transform transition-transform duration-300 ease-out">
+            {/* Draggable Handle - Mobile Only */}
+            <div className="flex md:hidden justify-center pt-3 pb-2">
+              <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900">Apply Offer Code</h2>
+              <button
+                onClick={() => {
+                  setShowOffersModal(false);
+                  setOfferError("");
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-4 md:px-6 py-6 space-y-6">
+              {/* Offer Code Input */}
+              <div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter code"
+                    value={offerCode}
+                    onChange={(e) => {
+                      setOfferCode(e.target.value.toUpperCase());
+                      setOfferError("");
+                    }}
+                    className={`flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      offerError ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  <button
+                    onClick={validateOfferCode}
+                    disabled={isValidatingOffer || !offerCode.trim()}
+                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isValidatingOffer ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      'Apply'
+                    )}
+                  </button>
+                </div>
+                {offerError && (
+                  <p className="mt-2 text-sm text-red-600">{offerError}</p>
+                )}
+              </div>
+
+              {/* Available Offers */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Available Offers</h3>
+                
+                {availableOffers.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No offers available at the moment</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {availableOffers.map((offer) => (
+                      <div
+                        key={offer.id}
+                        className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          {/* Left side - Offer details */}
+                          <div className="flex-1">
+                            <div className="flex flex-col gap-1">
+                              {/* Discount Value */}
+                              {offer.discount_type === 'percentage' && (
+                                <span className="text-green-600 font-bold text-lg">
+                                  {offer.discount_value}% OFF
+                                </span>
+                              )}
+                              {offer.discount_type === 'fixed' && (
+                                <span className="text-green-600 font-bold text-lg">
+                                  <AEDIcon className="w-4 h-4 inline-block" />
+                                  {offer.discount_value} OFF
+                                </span>
+                              )}
+                              
+                              {/* Code */}
+                              <span className="text-gray-900 font-semibold text-sm">
+                                {offer.code}
+                              </span>
+                              
+                              {/* Valid Till */}
+                              <span className="text-gray-500 text-xs">
+                                Valid till: {new Date(offer.end_date).toLocaleDateString('en-GB', { 
+                                  day: '2-digit', 
+                                  month: 'short', 
+                                  year: 'numeric' 
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Right side - Apply button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOfferCode(offer.code);
+                              validateOfferCode();
+                            }}
+                            className="px-6 py-2 bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

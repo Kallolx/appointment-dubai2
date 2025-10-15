@@ -13,9 +13,11 @@ import ServiceOptionsModal from "@/components/website/ServiceOptionsModal";
 import { buildApiUrl } from "@/config/api";
 
 // Small reusable AED icon component (uses public/aed.svg)
-const AEDIcon = ({ className = "inline-block w-4 h-4 mr-2" }: { className?: string }) => (
-  <img src="/aed.svg" alt="AED" className={className} />
-);
+const AEDIcon = ({
+  className = "inline-block w-4 h-4 mr-2",
+}: {
+  className?: string;
+}) => <img src="/aed.svg" alt="AED" className={className} />;
 
 // No fallback data - force database usage only
 
@@ -36,11 +38,15 @@ const StepOne = ({
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
   const [selectedPropertyTypeId, setSelectedPropertyTypeId] = useState(0);
   const [modalCategory, setModalCategory] = useState("");
-  const [selectedServiceItemsCategory, setSelectedServiceItemsCategory] = useState("");
+  const [selectedServiceItemsCategory, setSelectedServiceItemsCategory] =
+    useState("");
   const inputRef = useRef(null);
   const categoryRef = useRef(null);
   const sectionRefs = useRef({});
   const scrollContainerRef = useRef(null);
+  const tabsRef = useRef(null);
+  const [isTabsSticky, setIsTabsSticky] = useState(false);
+  const [tabsOriginalOffset, setTabsOriginalOffset] = useState(0);
 
   // Fetch service item details for hero section
   const {
@@ -139,6 +145,48 @@ const StepOne = ({
     window.scrollTo(0, 0);
   }, []);
 
+  // Handle sticky tabs on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (tabsRef.current) {
+        const navbarHeight = 64; // Fixed navbar height (pt-16 = 64px)
+
+        // Get the tabs original position (only calculate once or when not sticky)
+        if (!isTabsSticky && tabsOriginalOffset === 0) {
+          const rect = tabsRef.current.getBoundingClientRect();
+          const scrollTop =
+            window.pageYOffset || document.documentElement.scrollTop;
+          setTabsOriginalOffset(rect.top + scrollTop);
+        }
+
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+
+        // Make tabs sticky when scroll position passes the original tabs position minus navbar height
+        if (scrollTop >= tabsOriginalOffset - navbarHeight) {
+          setIsTabsSticky(true);
+        } else {
+          setIsTabsSticky(false);
+        }
+      }
+    };
+
+    // Calculate initial position after a short delay to ensure layout is ready
+    setTimeout(() => {
+      if (tabsRef.current && tabsOriginalOffset === 0) {
+        const rect = tabsRef.current.getBoundingClientRect();
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+        setTabsOriginalOffset(rect.top + scrollTop);
+      }
+    }, 100);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Check initial state
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isTabsSticky, tabsOriginalOffset]);
+
   // Legacy services data for search functionality
   const {
     data: services = [],
@@ -168,12 +216,12 @@ const StepOne = ({
     queryKey: ["service-pricing-all"],
     queryFn: async () => {
       try {
-        const resp = await fetch(buildApiUrl('/api/service-pricing'));
-        if (!resp.ok) throw new Error('Failed to fetch pricing');
+        const resp = await fetch(buildApiUrl("/api/service-pricing"));
+        if (!resp.ok) throw new Error("Failed to fetch pricing");
         const data = await resp.json();
         return data;
       } catch (e) {
-        console.warn('service-pricing-all error', e);
+        console.warn("service-pricing-all error", e);
         return [];
       }
     },
@@ -236,17 +284,18 @@ const StepOne = ({
   useEffect(() => {
     // Temporarily disabled to test scrolling
     return;
-    
+
     if (searchOpen || displayCategories.length === 0) return; // skip while searching
 
     let scrollTimeout;
     const handleScroll = () => {
       // Clear previous timeout to debounce
       if (scrollTimeout) clearTimeout(scrollTimeout);
-      
+
       // Add delay to avoid interfering with smooth scrolling
       scrollTimeout = setTimeout(() => {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
         let currentCat = selected;
         let bestMatch = null;
         let maxVisibleArea = 0;
@@ -259,7 +308,7 @@ const StepOne = ({
             const visibleTop = Math.max(0, rect.top);
             const visibleBottom = Math.min(window.innerHeight, rect.bottom);
             const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-            
+
             // Only consider sections that are significantly visible
             if (visibleHeight > maxVisibleArea && visibleHeight > 200) {
               maxVisibleArea = visibleHeight;
@@ -301,9 +350,12 @@ const StepOne = ({
         return;
       }
 
-      // Calculate position with offset for sticky header
-      const headerHeight = 70; // Account for sticky tabs
-      const elementPosition = section.offsetTop - headerHeight;
+      // Calculate position with offset for navbar (64px) + tabs (70px)
+      const navbarHeight = 64;
+      const tabsHeight = 70;
+      const totalOffset = navbarHeight + tabsHeight;
+      const elementPosition =
+        section.getBoundingClientRect().top + window.pageYOffset - totalOffset;
 
       // Smooth scroll to position
       window.scrollTo({
@@ -362,7 +414,7 @@ const StepOne = ({
     };
 
     return (
-      <div 
+      <div
         className="flex gap-4 items-start p-0 bg-white pb-4 border-b border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={handleCardClick}
       >
@@ -377,16 +429,15 @@ const StepOne = ({
           <h3 className="text-base text-gray-600  font-medium mb-1">
             {property.name}
           </h3>
-          <p className="text-gray-500 text-xs mb-2">
-            {property.description}
-          </p>
+          <p className="text-gray-500 text-xs mb-2">{property.description}</p>
           <div className="flex justify-between items-center">
-              <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+            <div className="flex flex-col md:flex-row md:items-center md:gap-2">
               <span className="text-xs md:text-sm text-gray-500 font-normal">
                 Starting from
               </span>
               <span className="text-sm md:text-md text-gray-600 font-semibold flex items-center">
-                <AEDIcon className="inline-block w-4 h-4 mr-2" />{property.base_price || property.price}
+                <AEDIcon className="inline-block w-4 h-4 mr-2" />
+                {property.base_price || property.price}
               </span>
             </div>
             <div className="flex text-[#01788e] items-center gap-1 p-2 text-xs border border-[#01788e]">
@@ -514,7 +565,8 @@ const StepOne = ({
               </p>
               <div className="flex justify-between items-center">
                 <span className="font-bold text-blue-600 flex items-center">
-                  <AEDIcon className="inline-block w-4 h-4 mr-2" />{service.currentPrice}
+                  <AEDIcon className="inline-block w-4 h-4 mr-2" />
+                  {service.currentPrice}
                 </span>
                 {(cartItems[service.id]?.count || 0) === 0 ? (
                   <button
@@ -627,53 +679,93 @@ const StepOne = ({
               {searchOpen && (
                 <div className="absolute left-0 right-0 mt-2 bg-white border border-[#cddcdc] rounded shadow-lg z-40 max-h-[420px] overflow-y-auto">
                   <div className="flex items-center justify-between p-3 border-b border-gray-100">
-                    <div className="text-sm text-gray-700">Select room type</div>
-                    <button onClick={() => setSearchOpen(false)} className="text-gray-500 hover:text-gray-800">Close</button>
+                    <div className="text-sm text-gray-700">
+                      Select room type
+                    </div>
+                    <button
+                      onClick={() => setSearchOpen(false)}
+                      className="text-gray-500 hover:text-gray-800"
+                    >
+                      Close
+                    </button>
                   </div>
 
                   {allPricing.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">No room types available</div>
+                    <div className="p-4 text-center text-gray-500">
+                      No room types available
+                    </div>
                   ) : (
                     allPricing.map((p) => {
                       // Build a consistent service id key similar to the modal output
-                      const serviceId = `${(p.property_type_slug || 'property')}-${p.room_type_slug}-${(p.category_slug || '').replace(/\s+/g, '')}`;
-                      const qty = (cartItems && cartItems[serviceId] && cartItems[serviceId].count) || 0;
+                      const serviceId = `${
+                        p.property_type_slug || "property"
+                      }-${p.room_type_slug}-${(p.category_slug || "").replace(
+                        /\s+/g,
+                        ""
+                      )}`;
+                      const qty =
+                        (cartItems &&
+                          cartItems[serviceId] &&
+                          cartItems[serviceId].count) ||
+                        0;
                       const serviceObj = {
                         id: serviceId,
                         title: p.room_type_name,
                         name: p.room_type_name,
-                        description: p.room_description || '',
+                        description: p.room_description || "",
                         price: p.price,
                         discount_price: p.discount_price ?? null,
-                        image: p.room_image || '',
+                        image: p.room_image || "",
                         room_type_id: p.room_type_id,
                         room_type_slug: p.room_type_slug,
-                        category: p.category_name || category || '',
-                        category_slug: p.category_slug || '',
+                        category: p.category_name || category || "",
+                        category_slug: p.category_slug || "",
                       };
 
                       return (
-                        <div key={p.id} className="flex gap-4 items-start p-3 border-b last:border-b-0">
+                        <div
+                          key={p.id}
+                          className="flex gap-4 items-start p-3 border-b last:border-b-0"
+                        >
                           <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                            <img src={p.room_image || '/steps/apart/1.png'} alt={p.room_type_name} className="w-full h-full object-cover" />
+                            <img
+                              src={p.room_image || "/steps/apart/1.png"}
+                              alt={p.room_type_name}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-semibold text-gray-800">{p.room_type_name}</h4>
-                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{p.room_description || ''}</p>
-                            <div className="text-sm text-gray-700 mt-2 flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{p.discount_price ?? p.price}</div>
+                            <h4 className="font-semibold text-gray-800">
+                              {p.room_type_name}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {p.room_description || ""}
+                            </p>
+                            <div className="text-sm text-gray-700 mt-2 flex items-center">
+                              <AEDIcon className="inline-block w-4 h-4 mr-2" />
+                              {p.discount_price ?? p.price}
+                            </div>
                           </div>
                           <div className="flex flex-col items-end justify-between">
                             {qty > 0 ? (
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => handleRemoveItemClick && handleRemoveItemClick(serviceId)}
+                                  onClick={() =>
+                                    handleRemoveItemClick &&
+                                    handleRemoveItemClick(serviceId)
+                                  }
                                   className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
                                 >
                                   −
                                 </button>
-                                <span className="min-w-[24px] text-center">{qty}</span>
+                                <span className="min-w-[24px] text-center">
+                                  {qty}
+                                </span>
                                 <button
-                                  onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                                  onClick={() =>
+                                    handleAddItemsClick &&
+                                    handleAddItemsClick(serviceObj)
+                                  }
                                   className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
                                 >
                                   +
@@ -681,7 +773,10 @@ const StepOne = ({
                               </div>
                             ) : (
                               <button
-                                onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                                onClick={() =>
+                                  handleAddItemsClick &&
+                                  handleAddItemsClick(serviceObj)
+                                }
                                 className="px-3 py-1.5 border border-[#01788e] text-[#01788e] rounded text-sm"
                               >
                                 ADD +
@@ -710,11 +805,14 @@ const StepOne = ({
                   className="w-full h-full object-cover"
                 />
                 {/* Mobile Header Icons - Overlay on Hero Image */}
-                  <div className="md:hidden absolute top-4 left-4 right-4 flex items-center justify-between">
+                <div className="md:hidden absolute top-4 left-4 right-4 flex items-center justify-between">
                   <button className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
                     <ChevronLeft className="w-5 h-5 text-black" />
                   </button>
-                  <button onClick={() => setSearchOpen(true)} className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                  <button
+                    onClick={() => setSearchOpen(true)}
+                    className="w-10 h-10 rounded-full bg-white border border-gray-400 flex items-center justify-center hover:bg-opacity-50 transition-all"
+                  >
                     <Search className="w-5 h-5 text-black" />
                   </button>
                 </div>
@@ -757,7 +855,10 @@ const StepOne = ({
                   <button className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
                     <ChevronLeft className="w-5 h-5 text-white" />
                   </button>
-                  <button onClick={() => setSearchOpen(true)} className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all">
+                  <button
+                    onClick={() => setSearchOpen(true)}
+                    className="w-10 h-10 rounded-full bg-black bg-opacity-30 flex items-center justify-center hover:bg-opacity-50 transition-all"
+                  >
                     <Search className="w-5 h-5 text-white" />
                   </button>
                 </div>
@@ -812,7 +913,9 @@ const StepOne = ({
 
           <div className="p-2">
             {allPricing.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">No room types available</div>
+              <div className="p-4 text-center text-gray-500">
+                No room types available
+              </div>
             ) : (
               allPricing
                 .filter((p) => {
@@ -825,44 +928,72 @@ const StepOne = ({
                   );
                 })
                 .map((p) => {
-                  const serviceId = `${(p.property_type_slug || 'property')}-${p.room_type_slug}-${(p.category_slug || '').replace(/\s+/g, '')}`;
-                  const qty = (cartItems && cartItems[serviceId] && cartItems[serviceId].count) || 0;
+                  const serviceId = `${p.property_type_slug || "property"}-${
+                    p.room_type_slug
+                  }-${(p.category_slug || "").replace(/\s+/g, "")}`;
+                  const qty =
+                    (cartItems &&
+                      cartItems[serviceId] &&
+                      cartItems[serviceId].count) ||
+                    0;
                   const serviceObj = {
                     id: serviceId,
                     title: p.room_type_name,
                     name: p.room_type_name,
-                    description: p.room_description || '',
+                    description: p.room_description || "",
                     price: p.price,
                     discount_price: p.discount_price ?? null,
-                    image: p.room_image || '',
+                    image: p.room_image || "",
                     room_type_id: p.room_type_id,
                     room_type_slug: p.room_type_slug,
-                    category: p.category_name || category || '',
-                    category_slug: p.category_slug || '',
+                    category: p.category_name || category || "",
+                    category_slug: p.category_slug || "",
                   };
 
                   return (
-                    <div key={p.id} className="flex gap-3 items-start p-2 border-b last:border-b-0">
+                    <div
+                      key={p.id}
+                      className="flex gap-3 items-start p-2 border-b last:border-b-0"
+                    >
                       <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                        <img src={p.room_image || '/steps/apart/1.png'} alt={p.room_type_name} className="w-full h-full object-cover" />
+                        <img
+                          src={p.room_image || "/steps/apart/1.png"}
+                          alt={p.room_type_name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm text-gray-800">{p.room_type_name}</h4>
-                        <div className="text-xs text-gray-600 line-clamp-2">{p.room_description || ''}</div>
-                        <div className="text-sm text-gray-700 mt-1 flex items-center"><AEDIcon className="inline-block w-4 h-4 mr-2" />{p.discount_price ?? p.price}</div>
+                        <h4 className="font-semibold text-sm text-gray-800">
+                          {p.room_type_name}
+                        </h4>
+                        <div className="text-xs text-gray-600 line-clamp-2">
+                          {p.room_description || ""}
+                        </div>
+                        <div className="text-sm text-gray-700 mt-1 flex items-center">
+                          <AEDIcon className="inline-block w-4 h-4 mr-2" />
+                          {p.discount_price ?? p.price}
+                        </div>
                       </div>
                       <div className="flex flex-col items-end justify-center">
                         {qty > 0 ? (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleRemoveItemClick && handleRemoveItemClick(serviceId)}
+                              onClick={() =>
+                                handleRemoveItemClick &&
+                                handleRemoveItemClick(serviceId)
+                              }
                               className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
                             >
                               −
                             </button>
-                            <span className="min-w-[24px] text-center">{qty}</span>
+                            <span className="min-w-[24px] text-center">
+                              {qty}
+                            </span>
                             <button
-                              onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                              onClick={() =>
+                                handleAddItemsClick &&
+                                handleAddItemsClick(serviceObj)
+                              }
                               className="w-8 h-8 rounded-full border border-[#01788e] text-[#01788e] bg-white flex items-center justify-center"
                             >
                               +
@@ -870,7 +1001,10 @@ const StepOne = ({
                           </div>
                         ) : (
                           <button
-                            onClick={() => handleAddItemsClick && handleAddItemsClick(serviceObj)}
+                            onClick={() =>
+                              handleAddItemsClick &&
+                              handleAddItemsClick(serviceObj)
+                            }
                             className="px-3 py-1.5 border border-[#01788e] text-[#01788e] rounded text-sm"
                           >
                             ADD +
@@ -887,8 +1021,24 @@ const StepOne = ({
 
       {/* Main Content Container with Padding */}
       <div>
+        {isTabsSticky && <div className="h-[70px]"></div>}
+
         {/* Sticky Tabs */}
-        <div className="sticky top-0 -mx-4 border-b border-gray-200 z-30 mb-4">
+        <div
+          ref={tabsRef}
+          className={`${
+            isTabsSticky ? "fixed top-14 left-0 right-0 z-40" : "relative"
+          } border-b border-gray-200 bg-white shadow-sm mb-4 transition-all duration-200`}
+          style={
+            isTabsSticky
+              ? {
+                  maxWidth: "1000px",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                }
+              : {}
+          }
+        >
           {/* Categories Section */}
           <div className="p-3 bg-white">
             <div className="relative">
@@ -904,9 +1054,9 @@ const StepOne = ({
               <div
                 ref={categoryRef}
                 className="flex gap-3 overflow-x-auto mx-0 md:mx-6 w-full md:w-auto py-1"
-                style={{ 
-                  scrollbarWidth: "none", 
-                  msOverflowStyle: "none"
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
                 }}
               >
                 {displayCategories.map((cat) => {
@@ -934,7 +1084,11 @@ const StepOne = ({
                       {/* Circular Icon */}
                       <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
                         <img
-                          src={cat.icon_url || cat.hero_image_url || "/icons/pest.webp"}
+                          src={
+                            cat.icon_url ||
+                            cat.hero_image_url ||
+                            "/icons/pest.webp"
+                          }
                           alt={`${cat.name} icon`}
                           className="w-full h-full object-cover"
                         />

@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import NewUserLayout from "./../NewUserLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ziinaService } from '@/services/ziinaService';
 
 interface Appointment {
   id: number;
@@ -43,6 +44,7 @@ const MyBookings: React.FC = () => {
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const [payingId, setPayingId] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -149,6 +151,59 @@ const MyBookings: React.FC = () => {
     setShowCancelDialog(false);
     await handleCancelBooking(cancellingId);
     setCancellingId(null);
+  };
+
+  const handlePayNow = async (booking: Appointment) => {
+    try {
+      setPayingId(booking.id);
+      
+      // Calculate total amount
+      const parsePrice = (value: any): number => {
+        if (value === null || value === undefined || value === '') return 0;
+        const parsed = typeof value === 'string' ? parseFloat(value) : Number(value);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+
+      const basePrice = parsePrice(booking.price);
+      const total = basePrice + parsePrice(booking.extra_price) + parsePrice(booking.cod_fee);
+
+      // Get current URL for return/cancel URLs
+      const currentUrl = window.location.origin;
+      
+      // Create payment request
+      const paymentRequest = {
+        amount: total,
+        currency: 'AED',
+        description: `Payment for ${booking.service} - Order #${booking.id}`,
+        order_id: booking.id.toString(),
+        return_url: `${currentUrl}/order-confirmation?appointment_id=${booking.id}&payment_success=true`,
+        cancel_url: `${currentUrl}/my-bookings?payment=cancelled`
+      };
+
+      toast({
+        title: 'Processing Payment',
+        description: 'Please wait while we redirect you to the payment gateway...'
+      });
+
+      // Create payment via backend
+      const response = await ziinaService.createPaymentViaBackend(paymentRequest);
+
+      if (response.success && response.payment_url) {
+        // Redirect to Ziina payment page
+        window.location.href = response.payment_url;
+      } else {
+        throw new Error(response.message || 'Failed to create payment');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: 'Payment Failed',
+        description: error instanceof Error ? error.message : 'Failed to initiate payment. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setPayingId(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -273,7 +328,21 @@ const MyBookings: React.FC = () => {
               )}
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
+              {/* Pay Now button - only for COD and non-completed/cancelled bookings */}
+              {booking.payment_method?.toLowerCase().includes('cash on delivery') &&
+               (booking.status || '').toLowerCase() !== 'cancelled' && 
+               (booking.status || '').toLowerCase() !== 'completed' && (
+                <button
+                  onClick={() => handlePayNow(booking)}
+                  disabled={payingId === booking.id}
+                  className="text-xs bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700 transition-colors shadow-sm disabled:bg-green-400 disabled:cursor-not-allowed"
+                >
+                  {payingId === booking.id ? 'Processing...' : 'Pay Now'}
+                </button>
+              )}
+              
+              {/* Cancel button */}
               {(booking.status || '').toLowerCase() !== 'cancelled' && 
                (booking.status || '').toLowerCase() !== 'completed' && (
                 <button
@@ -281,18 +350,19 @@ const MyBookings: React.FC = () => {
                     setCancellingId(booking.id);
                     setShowCancelDialog(true);
                   }}
-                  className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded border border-red-200 hover:bg-red-100"
+                  className="text-xs bg-white text-red-600 px-4 py-2 rounded-md font-medium border-2 border-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isCancelling}
                 >
                   {isCancelling && cancellingId === booking.id ? 'Cancelling...' : 'Cancel'}
                 </button>
               )}
               
+              {/* Details button */}
               <button 
                 onClick={() => navigate(`/booking-details/${booking.id}`, { 
                   state: { orderData: booking } 
                 })}
-                className="text-xs bg-gray-50 text-gray-600 px-3 py-1 rounded border border-gray-200 hover:bg-gray-100"
+                className="text-xs bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm"
               >
                 Details
               </button>

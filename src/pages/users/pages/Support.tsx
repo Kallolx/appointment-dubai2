@@ -22,6 +22,7 @@ interface SupportTicket {
   status: string;
   created_at: string;
   updated_at: string;
+  admin_response?: string; // Add admin response field
 }
 
 const Support: React.FC = () => {
@@ -37,6 +38,13 @@ const Support: React.FC = () => {
     subject: '',
     message: ''
   });
+
+  // Open WhatsApp with a prefilled message (no specific recipient so user picks contact)
+  const openWhatsApp = (text?: string) => {
+    const message = text || 'Hello, I need assistance with my account.';
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
 
   useEffect(() => {
     fetchTickets();
@@ -179,7 +187,12 @@ const Support: React.FC = () => {
             </div>
           </Card>
 
-          <Card className="p-4 hover:shadow-md transition-shadow">
+          <Card
+            className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            role="button"
+            onClick={() => openWhatsApp('Hello, I need help with my account')}
+            aria-label="Open Live Chat on WhatsApp"
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <MessageCircle className="h-5 w-5 text-green-600" />
@@ -242,10 +255,25 @@ const Support: React.FC = () => {
                         </div>
                       </div>
                       
-                      {ticket.status === 'open' || ticket.status === 'in_progress' ? (
+                      {ticket.admin_response && (
+                        <div className="flex items-start gap-3 pt-3 border-t">
+                          <MessageSquare className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-blue-600 mb-1">Support Response:</p>
+                            <p className="text-gray-700 whitespace-pre-line">{ticket.admin_response}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!ticket.admin_response && (ticket.status === 'open' || ticket.status === 'in_progress') ? (
                         <div className="flex items-center gap-2 pt-2 border-t">
                           <Clock className="h-4 w-4 text-orange-500" />
                           <span className="text-sm text-orange-600 font-medium">Awaiting response</span>
+                        </div>
+                      ) : ticket.admin_response ? (
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          <MessageSquare className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-green-600 font-medium">Response received</span>
                         </div>
                       ) : null}
                     </div>
