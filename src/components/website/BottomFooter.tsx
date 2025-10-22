@@ -82,13 +82,14 @@ const BottomFooter: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {/* Social Media Icons - Centered and Bigger */}
           <div className="flex justify-center mb-6">
-              <div className="flex items-center gap-4">
+              {/* Allow icons to wrap and scale on small screens to avoid overflow */}
+              <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4 max-w-full">
               {shouldShowSocialLink(settings.facebook_url) && (
                 <a 
                   href={settings.facebook_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition shrink-0"
                 >
                   <img src="/icons/facebook.svg" alt="Facebook" />
                 </a>
@@ -98,7 +99,7 @@ const BottomFooter: React.FC = () => {
                   href={settings.instagram_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition shrink-0"
                 >
                   <img src="/icons/instagram.svg" alt="Instagram" />
                 </a>
@@ -108,7 +109,7 @@ const BottomFooter: React.FC = () => {
                   href={settings.twitter_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition shrink-0"
                 >
                   <img src="/icons/twitter.svg" alt="Twitter" />
                 </a>
@@ -118,7 +119,7 @@ const BottomFooter: React.FC = () => {
                   href={settings.linkedin_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition shrink-0"
                 >
                     <img src="/icons/linkedin.svg" alt="Linkedin" />
                 </a>
@@ -128,7 +129,7 @@ const BottomFooter: React.FC = () => {
                   href={settings.google_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition shrink-0"
                 >
                     <img src="/icons/google-1.svg" alt="Google" />
                 </a>
@@ -138,7 +139,7 @@ const BottomFooter: React.FC = () => {
                   href={settings.whatsapp_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="w-12 h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-[#006e82] rounded-full flex items-center justify-center hover:bg-white/20 transition shrink-0"
                 >
                   <img src="/icons/whatsapp.svg" alt="WhatsApp" />
                 </a>
@@ -155,11 +156,39 @@ const BottomFooter: React.FC = () => {
             </div>
           </div>
 
-          {/* Copyright - Underneath Terms */}
-          <div className="text-center">
-            <p className="text-gray-200 text-sm">
+          {/* Tagline - Centered */}
+          <div className="text-center mb-4 px-2">
+            <p className="text-gray-200 text-xs sm:text-sm">
               {settings.tagline}
             </p>
+          </div>
+
+          {/* Copyright and Developer - Responsive Layout */}
+          <div className="border-t border-gray-600 pt-4 flex w-full flex-col sm:flex-row justify-between items-center gap-3 sm:gap-2 text-sm sm:text-base px-2">
+            {/* Left side - Copyright */}
+            <div className="flex-1 text-center sm:text-left order-2 sm:order-1 w-full sm:w-auto">
+              <p className="text-gray-300">
+                {settings.copyright_text || '© 2025 JL Services. All rights reserved.'}
+              </p>
+            </div>
+
+            {/* Vertical separator for larger screens */}
+            <div className="hidden sm:block w-px h-5 bg-gray-600 mx-4" aria-hidden="true" />
+
+            {/* Right side - Developed by */}
+            <div className="flex-none text-center sm:text-right order-1 sm:order-2">
+              <p className="text-gray-300">
+                Developed by{' '}
+                <a 
+                  href={settings.developer_url || 'https://webbyte.com'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-[#FFD03E] transition-colors underline font-medium"
+                >
+                  {settings.developer_name || 'WebByte Solutions'}
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>

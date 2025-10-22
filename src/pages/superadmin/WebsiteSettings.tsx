@@ -39,6 +39,9 @@ interface WebsiteSettings {
   contact_address: string;
   contact_phone: string;
   contact_email: string;
+  copyright_text: string;
+  developer_name: string;
+  developer_url: string;
 }
 
 const defaultSettings: WebsiteSettings = {
@@ -55,6 +58,9 @@ const defaultSettings: WebsiteSettings = {
   contact_address: "1403, Fortune Executive Tower, Cluster T, JLT, Dubai, UAE.",
   contact_phone: "+971 4 506 1500",
   contact_email: "support@servicemarket.com",
+  copyright_text: "© 2025 JL Services. All rights reserved.",
+  developer_name: "WebByte Solutions",
+  developer_url: "https://webbyte.com",
 };
 
 const WebsiteSettingsPage: React.FC = () => {
@@ -310,31 +316,6 @@ const WebsiteSettingsPage: React.FC = () => {
               />
             </div>
 
-            {/* Primary Color */}
-            <div className="space-y-2">
-              <Label htmlFor="primaryColor">Primary Color</Label>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  type="color"
-                  value={settings.primary_color}
-                  onChange={(e) =>
-                    handleInputChange("primary_color", e.target.value)
-                  }
-                  className="w-20 h-10 p-1 cursor-pointer"
-                />
-                <Input
-                  id="primaryColor"
-                  value={settings.primary_color}
-                  onChange={(e) =>
-                    handleInputChange("primary_color", e.target.value)
-                  }
-                  placeholder="#FFD03E"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Choose the primary color for buttons and accents
-              </p>
-            </div>
             
             <Separator />
 
@@ -457,6 +438,58 @@ const WebsiteSettingsPage: React.FC = () => {
                     onChange={(e) => handleInputChange("contact_email", e.target.value)}
                     placeholder="support@yourcompany.com"
                   />
+                </div>
+              </div>
+            </div>
+            
+            <Separator />
+
+            {/* Footer Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Footer Information</h3>
+              <p className="text-sm text-muted-foreground">
+                Customize copyright text and developer attribution displayed in the website footer.
+              </p>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {/* Copyright Text */}
+                <div className="space-y-2">
+                  <Label htmlFor="copyrightText">Copyright Text</Label>
+                  <Input
+                    id="copyrightText"
+                    value={settings.copyright_text}
+                    onChange={(e) => handleInputChange("copyright_text", e.target.value)}
+                    placeholder="© 2025 JL Services. All rights reserved."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This text will appear on the left side of the footer
+                  </p>
+                </div>
+
+                {/* Developer Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="developerName">Developed By (Company Name)</Label>
+                  <Input
+                    id="developerName"
+                    value={settings.developer_name}
+                    onChange={(e) => handleInputChange("developer_name", e.target.value)}
+                    placeholder="WebByte Solutions"
+                  />
+                </div>
+
+                {/* Developer URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="developerUrl">Developer Website URL</Label>
+                  <Input
+                    id="developerUrl"
+                    type="url"
+                    value={settings.developer_url}
+                    onChange={(e) => handleInputChange("developer_url", e.target.value)}
+                    placeholder="https://webbyte.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Clicking the developer name in footer will redirect to this URL
+                  </p>
                 </div>
               </div>
             </div>
